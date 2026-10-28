@@ -441,3 +441,19 @@ sheet('h12.svg',{...HS,w:660,h:990,elecH:360,names:['A'],seq:['A+','A-'],note:['
     L.rung(480,[{t:'no',name:'K2'},{t:'sol',name:'Y1'}],{fromY:busY,slots,dot:true});
     L.rung(590,[{t:'no',name:'ES',act:'es'},{t:'lamp',name:'H1'}],{slots});
   }});
+sheet('h13.svg',{...HS,w:780,names:['A'],seq:['A+','A-','A+','A-','A+','A-'],note:['PB2: 3회 후 정지','PB3: 카운터 리셋'],
+  pneu:S=>hyd(S,110,90,{name:'A',valve:'42',sols:['Y1'],sensors:[{end:'-',name:'LS1',kind:'ls'},{end:'+',name:'LS2',kind:'ls'}]}),
+  elec:L=>{
+    L.rung(120,[{t:'nc',name:'C1'},{t:'no',name:'PB2',act:'pb',hold:'K1'},{t:'coil',name:'K1'}]);
+    L.rung(290,[{t:'nc',name:'LS2',act:'ls'},{t:'no',name:'K1',hold:'K2',span:2},{t:'no',name:'LS1',act:'ls'},{t:'coil',name:'K2'}]);
+    L.rung(440,[{t:'no',name:'K2'},{t:'sol',name:'Y1'}]);
+    L.rung(560,[{t:'no',name:'LS2',act:'ls'},{t:'coil',name:'C1 (3회)'}]);
+    L.rung(690,[{t:'no',name:'PB3',act:'pb'},{t:'coil',name:'C1 리셋'}]);
+  }});
+sheet('h14.svg',{...HS,w:580,names:['A'],seq:['A+','A-'],note:['PB2: 연속 반복','PB3: 사이클 끝에서 정지'],
+  pneu:S=>hyd(S,110,90,{name:'A',valve:'42',sols:['Y1'],sensors:[{end:'-',name:'LS1',kind:'ls'},{end:'+',name:'LS2',kind:'ls'}]}),
+  elec:L=>{
+    L.rung(130,[{t:'nc',name:'PB3',act:'pb'},{t:'no',name:'PB2',act:'pb',hold:'K1'},{t:'coil',name:'K1'}]);
+    L.rung(300,[{t:'nc',name:'LS2',act:'ls'},{t:'no',name:'K1',hold:'K2',span:2},{t:'no',name:'LS1',act:'ls'},{t:'coil',name:'K2'}]);
+    L.rung(470,[{t:'no',name:'K2'},{t:'sol',name:'Y1'}]);
+  }});

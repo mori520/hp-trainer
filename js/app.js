@@ -3,7 +3,8 @@
 
 /* ===================== 상태 / 저장 ===================== */
 const KEY='ph-trainer-v1';
-let store={done:{},circuits:{},last:'m0',mode:'tut'};
+// 처음 온 사람: 기초 강의·미션 칸은 접고, 실전 연습 칸의 자유 실습을 연 상태로 시작
+let store={done:{},circuits:{},last:'free',mode:'tut',fold:{lessons:true,missions:true}};
 try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s)store=Object.assign(store,s);}catch(e){}
 const BOOT_LAST=store.last;   // 시작 때 마지막으로 보던 것 (그리는 중 save()가 store.last를 덮기 전에 기억)
 // 예전 잭 이름으로 저장된 배선을 새 이름(부품 id_포트)으로 옮긴다
@@ -363,5 +364,5 @@ PLUGGED=!!store.plugged;
 if(typeof store.autoColor!=='boolean')store.autoColor=true;
 $('autoColor').setAttribute('aria-pressed',store.autoColor);setColor(UI.color);
 applyZoom();
-loadMission(ALL.some(x=>x.id===store.last)?store.last:'m0');
+loadMission(ALL.some(x=>x.id===store.last)?store.last:'free');
 requestAnimationFrame(loop);

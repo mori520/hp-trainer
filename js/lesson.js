@@ -64,6 +64,5 @@ window.addEventListener('keyup',e=>{
   if(!UI.lesson||!(e.key===' '||e.key==='Enter'))return;
   $('lesson').querySelectorAll('[data-hold]').forEach(h=>{LS_UI.state[h.dataset.hold]=false;});lessonUpdate();
 });
-// 처음 열 때: 처음 쓰는 사람(아무 기록 없음)이나 마지막에 보던 것이 강의면 강의부터
+// 처음 열 때: 마지막에 보던 것이 강의면 그 강의부터
 if(lessonById(BOOT_LAST))openLesson(BOOT_LAST,0);
-else if(!Object.keys(store.done).length&&!Object.keys(store.circuits).length&&!store.lessonDone)openLesson(LESSONS[0].id,0);

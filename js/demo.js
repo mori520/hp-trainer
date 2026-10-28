@@ -79,7 +79,7 @@ const DEMO={
   // real: 실제로 흐른 초 (버튼을 누르고 있는 시간은 빠르기와 상관없이 실제 시간 — 기계는 늘 같은 빠르기로 움직이므로)
   tick(r,w,c,dt,fx,real=dt){
     const T=DEMO.T, step=r.mis.steps[r.i], act=r.plan[r.i];
-    r.timers=r.timers.filter(x=>{x.t-=real;if(x.t>0)return true;x.fn();return false;});
+    DEMO.timers(r,real);
     if(r.done||r.fail)return;
     r.t+=dt;
     const next=ph=>{r.phase=ph;r.t=0;};
@@ -133,6 +133,8 @@ const DEMO={
       next('pre');
     }
   },
+  // 일시정지 중에도 탭을 떼는 시간은 흐른다 (멈춘 동안 버튼이 계속 눌려 있지 않게)
+  timers(r,real){r.timers=r.timers.filter(x=>{x.t-=real;if(x.t>0)return true;x.fn();return false;});},
   // 끝: 누르고 있던 버튼을 모두 뗀다
   releaseAll(w){for(const k in w.pb)if(LAYOUT.pbs.includes(k))w.pb[k]=false;}
 };

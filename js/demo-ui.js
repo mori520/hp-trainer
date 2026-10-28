@@ -11,10 +11,10 @@ function demoStart(){
   loadCircuit();   // 튜토리얼처럼 빈 판(기본 전원 선만)에서 시작
   S.power=false;S.air=false;
   DM.run=DEMO.start(cur(),DEMO.plan(cur(),JACKS,S.wires.concat(S.hoses)));
-  DM.paused=false;DM.stepOnce=false;DM.endT=0;DEMO_ON=true;
+  DM.paused=false;DM.stepOnce=false;DM.endT=0;DM.color=UI.color;DEMO_ON=true;
   document.body.classList.add('demo-on');$('demoBar').hidden=false;demoUpdateBtn();
   // 도면 창은 작게 오른쪽 위로 (트레이너 앞을 많이 가리지 않게). 사용자가 옮겨 둔 창이면 그대로
-  const box=$('mydiag');DM.sized=box.hidden&&!box.style.left;
+  const box=$('mydiag');DM.sized=box.hidden&&!box.style.left&&!box.style.width;   // 사용자가 옮기거나 크기를 바꾼 창은 그대로
   if(DM.sized){box.style.width='min(440px,32vw)';box.style.height='min(400px,46vh)';}
   showMyDiagram(true);demoBarText();
 }
@@ -25,6 +25,7 @@ function demoStop(){
   document.body.classList.remove('demo-on');$('demoBar').hidden=true;
   $('demoPath').setAttribute('d','');$('demoHand').setAttribute('r',0);
   PLUGGED=!!store.plugged;
+  setColor(DM.color||UI.color);   // 시연이 바꾼 툴바 색을 원래대로
   if(DM.sized){const box=$('mydiag');box.style.width=box.style.height='';DM.sized=false;}
   loadCircuit();demoUpdateBtn();
 }
@@ -60,11 +61,11 @@ function demoFrame(dt){
     if(r.done&&(DM.endT+=dt)>4)demoStop();   // 다 된 모습을 4초 보여 주고 빈 판으로
     return;
   }
-  if(DM.paused)return;
+  if(DM.paused){DEMO.timers(r,dt);return;}
   const i=r.i,c={color:UI.color,auto:store.autoColor,quiz:UI.quiz.ok,plugged:PLUGGED};
   DEMO.tick(r,S,c,dt*DM.speed,demoFx,dt);
   demoDraw(r.anim);
-  if(r.done)DEMO.releaseAll(S);
+  if(r.done||r.fail)DEMO.releaseAll(S);
   if(r.i!==i&&DM.stepOnce){DM.paused=true;DM.stepOnce=false;}
   if(r.i!==i||r.done||r.fail)demoBarText();
 }

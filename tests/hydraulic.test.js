@@ -217,3 +217,22 @@ test('카운터밸런스를 후방 줄에 끼우면 소용없다: 전방 기름�
   run(s,{power:true,air:true},2);
   assert.ok(s.cyl.A>.3,'내려감 '+s.cyl.A);
 });
+
+test('펌프 토출구 체크밸브가 있어도 카운터밸런스·파일럿 체크가 열린다',()=>{
+  const base=[h('HP1','CV1_1'),h('CV1_2','V1_P'),h('V1_T','HT1')];
+  const cb=world({cylA:'cylw',valveA:'valve43a',MA2:'cbv',R1:'chk'},lift([...base,h('V1_A','A_cap'),h('V1_B','CB2_1'),h('CB2_2','A_rod')].map(x=>({...x,a:x.a.replace('CB2','CB1'),b:x.b.replace('CB2','CB1')}))));
+  run(cb,{power:true,air:true},1);assert.equal(cb.cyl.A,0);
+  run(cb,{PB1:true},1.5);assert.equal(end(cb.cyl.A),'+');
+  const lk=world({cylA:'cylw',valveA:'valve43a',LA:'lock',R1:'chk'},lift([...base,h('V1_A','PC1_A1'),h('PC1_A2','A_cap'),h('V1_B','PC1_B1'),h('PC1_B2','A_rod')]));
+  run(lk,{power:true,air:true,PB1:true},1.5);assert.equal(end(lk.cyl.A),'+');
+  run(lk,{PB1:false,PB2:true},1.5);assert.equal(end(lk.cyl.A),'-');
+});
+test('펌프 쪽 체크 뒤에 거꾸로 끼운 체크밸브는 막는다',()=>{
+  const s=world({cylA:'cylinder',valveA:'valve42',R1:'chk',MA1:'chk'},{wires:pbWires('V1'),hoses:[h('HP1','CV1_1'),h('CV1_2','V1_P'),h('V1_T','HT1'),h('V1_A','CV2_2'),h('CV2_1','A_cap'),h('V1_B','A_rod')]});
+  run(s,{power:true,air:true,PB1:true},1.5);assert.equal(s.cyl.A,0);
+});
+test('압력스위치: 릴리프를 높게 맞춰도 움직이는 동안은 켜지지 않는다',()=>{
+  const s=world({cylA:'cylinder',valveA:'valve42',MA1:'psw'},{wires:pbWires('V1'),hoses:[h('HP1','V1_P'),h('V1_T','HT1'),h('V1_A','PS1_a'),h('PS1_b','A_cap'),h('V1_B','A_rod')],set:{RV:7,PS1:1}});
+  run(s,{power:true,air:true,PB1:true},.4);assert.equal(s.sensor.PS1,false);
+  run(s,{},1);assert.equal(s.sensor.PS1,true);
+});

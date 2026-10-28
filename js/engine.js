@@ -120,15 +120,29 @@ function solvePneu(w){
   // 1) 늘 통하는 기기만 넣고 각 포트가 공급(S)·배기(E)·그 밖(N) 어디에 이어졌는지 본다
   const uc=base();devs.filter(d=>DEV_PIPE.has(d.kind)).forEach(d=>uc.u(d.a,d.b));
   const side=id=>uc.same(id,'SUP')?'S':uc.same(id,'EX')?'E':'N';
-  const thr=devs.filter(d=>d.kind==='thr');
-  const bleed=thr.filter(d=>{const a=side(d.a),b=side(d.b);return (a==='S'&&b==='E')||(a==='E'&&b==='S');});   // 블리드오프: 잇지 않고 속도만 줄임
-  const thrOn=thr.filter(d=>!bleed.includes(d));thrOn.forEach(d=>uc.u(d.a,d.b));
-  // 2) 한방향 기기: 정방향(a→b)으로 흐를 자리면 통함. 거꾸로는 파일럿 조건이 맞을 때만
   const pre=id=>uc.same(id,'SUP')?main:0;
-  const fwd=d=>{const a=side(d.a),b=side(d.b);return !((b==='S'&&a!=='S')||(a==='E'&&b!=='E'));};
   const other=id=>{for(const p of LAYOUT.parts){if(!(p.type in CYL_TYPES))continue;const c=p.id+'_cap',r=p.id+'_rod';if(uc.same(id,c))return r;if(uc.same(id,r))return c;}return null;};
   const pilot=d=>d.kind==='pocv'?d.pilot.some(x=>pre(x)>=MIN_P):d.kind==='cbv'?(o=>o!=null&&pre(o)>=d.set)(other(d.b)):false;
-  const dirOn=devs.filter(d=>DEV_DIR.has(d.kind)&&(fwd(d)||pilot(d)));
+  // 2) 조임(thr)·한방향 기기를 바뀌는 게 없을 때까지 되풀이해 넣는다 (펌프 쪽 체크 뒤에 또 기기가 있어도 공급이 이어지게)
+  //    thr: 공급과 탱크 사이면 블리드오프(잇지 않고 속도만), 한쪽이라도 정해지면 이음
+  //    한방향: 공급이 a로 들어오거나(a=S) 실린더 쪽 기름이 b로 빠져나갈 때(a=N, b=E)만 정방향, 거꾸로는 파일럿 조건이 맞을 때만
+  const thr=devs.filter(d=>d.kind==='thr'), bleed=[], thrOn=[], dirOn=[];
+  const dirs=devs.filter(d=>DEV_DIR.has(d.kind));
+  for(let changed=true;changed;){
+    changed=false;
+    for(const d of thr){
+      if(bleed.includes(d)||thrOn.includes(d))continue;
+      const a=side(d.a),b=side(d.b);
+      if((a==='S'&&b==='E')||(a==='E'&&b==='S')){bleed.push(d);changed=true;}
+      else if(a!=='N'||b!=='N'){thrOn.push(d);uc.u(d.a,d.b);changed=true;}
+    }
+    for(const d of dirs){
+      if(dirOn.includes(d))continue;
+      const a=side(d.a),b=side(d.b);
+      if(a==='S'||(a==='N'&&b==='E')||pilot(d)){dirOn.push(d);uc.u(d.a,d.b);changed=true;}
+    }
+  }
+  thr.filter(d=>!bleed.includes(d)&&!thrOn.includes(d)).forEach(d=>{thrOn.push(d);uc.u(d.a,d.b);});   // 양쪽 다 막힌 곳: 이어도 그만
   const pass=devs.filter(d=>DEV_PIPE.has(d.kind)).concat(thrOn,dirOn);
   const u0=base(), u1=base();pass.forEach(d=>u1.u(d.a,d.b));
   const prvOn=devs.filter(d=>d.kind==='prv'&&u1.same(d.a,'SUP'));   // 감압밸브는 1차 쪽에 공급이 있어야 지나감

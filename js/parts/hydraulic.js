@@ -298,7 +298,7 @@ PARTS.psw={
   move(p,w,P,E,dt,pn){
     const N=p.tags[0], port=N+'_a';if(!pn)return;
     let pres=pn.press(port);
-    if(Object.values(w.cylSup).some(sp=>sp&&pn.same(sp,port)))pres*=.3;   // 움직이는 중: 일하는 만큼만
+    if(Object.values(w.cylSup).some(sp=>sp&&pn.same(sp,port)))pres=Math.min(pres,.3);   // 움직이는 중: 일하는 만큼만 (부하 압력 0.3 MPa로 봄)
     w.sensor[N]=pres>=w.set[N]-1e-9;
   },
   elec(p,w,u,all){

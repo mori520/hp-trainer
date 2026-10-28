@@ -1,6 +1,6 @@
 /* 미션 도면(SVG) 만들기 도구 — 개발용. 결과 파일(diagrams/*.svg)을 저장소에 넣고, 앱은 그림만 띄운다.
    실행: node tools/make-diagrams.js
-   도면 = 가. 공기압회로도 / 나. 전기회로도(세로 사다리, 위 24V·아래 0V) / 다. 변위단계선도
+   도면 = 가. 공기압회로도(유압 미션은 유압회로도) / 나. 전기회로도(세로 사다리, 위 24V·아래 0V) / 다. 변위단계선도
    (공개과제 도면은 복사하지 않는다. 우리 미션 회로를 직접 그린 것) */
 const fs=require('fs'),path=require('path');
 const OUT=path.join(__dirname,'..','diagrams');
@@ -56,6 +56,7 @@ function ladder(S,{top,bot,x0,x1}){
     if(c.act==='pb'){S.line(x-4,y,x-20,y,'dash');S.path(`M${x-20},${y-6}V${y+6}M${x-20},${y-6}H${x-25}M${x-20},${y+6}H${x-25}`);}
     if(c.act==='ls'){S.line(x-4,y,x-18,y);S.add(`<circle cx="${x-22}" cy="${y}" r="4" class="w"/>`);
       if(c.pressed)S.path(`M${x-22},${y+16}V${y+6}M${x-25},${y+10}L${x-22},${y+5}L${x-19},${y+10}`);}   // 처음부터 눌려 있는 리밋(화살표)
+    if(c.act==='ps'){S.line(x-4,y,x-14,y,'dash');S.rect(x-26,y-7,12,14);S.path(`M${x-23},${y+4}L${x-17},${y-4}`);}   // 압력스위치
     if(c.act==='es'){S.line(x-4,y,x-18,y,'dash');S.path(`M${x-18},${y-8}A8,8 0 0,0 ${x-18},${y+8}Z`);S.path(`M${x-11},${y-4}l3,4l-3,4`);}
     // 한시(타이머) 접점: 날에서 왼쪽으로 낙하산 모양 표시
     if(c.timed){S.line(x-4,y,x-12,y);S.path(`M${x-12},${y-6}A6,6 0 0,0 ${x-12},${y+6}`);}
@@ -163,6 +164,76 @@ function valve(S,vx,vy,cyl,{double=false,sols,capDev,supplyDev}){
   S.path(`M${R+45},${vy}V${vy-32}H${cyl.rod[0]}V${cyl.rod[1]}`);
 }
 
+/* ---------- 가. 유압회로도 ---------- */
+// 액추에이터(실린더·하중 실린더·모터) + 4/2·4/3 밸브 + 파워유닛(펌프·릴리프·탱크). 밸브 포트는 평상시 칸에: A·B 위, P·T 아래
+// o: {act:'cyl'|'cylw'|'motor', name, sensors, valve:'42'|'43c'|'43a', sols, capDev, rodDev, lock, supply:'chk'|'bleed', rv}
+//   capDev·rodDev(후방·전방 줄 기기): 'fcvin'(미터인 유량조절) | 'hprv' | 'cbv' | 'psw' (뒤에 :글자 = 옆 설명)
+function tank(S,x,y){S.path(`M${x-10},${y}V${y+8}H${x+10}V${y}`);}
+function hdev(S,x,y,dev){
+  const [k,lab]=dev.split(':');
+  S.add(`<rect x="${x-13}" y="${y-14}" width="26" height="28" fill="#fff" stroke="none"/>`);
+  if(k==='fcvin'){
+    S.path(`M${x},${y-14}V${y-10}H${x-7}V${y+10}H${x}V${y+14}M${x},${y-10}H${x+7}V${y+10}H${x}`);
+    S.path(`M${x-10},${y-5}Q${x-7},${y} ${x-10},${y+5}M${x-4},${y-5}Q${x-7},${y} ${x-4},${y+5}`);
+    S.add(`<circle cx="${x+7}" cy="${y+1}" r="3" class="w"/>`);S.path(`M${x+3},${y-4}L${x+7},${y}L${x+11},${y-4}`);   // 체크가 아래로 열림 → 올라가는 기름은 조임
+  }
+  if(k==='hprv'){S.rect(x-9,y-10,18,20);S.path(`M${x},${y-14}V${y-10}M${x},${y+10}V${y+14}`);S.line(x-5,y+7,x+5,y-7,'arw');}
+  if(k==='cbv'){S.path(`M${x},${y-14}V${y-10}H${x-7}V${y+10}H${x}V${y+14}M${x},${y-10}H${x+7}V${y+10}H${x}`);S.rect(x-11,y-4,8,9);S.add(`<circle cx="${x+7}" cy="${y-1}" r="3" class="w"/>`);}
+  if(k==='psw'){S.path(`M${x},${y-14}V${y+14}M${x},${y}H${x+6}`);S.rect(x+6,y-6,10,12);}
+  if(lab)S.text(x+16,y+4,lab,{c:'s'});
+}
+function hmotor(S,x,y,name){
+  const cx=x+80,cy=y+12;
+  S.text(x,y-10,name,{c:'n'}).text(cx+28,cy+4,'유압모터',{c:'s'});S.add(`<circle cx="${cx}" cy="${cy}" r="20" class="w"/>`);
+  S.path(`M${cx-6},${cy-18}L${cx},${cy-10}L${cx+6},${cy-18}Z`,'fill');S.path(`M${cx-6},${cy+18}L${cx},${cy+10}L${cx+6},${cy+18}Z`,'fill');
+  S.path(`M${x+12},${y+40}V${cy}H${cx-20}M${x+148},${y+40}V${cy}H${cx+20}`);
+  return{cap:[x+12,y+40],rod:[x+148,y+40]};
+}
+function hyd(S,x,y,o){
+  const act=o.act==='motor'?hmotor(S,x,y,o.name):cylinder(S,x,y,o.name,o.sensors||[]);
+  if(o.act==='cylw'){S.rect(x+204,y+20,20,18);S.text(x+214,y+33,'W',{anchor:'middle',c:'s'});S.text(x+232,y+33,'하중',{c:'s'});}
+  const three=o.valve!=='42',abt=o.valve==='43a',W=48,H=36,vy=y+150,vx=x+20;
+  const boxes=three?['par','mid','cross']:['par','cross'],rb=vx+W;
+  boxes.forEach((b,i)=>{
+    const bx=vx+i*W;S.rect(bx,vy,W,H);
+    if(b==='par'){S.path(`M${bx+12},${vy+H}L${bx+12},${vy+3}`,'arw');S.path(`M${bx+36},${vy}L${bx+36},${vy+H-3}`,'arw');}
+    if(b==='cross'){S.path(`M${bx+12},${vy+H}L${bx+36},${vy+3}`,'arw');S.path(`M${bx+12},${vy}L${bx+36},${vy+H-3}`,'arw');}
+    if(b==='mid'){
+      const tb=(cx,top)=>S.path(top?`M${cx},${vy}V${vy+8}M${cx-5},${vy+8}H${cx+5}`:`M${cx},${vy+H}V${vy+H-8}M${cx-5},${vy+H-8}H${cx+5}`);
+      if(abt){S.path(`M${bx+12},${vy}V${vy+14}H${bx+36}M${bx+36},${vy}V${vy+H}`);tb(bx+12,false);}
+      else{tb(bx+12,true);tb(bx+36,true);tb(bx+12,false);tb(bx+36,false);}
+    }
+  });
+  const R=vx+boxes.length*W;
+  S.rect(vx-24,vy+8,24,20);S.line(vx-24,vy+28,vx,vy+8);S.text(vx-30,vy+23,o.sols[0],{anchor:'end'});
+  if(three){S.rect(R,vy+8,24,20);S.line(R,vy+28,R+24,vy+8);S.text(R+30,vy+23,o.sols[1]);}
+  else S.path(`M${R},${vy+18}l4,-6l6,12l6,-12l6,12l4,-6`);
+  S.text(rb+6,vy-6,'A',{anchor:'end',c:'s'}).text(rb+42,vy-6,'B',{c:'s'}).text(rb+6,vy+H+14,'P',{anchor:'end',c:'s'}).text(rb+42,vy+H+14,'T',{c:'s'});
+  // A → 후방, B → 전방 (줄 가운데에 기기)
+  const ax=rb+12,bxp=rb+36,yA=vy-18,yB=vy-34;
+  S.path(`M${ax},${vy}V${yA}H${act.cap[0]}V${act.cap[1]}`);S.path(`M${bxp},${vy}V${yB}H${act.rod[0]}V${act.rod[1]}`);
+  const mid=(top,bot)=>(top+bot)/2;
+  if(o.capDev)hdev(S,act.cap[0],mid(act.cap[1],yA),o.capDev);
+  if(o.rodDev)hdev(S,act.rod[0],mid(act.rod[1],yB),o.rodDev);
+  if(o.lock){
+    [[act.cap[0],mid(act.cap[1],yA)],[act.rod[0],mid(act.rod[1],yB)]].forEach(([cx,cy])=>{
+      S.add(`<rect x="${cx-13}" y="${cy-12}" width="26" height="24" fill="#fff" stroke="none"/>`);
+      S.path(`M${cx-7},${cy-6}L${cx},${cy+1}L${cx+7},${cy-6}`);S.add(`<circle cx="${cx}" cy="${cy+3}" r="4" class="w"/>`);
+    });
+    const y1=mid(act.cap[1],yA);S.path(`M${act.cap[0]+8},${y1+3}L${act.rod[0]},${y1+12}`,'dash');S.text((act.cap[0]+act.rod[0])/2,y1-6,'파일럿 체크',{anchor:'middle',c:'s'});
+  }
+  // 파워유닛: P 아래로 펌프, 릴리프는 탱크로. T는 바로 탱크
+  const py=vy+H+44, pumpX=vx-50;
+  S.path(`M${ax},${vy+H}V${py}H${pumpX}V${py+12}`);
+  if(o.supply==='chk'){const cy=vy+H+22;S.add(`<rect x="${ax-10}" y="${cy-10}" width="20" height="20" fill="#fff" stroke="none"/>`);S.path(`M${ax-7},${cy+4}L${ax},${cy-3}L${ax+7},${cy+4}`);S.add(`<circle cx="${ax}" cy="${cy-6}" r="4" class="w"/>`);S.text(ax+12,cy+4,'체크',{c:'s'});}
+  S.add(`<circle cx="${pumpX}" cy="${py+26}" r="13" class="w"/>`);S.path(`M${pumpX-7},${py+30}L${pumpX},${py+19}L${pumpX+7},${py+30}Z`,'fill');
+  S.line(pumpX,py+39,pumpX,py+50);tank(S,pumpX,py+50);
+  const rx=pumpX+40;S.path(`M${rx},${py}V${py+12}`);S.rect(rx-10,py+12,20,20);S.line(rx-6,py+28,rx+6,py+16,'arw');S.path(`M${rx},${py+32}V${py+50}`);tank(S,rx,py+50);
+  S.text(rx+14,py+28,`릴리프 ${o.rv||'4.0'} MPa`,{c:'s'});
+  if(o.supply==='bleed'){const bx=pumpX-40;S.path(`M${pumpX},${py}H${bx}V${py+12}`);S.path(`M${bx-5},${py+16}Q${bx},${py+22} ${bx-5},${py+28}M${bx+5},${py+16}Q${bx},${py+22} ${bx+5},${py+28}`);S.line(bx-8,py+30,bx+8,py+14,'arw');S.path(`M${bx},${py+30}V${py+50}`);tank(S,bx,py+50);S.text(bx,py+72,'블리드오프',{anchor:'middle',c:'s'});}
+  S.path(`M${bxp},${vy+H}V${py+50}`);tank(S,bxp,py+50);
+}
+
 /* ---------- 다. 변위단계선도 ---------- */
 // seq 원소: "A+"·"B-" 같은 동작, 또는 "wait:3초"(그 구간은 그대로 머물고 위에 글자 표시)
 function displacement(S,x,y,names,seq){
@@ -180,14 +251,15 @@ function displacement(S,x,y,names,seq){
   });
 }
 
-function sheet(file,{w,h,pneu,elec,elecH=300,seq,names,note}){
+// hyd: 유압 미션(제목 "유압회로도", 회로도 칸이 조금 더 큼). seq가 비어 있으면 변위단계선도 대신 동작 설명(note)만
+function sheet(file,{w,h,pneu,elec,elecH=300,seq,names,note,hyd}){
   const S=new Svg(w,h);
-  S.text(16,26,'가. 공기압회로도',{c:'h'});pneu(S);
-  const lt=300;S.text(16,lt-20,'나. 전기회로도',{c:'h'});
+  S.text(16,26,hyd?'가. 유압회로도':'가. 공기압회로도',{c:'h'});pneu(S);
+  const lt=hyd?450:300;S.text(16,lt-20,'나. 전기회로도',{c:'h'});
   elec(ladder(S,{top:lt+10,bot:lt+10+elecH,x0:50,x1:w-30}));
-  const dy=lt+elecH+60;S.text(16,dy,'다. 변위단계선도',{c:'h'});
-  displacement(S,90,dy+34,names,seq);
-  (note||[]).forEach((t,k)=>S.text(90+seq.length*80+40,dy+40+k*20,t));
+  const dy=lt+elecH+60;S.text(16,dy,seq.length?'다. 변위단계선도':'다. 동작',{c:'h'});
+  if(seq.length)displacement(S,90,dy+34,names,seq);
+  (note||[]).forEach((t,k)=>S.text(seq.length?90+seq.length*80+40:40,dy+40+k*20,t));
   fs.writeFileSync(path.join(OUT,file),S.toString());
   console.log('wrote diagrams/'+file);
 }
@@ -321,3 +393,30 @@ sheet('m14d.svg',{w:580,h:760,names:['A'],seq:['A+','wait:3초','A-'],
     L.rung(320,[{t:'no',name:'LS2',act:'ls'},{t:'coil',name:'T1 (3초)'}]);
     L.rung(470,[{t:'no',name:'K1'},{t:'sol',name:'Y1'}]);
   }});
+
+/* ---------- 유압 미션 H1~H10 (직접 만든 회로) ---------- */
+const pbY=L=>{L.rung(170,[{t:'no',name:'PB1',act:'pb'},{t:'sol',name:'Y1'}]);};
+const pbYY=L=>{L.rung(150,[{t:'no',name:'PB1',act:'pb'},{t:'sol',name:'Y1'}]);L.rung(330,[{t:'no',name:'PB2',act:'pb'},{t:'sol',name:'Y2'}]);};
+const HS={w:560,h:910,hyd:true};
+sheet('h1.svg',{...HS,names:['A'],seq:['A+','A-'],note:['PB1을 누르는 동안 전진','릴리프 4.0 MPa'],
+  pneu:S=>hyd(S,110,90,{name:'A',valve:'42',sols:['Y1']}),elec:pbY});
+sheet('h2.svg',{...HS,names:['A'],seq:[],note:['PB1을 누르는 동안 전진, PB2를 누르는 동안 후진','둘 다 떼면 그 자리에 정지 (중립 올 포트 블록)'],
+  pneu:S=>hyd(S,110,90,{name:'A',valve:'43c',sols:['Y1','Y2']}),elec:pbYY});
+sheet('h3.svg',{...HS,names:['M'],seq:[],note:['PB1을 누르는 동안 정회전 (A → B)','PB2를 누르는 동안 역회전 (B → A)','떼면 정지'],
+  pneu:S=>hyd(S,110,90,{act:'motor',name:'M',valve:'43c',sols:['Y1','Y2']}),elec:pbYY});
+sheet('h4.svg',{...HS,names:['A'],seq:['A+','A-'],note:['전진만 느리게 (미터인, F1 3단)','펌프 토출구 체크밸브'],
+  pneu:S=>hyd(S,110,90,{name:'A',valve:'42',sols:['Y1'],capDev:'fcvin:미터인',supply:'chk'}),elec:pbY});
+sheet('h5.svg',{...HS,names:['A'],seq:['A+','A-'],
+  pneu:S=>hyd(S,110,90,{name:'A',valve:'42',sols:['Y1'],sensors:[{end:'+',name:'LS2',kind:'ls'}]}),
+  elec:L=>{L.rung(140,[{t:'nc',name:'LS2',act:'ls'},{t:'no',name:'PB1',act:'pb',hold:'K1'},{t:'coil',name:'K1'}]);L.rung(300,[{t:'no',name:'K1'},{t:'sol',name:'Y1'}]);}});
+sheet('h6.svg',{...HS,names:['A'],seq:['A+','A-'],note:['전진·후진 모두 느리게 (블리드오프, F1 6단)'],
+  pneu:S=>hyd(S,170,90,{name:'A',valve:'42',sols:['Y1'],supply:'bleed'}),elec:pbY});
+sheet('h7.svg',{...HS,names:['A'],seq:['A+','A-'],note:['A 작동압력 2.0 MPa (감압)','릴리프 4.0 MPa'],
+  pneu:S=>hyd(S,110,90,{name:'A',valve:'42',sols:['Y1'],capDev:'hprv:감압 2.0 MPa'}),elec:pbY});
+sheet('h8.svg',{...HS,names:['A'],seq:['A+','A-'],note:['PS1 3.0 MPa'],
+  pneu:S=>hyd(S,110,90,{name:'A',valve:'42',sols:['Y1'],capDev:'psw:PS1'}),
+  elec:L=>{L.rung(140,[{t:'nc',name:'PS1',act:'ps'},{t:'no',name:'PB1',act:'pb',hold:'K1'},{t:'coil',name:'K1'}]);L.rung(300,[{t:'no',name:'K1'},{t:'sol',name:'Y1'}]);}});
+sheet('h9.svg',{...HS,names:['A'],seq:[],note:['PB1을 누르는 동안 전진(하중이 내려감), PB2를 누르는 동안 후진','떼면 그 자리에 정지 — 하중이 제 무게로 내려가지 않게 (카운터밸런스 2.0 MPa)'],
+  pneu:S=>hyd(S,110,90,{act:'cylw',name:'A',valve:'43a',sols:['Y1','Y2'],rodDev:'cbv:카운터밸런스'}),elec:pbYY});
+sheet('h10.svg',{...HS,names:['A'],seq:[],note:['PB1을 누르는 동안 전진, PB2를 누르는 동안 후진','떼면 그 자리에 고정, 펌프를 꺼도 그대로 (로킹 회로)'],
+  pneu:S=>hyd(S,110,90,{act:'cylw',name:'A',valve:'43a',sols:['Y1','Y2'],lock:true}),elec:pbYY});

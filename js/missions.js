@@ -753,7 +753,7 @@ const MISSIONS=[
   "id":"h1","no":"H1","title":"유압 파워유닛과 4/2 밸브",
   "goal":"릴리프 압력을 4.0 MPa로 맞추고, PB1을 누르고 있는 동안 실린더 A가 전진, 떼면 후진하도록 호스와 배선을 구성하세요.",
   "learn":"배우는 것: 유압은 기름이 탱크로 돌아와야 움직인다(P·T·A·B 포트), 릴리프밸브로 펌프 압력 맞추기, 4/2 편솔 밸브",
-  "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve42"},"set":{"RV":3},
+  "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve42"},"diagram":"diagrams/h1.svg","set":{"RV":3},
   "steps":[
     {"g":"1. 유압 호스","t":"파워유닛 <b>P</b>(펌프에서 기름이 나오는 곳)에서 밸브 <b>P</b> 포트로 호스를 연결하세요.","hose":["group:hp","V1_P"],"keep":true},
     {"g":"1. 유압 호스","t":"밸브 <b>T</b> 포트에서 파워유닛 <b>T 탱크</b>로 연결하세요. 공기는 그 자리에서 빠지지만, 기름은 탱크로 돌아와야 해요. 이 호스가 없으면 실린더가 움직이지 않아요.","hose":["V1_T","group:ht"],"keep":true},
@@ -786,7 +786,7 @@ const MISSIONS=[
   "id":"h2","no":"H2","title":"4/3 밸브로 중간 정지",
   "goal":"PB1을 누르는 동안 실린더 A가 전진, PB2를 누르는 동안 후진하고, 둘 다 떼면 그 자리에 멈추도록 구성하세요.",
   "learn":"배우는 것: 4/3 양솔 밸브(가운데 칸 = 중립), 중립에서 모든 포트가 막히면(올 포트 블록) 실린더가 그 자리에 선다",
-  "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve43c"},
+  "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve43c"},"diagram":"diagrams/h2.svg",
   "steps":[
     {"g":"1. 유압 호스","t":"파워유닛 <b>P</b>에서 밸브 <b>P</b>로 연결하세요.","hose":["group:hp","V1_P"],"keep":true},
     {"g":"1. 유압 호스","t":"밸브 <b>T</b>에서 <b>탱크 T</b>로 연결하세요.","hose":["V1_T","group:ht"],"keep":true},
@@ -825,7 +825,7 @@ const MISSIONS=[
   "id":"h3","no":"H3","title":"유압모터 정회전·역회전",
   "goal":"PB1을 누르는 동안 유압모터가 정회전, PB2를 누르는 동안 역회전하고, 떼면 멈추도록 구성하세요.",
   "learn":"배우는 것: 유압모터(기름이 A로 들어가 B로 나가면 정회전, 반대면 역회전), 4/3 밸브로 방향 바꾸기",
-  "layout":"hyd","board":{"cylB":"motor","valveB":"valve43c"},
+  "layout":"hyd","board":{"cylB":"motor","valveB":"valve43c"},"diagram":"diagrams/h3.svg",
   "steps":[
     {"g":"1. 유압 호스","t":"파워유닛 <b>P</b>에서 밸브 <b>P</b>로 연결하세요.","hose":["group:hp","V2_P"],"keep":true},
     {"g":"1. 유압 호스","t":"밸브 <b>T</b>에서 <b>탱크 T</b>로 연결하세요.","hose":["V2_T","group:ht"],"keep":true},
@@ -862,7 +862,7 @@ const MISSIONS=[
   "id":"h4","no":"H4","title":"체크밸브와 미터인 속도제어",
   "goal":"펌프 토출구에 체크밸브를 달고, 일방향 유량조절밸브로 실린더 A의 전진만 느리게 하세요 (실린더로 들어가는 기름을 조이는 미터인). PB1을 누르고 있으면 전진, 떼면 후진합니다.",
   "learn":"배우는 것: 체크밸브(한쪽으로만 흐름), 미터인(들어가는 쪽 조임)과 미터아웃(나가는 쪽 조임)의 차이, 유량조절밸브를 끼우는 방향",
-  "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve42","MA1":"fcv","R1":"chk"},
+  "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve42","MA1":"fcv","R1":"chk"},"diagram":"diagrams/h4.svg",
   "steps":[
     {"g":"1. 펌프 토출구 체크밸브","t":"파워유닛 <b>P</b>에서 체크밸브 <b>CV1의 1번</b>으로 연결하세요. 체크밸브는 1→2로만 흘러요.","hose":["group:hp","CV1_1"],"keep":true},
     {"g":"1. 펌프 토출구 체크밸브","t":"<b>CV1 2번</b>에서 밸브 <b>P</b>로 연결하세요. 펌프가 멈춰도 기름이 거꾸로 돌아가지 않아요.","hose":["CV1_2","V1_P"],"keep":true},
@@ -898,7 +898,7 @@ const MISSIONS=[
   "id":"h5","no":"H5","title":"유압 자기유지 + 리밋 자동 후진",
   "goal":"PB1을 한 번 누르면 실린더 A가 전진하고, 끝에서 리밋스위치 LS2가 눌리면 자동으로 후진하게 하세요 (A+ A−). 미션 5를 유압으로 해 보는 거예요.",
   "learn":"배우는 것: 전기회로는 공압과 똑같고 밸브·호스만 유압으로 바뀐다는 것. 4/2 편솔 + 자기유지 + 리밋스위치",
-  "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve42","LS2":"A+"},
+  "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve42","LS2":"A+"},"diagram":"diagrams/h5.svg",
   "steps":[
     {"g":"1. 유압 호스","t":"파워유닛 <b>P</b>에서 밸브 <b>P</b>로 연결하세요.","hose":["group:hp","V1_P"],"keep":true},
     {"g":"1. 유압 호스","t":"밸브 <b>T</b>에서 <b>탱크 T</b>로 연결하세요.","hose":["V1_T","group:ht"],"keep":true},
@@ -926,7 +926,7 @@ const MISSIONS=[
   "id":"h6","no":"H6","title":"블리드오프 속도제어",
   "goal":"펌프의 두 번째 P 포트에서 양방향 유량조절밸브를 거쳐 탱크로 기름 일부를 흘려 보내, 실린더 A의 속도를 느리게 하세요 (블리드오프). PB1을 누르고 있으면 전진, 떼면 후진합니다.",
   "learn":"배우는 것: 블리드오프(펌프 기름 일부를 탱크로 빼서 실린더로 가는 양을 줄임), 양방향 유량조절밸브, 많이 열수록 느려진다는 점",
-  "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve42","R1":"thr"},
+  "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve42","R1":"thr"},"diagram":"diagrams/h6.svg",
   "steps":[
     {"g":"1. 기본 호스","t":"파워유닛 <b>P</b>에서 밸브 <b>P</b>로 연결하세요.","hose":["HP1","V1_P"],"keep":true},
     {"g":"1. 기본 호스","t":"밸브 <b>T</b>에서 <b>탱크 T</b>로 연결하세요.","hose":["V1_T","group:ht"],"keep":true},
@@ -958,7 +958,7 @@ const MISSIONS=[
   "id":"h7","no":"H7","title":"유압 감압밸브 (2차 압력)",
   "goal":"실린더 A 후방 줄에 감압밸브를 달아, 전진할 때 실린더에 걸리는 압력을 2.0 MPa로 낮추세요. 릴리프는 4.0 MPa 그대로입니다.",
   "learn":"배우는 것: 감압밸브(1차 압력을 원하는 2차 압력으로 낮춤), 릴리프(전체 최고 압력)와 감압(그 줄만)의 차이",
-  "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve42","MA1":"hprv"},
+  "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve42","MA1":"hprv"},"diagram":"diagrams/h7.svg",
   "steps":[
     {"g":"1. 유압 호스","t":"파워유닛 <b>P</b>에서 밸브 <b>P</b>로 연결하세요.","hose":["group:hp","V1_P"],"keep":true},
     {"g":"1. 유압 호스","t":"밸브 <b>T</b>에서 <b>탱크 T</b>로 연결하세요.","hose":["V1_T","group:ht"],"keep":true},
@@ -990,7 +990,7 @@ const MISSIONS=[
   "id":"h8","no":"H8","title":"압력스위치로 자동 후진",
   "goal":"PB1을 한 번 누르면 실린더 A가 전진하고, 끝에 닿아 후방 압력이 오르면 압력스위치 PS1이 자기유지를 끊어 자동으로 후진하게 하세요 (A+ A−).",
   "learn":"배우는 것: 압력스위치(설정 압력 이상이면 접점이 바뀜), 리밋스위치 대신 압력으로 끝을 알아내기. 설정값은 릴리프보다 낮아야 해요",
-  "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve42","MA1":"psw"},
+  "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve42","MA1":"psw"},"diagram":"diagrams/h8.svg",
   "steps":[
     {"g":"1. 유압 호스","t":"파워유닛 <b>P</b>에서 밸브 <b>P</b>로 연결하세요.","hose":["group:hp","V1_P"],"keep":true},
     {"g":"1. 유압 호스","t":"밸브 <b>T</b>에서 <b>탱크 T</b>로 연결하세요.","hose":["V1_T","group:ht"],"keep":true},
@@ -1019,7 +1019,7 @@ const MISSIONS=[
   "id":"h9","no":"H9","title":"카운터밸런스 (자중 낙하 방지)",
   "goal":"무거운 하중이 달린 실린더 A가 버튼을 떼면 그 자리에 서 있도록, 전방 줄에 카운터밸런스 밸브를 다세요. PB1을 누르는 동안 전진(내려감), PB2를 누르는 동안 후진(올라감)합니다.",
   "learn":"배우는 것: 4/3 ABT 중립은 A·B가 탱크로 열려 하중이 제 무게로 내려감(자중 낙하), 카운터밸런스는 반대쪽에서 밀어 줄 때만 열려서 막아 줌",
-  "layout":"hyd","board":{"cylA":"cylw","valveA":"valve43a","MA2":"cbv"},
+  "layout":"hyd","board":{"cylA":"cylw","valveA":"valve43a","MA2":"cbv"},"diagram":"diagrams/h9.svg",
   "steps":[
     {"g":"1. 유압 호스","t":"파워유닛 <b>P</b>에서 밸브 <b>P</b>로 연결하세요.","hose":["group:hp","V1_P"],"keep":true},
     {"g":"1. 유압 호스","t":"밸브 <b>T</b>에서 <b>탱크 T</b>로 연결하세요.","hose":["V1_T","group:ht"],"keep":true},
@@ -1057,7 +1057,7 @@ const MISSIONS=[
   "id":"h10","no":"H10","title":"로킹 회로 (파일럿 체크)",
   "goal":"파일럿 체크 블록으로 하중 실린더 A를 아무 위치에서나 꽉 고정하세요. PB1을 누르는 동안 전진, PB2를 누르는 동안 후진하고, 떼면 그 자리에 섭니다. 펌프를 꺼도 움직이지 않아야 해요.",
   "learn":"배우는 것: 파일럿 조작 체크밸브(반대쪽 줄에 압력이 있을 때만 거꾸로 열림), ABT 중립 4/3 밸브와 함께 쓰는 로킹 회로",
-  "layout":"hyd","board":{"cylA":"cylw","valveA":"valve43a","LA":"lock"},
+  "layout":"hyd","board":{"cylA":"cylw","valveA":"valve43a","LA":"lock"},"diagram":"diagrams/h10.svg",
   "steps":[
     {"g":"1. 유압 호스","t":"파워유닛 <b>P</b>에서 밸브 <b>P</b>로 연결하세요.","hose":["group:hp","V1_P"],"keep":true},
     {"g":"1. 유압 호스","t":"밸브 <b>T</b>에서 <b>탱크 T</b>로 연결하세요.","hose":["V1_T","group:ht"],"keep":true},

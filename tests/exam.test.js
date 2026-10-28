@@ -340,3 +340,49 @@ test('모의 유3 유지보수 3) 타이머 2초: 정답 통과, 타이머를 �
   assert.deepEqual(failed(gradeStage(y3abt,3,y3m3())),[]);
   assert.ok(failed(gradeStage(y3abt,3,{...y3m2(),set:{RV:4,CB1:2,F1:5,T1:2}})).length>0);
 });
+
+/* ---------- 모의 유4: A+ M+ (2초) M− A− M0 (4/2 + 4/3 모터) ---------- */
+const Y4={
+  hoses:()=>[h('HP1','V1_P'),h('V1_T','HT1'),h('V1_A','A_cap'),h('V1_B','A_rod'),h('HP2','V2_P'),h('V2_T','HT2'),h('V2_A','M_a'),h('V2_B','M_b')],
+  // K1 = 기동·유지(K3 NC로 해제), Y1(A) = K1·K4NC, K2 = (LS2 ∥ K2)·K1, T1 = K2, K4 = T1, Y2(M+) = K2·K4NC, Y3(M−) = K4, K3 = K4·LS1
+  wires:(t='K2_2')=>[
+    w('R24_6_0','K3_11','red'),w('K3_12','PB1_13','red'),w('PB1_14','K1_A1','red'),w('K3_12','K1_11','red'),w('K1_14','K1_A1','red'),w('K1_A2','R0_5_0','blue'),
+    w('R24_5_0','K1_21','red'),w('K1_24','K4_11','red'),w('K4_12','V1_Ya_p','red'),w('V1_Ya_n','R0_5_1','blue'),
+    w('R24_1_0','LS2_1','red'),w('LS2_4','K1_31','red'),w('R24_5_1','K2_11','red'),w('K2_14','K1_31','red'),w('K1_34','K2_A1','red'),w('K2_A2','R0_5_2','blue'),
+    w('R24_5_2',t==='K2_2'?'K2_21':'K1_41','red'),w(t==='K2_2'?'K2_24':'K1_44','T1_A1','red'),w('T1_A2','R0_3_0','blue'),
+    w('R24_3_1','T1_11','red'),w('T1_14','K4_A1','red'),w('K4_A2','R0_6_0','blue'),
+    w('R24_5_3','K2_31','red'),w('K2_34','K4_21','red'),w('K4_22','V2_Ya_p','red'),w('V2_Ya_n','R0_5_3','blue'),
+    w('R24_6_1','K4_31','red'),w('K4_34','V2_Yb_p','red'),w('V2_Yb_n','R0_6_1','blue'),
+    w('R24_6_2','K4_41','red'),w('K4_44','LS1_1','red'),w('LS1_4','K3_A1','red'),w('K3_A2','R0_6_2','blue')]
+};
+// 유지보수 1): A 전방 줄 미터아웃 (V1 B → F1 1번, F1 2번 → A 전방)
+const y4m1=()=>({wires:Y4.wires(),hoses:Y4.hoses().filter(x=>x.a!=='V1_B').concat([h('V1_B','F1_1'),h('F1_2','A_rod')]),set:{RV:4,T1:2,F1:5}});
+// 유지보수 2): LS2를 떼고 A 후방 줄 압력스위치 PS1 NO로 K2
+const y4m2=()=>{const c=y4m1();c.set.PS1=3;
+  c.hoses=c.hoses.filter(x=>x.a!=='V1_A').concat([h('V1_A','PS1_a'),h('PS1_b','A_cap')]);
+  c.wires=c.wires.filter(x=>!x.a.startsWith('LS2_')&&!x.b.startsWith('LS2_')).concat([w('R24_1_0','PS1_1','red'),w('PS1_4','K1_31','red')]);return c;};
+// 유지보수 3): K5 = (PB2 ∥ K5)·PB3NC, K5 a접점을 PB1과 나란히
+const y4m3=()=>{const c=y4m2();
+  c.wires=c.wires.concat([w('R24_1_1','PB3_11','red'),w('PB3_12','PB2_13','red'),w('PB2_14','K5_A1','red'),w('PB3_12','K5_11','red'),w('K5_14','K5_A1','red'),w('K5_A2','R0_6_3','blue'),
+    w('K3_12','K5_21','red'),w('K5_24','K1_A1','red')]);return c;};
+
+const y4=EXAMS.find(x=>x.id==='y4');
+test('모의 유4 기본 동작: 고친 회로 통과, 도면대로 타이머를 K1로 켜면 머무는 시간에서 실패',()=>{
+  assert.deepEqual(failed(gradeStage(y4,0,{wires:Y4.wires(),hoses:Y4.hoses(),set:{RV:4,T1:2}})),[]);
+  const f=failed(gradeStage(y4,0,{wires:Y4.wires('K1'),hoses:Y4.hoses(),set:{RV:4,T1:2}}));
+  assert.ok(f.some(s=>s.startsWith('M+ 도달 후 2초')),f.join(' / '));
+});
+test('모의 유4 유지보수 1) 미터아웃: 정답 통과, 미터인 방향이면 실패',()=>{
+  assert.deepEqual(failed(gradeStage(y4,1,y4m1())),[]);
+  const rev=y4m1();rev.hoses=rev.hoses.map(x=>x.b==='F1_1'?{...x,b:'F1_2'}:x.a==='F1_2'?{...x,a:'F1_1'}:x);
+  assert.ok(failed(gradeStage(y4,1,rev)).length>0);
+});
+test('모의 유4 유지보수 2) LS2 대신 압력스위치: 정답 통과, 압력스위치 선이 없으면 실패',()=>{
+  assert.deepEqual(failed(gradeStage(y4,2,y4m2())),[]);
+  const c=y4m2();c.wires=c.wires.filter(x=>!x.a.startsWith('PS1_')&&!x.b.startsWith('PS1_'));
+  assert.ok(failed(gradeStage(y4,2,c)).length>0);
+});
+test('모의 유4 유지보수 3) 연속/연속정지: 정답 통과, K5 없이는 실패',()=>{
+  assert.deepEqual(failed(gradeStage(y4,3,y4m3())),[]);
+  assert.ok(failed(gradeStage(y4,3,y4m2())).length>0);
+});

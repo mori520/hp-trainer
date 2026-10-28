@@ -650,6 +650,21 @@ sheet('y3.svg',{...HS,w:860,h:980,names:['A','B'],seq:['A+','B+','A-','B-'],note
     L.rung(760,[{t:'no',name:'K3'},{t:'no',name:'LS1',act:'ls',pressed:true},{t:'coil',name:'K4'}]);
   }});
 
+// 모의 유4: A+ M+ (2초) M− A− M0. A 4/2(Y1), 모터 M 4/3 중립 블록(Y2 정회전·Y3 역회전). 틀린 곳 = 타이머 코일을 K2 대신 K1으로 켬
+sheet('y4.svg',{...HS,w:880,h:1000,names:['A','M'],motors:['M'],seq:['A+','M+','wait:2초','M-','A-','M0'],note:['PB1: 한 사이클','릴레이 4개, 타이머 2초','릴리프 4.0 MPa'],
+  pneu:S=>{const a=hyd(S,110,90,{name:'A',valve:'42',sols:['Y1'],sensors:[{end:'+',name:'LS2',kind:'ls'},{end:'-',name:'LS1',kind:'ls'}]});
+    hyd(S,500,90,{act:'motor',name:'M',valve:'43c',sols:['Y2','Y3'],feed:{x:a.ax,y:a.py}});},
+  elec:L=>{
+    L.rung(80,[{t:'nc',name:'K3'},{t:'no',name:'PB1',act:'pb',hold:'K1'},{t:'coil',name:'K1'}]);
+    L.rung(190,[{t:'no',name:'K1'},{t:'nc',name:'K4'},{t:'sol',name:'Y1'}]);
+    L.rung(290,[{t:'no',name:'LS2',act:'ls',hold:'K2'},{t:'no',name:'K1'},{t:'coil',name:'K2'}]);
+    L.rung(400,[{t:'no',name:'K1'},{t:'coil',name:'T1 (2초)'}]);
+    L.rung(500,[{t:'no',name:'T1',timed:true},{t:'coil',name:'K4'}]);
+    L.rung(590,[{t:'no',name:'K2'},{t:'nc',name:'K4'},{t:'sol',name:'Y2'}]);
+    L.rung(690,[{t:'no',name:'K4'},{t:'sol',name:'Y3'}]);
+    L.rung(790,[{t:'no',name:'K4'},{t:'no',name:'LS1',act:'ls',pressed:true},{t:'coil',name:'K3'}]);
+  }});
+
 // 미션 0~4: 튜토리얼에서 완성 도면을 보며 배우도록 (2026-10-28 사용자 요청)
 sheet('m0.svg',{w:420,h:440,note:['PB1을 누르는 동안 H1 점등'],
   elec:L=>{L.rung(170,[{t:'no',name:'PB1',act:'pb'},{t:'lamp',name:'H1'}]);}});

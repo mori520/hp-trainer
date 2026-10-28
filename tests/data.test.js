@@ -135,8 +135,9 @@ for(const mis of MISSIONS.filter(m=>!m.soon).concat(EXAMS)){
     for(const sd of L.slots)if((BOARD||{})[sd.slot])(sd.excludes||[]).forEach(e=>assert.ok(!(BOARD||{})[e],`${sd.slot}과 ${e}는 함께 쓸 수 없음`));
     for(const g of (mis.grading?[mis.grading]:[]).concat(mis.exam?mis.exam.stages.map(s=>s.grading):[])){
     (g.settingsCheck||[]).forEach(s=>assert.ok(LAYOUT.settings[s.name]&&s.label,`settingsCheck: ${s.name}`));
+    (g.partCheck||[]).forEach(s=>{const sd=L.slots.find(x=>x.slot===s.slot);assert.ok(sd&&(sd.accepts||[]).includes(s.type)&&s.label,`partCheck: ${s.slot} ${s.type}`);});
     (g.steps||[]).forEach((s,i)=>{
-      if(s.stroke)assert.ok(cyls.has(s.stroke.cyl)&&['+','-'].includes(s.stroke.dir)&&(s.stroke.min!=null||s.stroke.max!=null),`채점 ${i+1}: stroke`);
+      [].concat(s.stroke||[]).forEach(st=>assert.ok(cyls.has(st.cyl)&&['+','-'].includes(st.dir)&&(st.min!=null||st.max!=null),`채점 ${i+1}: stroke`));
       for(const k in s.meter||{})assert.ok(cyls.has(k)&&['out','in','bleed'].includes(s.meter[k]),`채점 ${i+1}: meter`);
       for(const k in s.meterOn||{})assert.ok(/^(\w+)[+-]$/.test(k)&&cyls.has(k.slice(0,-1))&&['out','in','bleed'].includes(s.meterOn[k]),`채점 ${i+1}: meterOn`);
       for(const k in s.pressureAt||{})assert.ok(cyls.has(k)&&s.pressureAt[k].length===2,`채점 ${i+1}: pressureAt`);

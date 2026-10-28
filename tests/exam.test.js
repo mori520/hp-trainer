@@ -109,3 +109,49 @@ test('모의 공2 유지보수 3) 카운터 3회 + 리셋: 정답 통과, 기본
   assert.deepEqual(failed(gradeStage(x2,3,x2m3())),[]);
   assert.ok(failed(gradeStage(x2,3,{...x2m2(),set:{SU:0.5,PR1:0.3,C1:3}})).length>0);
 });
+
+/* ---------- 모의 공3: B+ A+ A− B− (편솔 + 편솔) ---------- */
+const X3={
+  hoses:()=>[h('D1','V1_1'),h('V1_4','A_cap'),h('V1_2','A_rod'),h('D2','V2_1'),h('V2_4','B_cap'),h('V2_2','B_rod')],
+  // K1 = 기동·유지(K4 NC로 해제), Y2(B) = K1, LS2 → K2, Y1(A) = K2·K3NC, K3 = (S1 ∥ K3)·K1, K4 = S2·K3
+  wires:(y1='K3_12')=>[
+    w('R24_6_0','K4_11','red'),w('K4_12','PB1_13','red'),w('PB1_14','K1_A1','red'),w('K4_12','K1_11','red'),w('K1_14','K1_A1','red'),w('K1_A2','R0_5_0','blue'),
+    w('R24_5_0','K1_21','red'),w('K1_24','V2_Ya_p','red'),w('V2_Ya_n','R0_5_1','blue'),
+    w('R24_1_0','LS2_1','red'),w('LS2_4','K2_A1','red'),w('K2_A2','R0_5_2','blue'),
+    w('R24_5_1','K2_11','red'),w('K2_14','K3_11','red'),w(y1,'V1_Ya_p','red'),w('V1_Ya_n','R0_5_3','blue'),
+    w('R24_1_1','S1_p','red'),w('S1_n','R0_1_0','blue'),w('S1_out','K1_31','red'),w('R24_5_2','K3_21','red'),w('K3_24','K1_31','red'),w('K1_34','K3_A1','red'),w('K3_A2','R0_5_4','blue'),
+    w('R24_1_2','S2_p','red'),w('S2_n','R0_1_1','blue'),w('S2_out','K3_31','red'),w('K3_34','K4_A1','red'),w('K4_A2','R0_6_0','blue')]
+};
+// 유지보수 1): B 양솔. Y2(B 전진) = K1·K3NC (전진 끝 기억 전까지), Y3(B 후진) = S2·K3 (K4와 나란히)
+const x3m1=()=>({wires:X3.wires().filter(x=>!(x.a==='K1_24'&&x.b==='V2_Ya_p')).concat([w('K1_24','K3_41','red'),w('K3_42','V2_Ya_p','red'),
+  w('K3_34','V2_Yb_p','red'),w('V2_Yb_n','R0_6_1','blue')]),hoses:X3.hoses(),set:{SU:0.5}});
+// 유지보수 2): B 후방 줄 F1, 전방 줄 F2 (둘 다 1번이 밸브 쪽), 5단 = 2초
+const x3m2=()=>{const c=x3m1();c.set.F1=5;c.set.F2=5;
+  c.hoses=c.hoses.filter(x=>x.a!=='V2_4'&&x.a!=='V2_2').concat([h('V2_4','F1_1'),h('F1_2','B_cap'),h('V2_2','F2_1'),h('F2_2','B_rod')]);return c;};
+// 유지보수 3): K5 = (PB2 ∥ K5)·PB3NC, K1 줄에 (K5·LS1) 가지를 더해 B가 돌아오면 다시 시작
+const x3m3=()=>{const c=x3m2();
+  c.wires=c.wires.concat([w('R24_1_3','PB3_11','red'),w('PB3_12','PB2_13','red'),w('PB2_14','K5_A1','red'),w('PB3_12','K5_11','red'),w('K5_14','K5_A1','red'),w('K5_A2','R0_6_2','blue'),
+    w('K4_12','K5_21','red'),w('K5_24','LS1_1','red'),w('LS1_4','K1_A1','red')]);return c;};
+
+const x3=EXAMS.find(x=>x.id==='x3');
+test('모의 공3 기본 동작: 고친 회로 통과, 도면대로 Y1 줄 K3를 NO로 쓰면 실패',()=>{
+  assert.deepEqual(failed(gradeStage(x3,0,{wires:X3.wires(),hoses:X3.hoses(),set:{SU:0.5}})),[]);
+  const f=failed(gradeStage(x3,0,{wires:X3.wires('K3_14'),hoses:X3.hoses(),set:{SU:0.5}}));
+  assert.ok(f.some(s=>s.startsWith('PB1 → 변위단계선도')),f.join(' / '));
+});
+test('모의 공3 유지보수 1) 양솔 교체: 정답 통과, 편솔 그대로면 교체 항목에서 실패',()=>{
+  const two={...x3,board:{...x3.board,valveB:'valve52d'}};
+  assert.deepEqual(failed(gradeStage(two,1,x3m1())),[]);
+  assert.deepEqual(failed(gradeStage(x3,1,{wires:X3.wires(),hoses:X3.hoses(),set:{SU:0.5}})).map(s=>s.split(' — ')[0]),['B 밸브를 5/2 양솔로 교체']);
+});
+test('모의 공3 유지보수 2) B 양쪽 미터아웃: 정답 통과, 한쪽만 끼우면 실패',()=>{
+  const two={...x3,board:{...x3.board,valveB:'valve52d'}};
+  assert.deepEqual(failed(gradeStage(two,2,x3m2())),[]);
+  const one=x3m2();one.hoses=one.hoses.filter(x=>!x.a.startsWith('V2_2')&&!x.a.startsWith('F2')).concat([h('V2_2','B_rod')]);
+  assert.ok(failed(gradeStage(two,2,one)).length>0);
+});
+test('모의 공3 유지보수 3) 연속/연속정지: 정답 통과, K5 없이는 실패',()=>{
+  const two={...x3,board:{...x3.board,valveB:'valve52d'}};
+  assert.deepEqual(failed(gradeStage(two,3,x3m3())),[]);
+  assert.ok(failed(gradeStage(two,3,x3m2())).length>0);
+});

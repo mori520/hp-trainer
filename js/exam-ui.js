@@ -18,7 +18,7 @@ function renderExam(){
       ${passed(k)&&k<last?`<button class="btn primary" id="examNext">다음: ${X.stages[k+1].name} →</button>`:''}</div>
     ${allDone?`<p class="fb ok"><b>모든 단계 통과!</b> 걸린 시간 ${fmtTime(st.sec)}. 시험은 보통 기본 동작부터 유지보수까지 정해진 시간 안에 끝내야 해요.</p>`:''}
     ${passed(0)?`<details class="ex-explain"><summary>도면의 틀린 곳 해설</summary><p>${X.explain}</p></details>`:''}
-    <button class="link" id="examRestart">${examAsk?'정말 처음부터? (단계 기록·시간을 지우고, 더해진 기기를 뺍니다. 한 번 더 누르세요)':'처음부터 다시'}</button>`;
+    <button class="link" id="examRestart">${examAsk?'정말 처음부터? (단계 기록·시간을 지우고, 판을 처음 구성으로 되돌립니다. 한 번 더 누르세요)':'처음부터 다시'}</button>`;
 }
 // 판을 바꾼 뒤 배선·호스·설정·실린더 자리는 그대로 두고 세계를 다시 만든다
 function examRebuild(board){
@@ -55,8 +55,7 @@ $('exam').addEventListener('click',e=>{
     if(!examAsk){examAsk=true;renderExam();return;}
     examAsk=false;
     store.exam[mis.id]={stage:0,passed:[],sec:0,run:false};delete store.done[mis.id];
-    const base=examBoard(mis,0);
-    examRebuild(Object.assign({},base,Object.fromEntries(Object.entries(UI.board).filter(([k])=>k in base))));
+    examRebuild(examBoard(mis,0));   // 밸브 교체 등 바꾼 판도 처음대로
     renderMissionList();renderExam();
   }
 });

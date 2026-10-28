@@ -11,11 +11,12 @@
       그 단계 동안의 움직임(실린더가 끝에 닿은 순서)도 볼 수 있다:
         "moves":["A+","A-"]  정확히 이 순서 ([]이면 움직이지 않아야 함)
         "movesRepeat":["A+","A-"], "minCycles":2  이 순서를 계속 되풀이 (연속동작), 기본 2회 이상
-        "stroke":{"cyl":"A","dir":"-","min":1.5}   그 단계에서 A가 후진하는 데 걸린 시간(초) 1.5초 이상 (max도 가능)
+        "stroke":{"cyl":"A","dir":"-","min":1.5}   그 단계에서 A가 후진하는 데 걸린 시간(초) 1.5초 이상 (max도 가능). 여러 개면 배열로
         "meter":{"A":"out"}   마지막 움직임이 미터아웃이었는지 ("in" = 미터인, "bleed" = 블리드오프)
         "meterOn":{"A+":"out"}   그 단계에서 A가 전진 끝에 닿은 움직임이 미터아웃이었는지 (한 사이클을 다 돌리는 단계용)
         "pressureAt":{"A":[0.25,0.35]}   A가 움직일 때 공급 압력(MPa) 범위
       "settingsCheck":[{"name":"SU","min":0.45,"max":0.55,"label":"…"}]   설정값 범위 검사 (서비스 유닛 압력 등)
+      "partCheck":[{"slot":"valveB","type":"valve52d","label":"…"}]   판의 그 자리에 그 종류가 놓였는지 (밸브 교체 유지보수)
    2) 변위단계선도 — 버튼을 한 번 눌렀다 떼고, 실린더가 끝에 닿는 순서를 기록해 비교한다
       {"press":"PB1", "sequence":["A+","B+","A-","B-"], "repeat":2, "timeout":20}
       유압모터는 돌기 시작·멈춤이 한 칸: "M+"(정회전) "M-"(역회전) "M0"(정지). 예 ["A+","M+","M0","A-"]
@@ -105,7 +106,7 @@ function strokeProblem(st,tl){
   return '';
 }
 function stepExtraProblem(s,w,tl){
-  if(s.stroke){const p=strokeProblem(s.stroke,tl);if(p)return p;}
+  for(const st of [].concat(s.stroke||[])){const p=strokeProblem(st,tl);if(p)return Array.isArray(s.stroke)?`${st.cyl} ${p}`:p;}
   for(const k in s.meter||{}){
     const m=w.meter[k]||'';if(m===s.meter[k])continue;
     return m==='in'?'미터인 방식이에요. 유량조절밸브를 뒤집어 1번이 밸브 쪽, 2번이 실린더 쪽이 되게 끼우세요.':
@@ -201,6 +202,8 @@ function gradeMission(mis,c){
   const sw=newWorld(clone(c));
   (g.settingsCheck||[]).forEach(s=>{const v=sw.set[s.name];
     res.push({name:s.label,ok:v>=s.min-1e-9&&v<=s.max+1e-9,detail:`지금 ${v} — 기대 ${s.min}~${s.max}`});});
+  (g.partCheck||[]).forEach(s=>{const p=LAYOUT.parts.find(x=>x.slot===s.slot);
+    res.push({name:s.label,ok:!!p&&p.type===s.type,detail:p&&p.type===s.type?'':'"⇄ 종류 교체" 버튼으로 바꾸세요 (공급을 끄고 그 밸브의 호스·배선을 뺀 뒤).'});});
   const air=g.sequence?(g.setup?g.setup.air:true):(g.setup&&g.setup.air);
   if(air)res.push(chkLeak(r.leak));
   if(g.relayCount!=null)res.push(chkRelayCount(c,g.relayCount));

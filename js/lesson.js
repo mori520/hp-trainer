@@ -10,6 +10,7 @@ function lessonUpdate(){
   box.querySelectorAll('[data-show]').forEach(el=>{el.style.display=lessonExpr(el.dataset.show,LS_UI.state)?'':'none';});
 }
 function openLesson(id,page){
+  if(DEMO_ON)demoStop();   // 강의를 열면 시연은 끝
   const L=lessonById(id);if(!L)return;
   UI.lesson=id;LS_UI.page=Math.max(0,Math.min(page,L.pages.length-1));LS_UI.state={};
   document.body.classList.add('in-lesson');$('lesson').hidden=false;$('diagram').hidden=true;

@@ -13,6 +13,7 @@ Object.values(store.circuits).forEach(c=>{if(c.board)return;[...(c.wires||[]),..
 // 스위치·릴레이 모듈 레일 잭을 6개로 늘리기 전에 저장된 기본 전원 선(3번째 잭에서 나감)을 맨 끝 잭으로 옮긴다
 const OLD_JUMP={R24_1_2:'R24_1_5',R0_1_2:'R0_1_5',R24_5_2:'R24_5_5',R0_5_2:'R0_5_5'};
 Object.values(store.circuits).forEach(c=>(c.wires||[]).forEach(x=>{if(!x.base)return;x.a=OLD_JUMP[x.a]||x.a;x.b=OLD_JUMP[x.b]||x.b;}));
+let DEMO_ON=false;   // 시연 중(demo-ui.js): 사용자 손이 버튼을 떼게 하지 않음
 let WIPED=false;   // 모든 기록을 지운 뒤 새로고침 전까지는 다시 저장하지 않는다
 function save(){if(WIPED)return;try{if(!inTutorial())store.circuits[UI.mission]={wires:S.wires,hoses:S.hoses,board:UI.board,set:S.set,pw:1};store.last=UI.lesson||UI.mission;store.mode=UI.mode;localStorage.setItem(KEY,JSON.stringify(store));}catch(e){}}
 const UI={color:'red',mission:'m0',mode:'tut',board:{},stepIdx:0,flash:[],quiz:{tried:[],ok:false},lesson:null};
@@ -96,7 +97,7 @@ window.addEventListener('pointermove',e=>{
   prev.setAttribute('d',`M${A.x},${A.y} C${A.x},${A.y+40} ${p.x},${p.y+40} ${p.x},${p.y}`);
 });
 window.addEventListener('pointerup',e=>{
-  LAYOUT.pbs.forEach(pb=>S.pb[pb]=false);
+  if(!DEMO_ON)LAYOUT.pbs.forEach(pb=>S.pb[pb]=false);
   if(!drag||drag.pending)return;
   const t=jackAt(e);
   if(t===drag.from){drag.pending=true;return;}
@@ -146,7 +147,7 @@ window.addEventListener('keydown',e=>{
   const sw=document.activeElement&&document.activeElement.closest&&document.activeElement.closest('.swap');
   if(sw&&(e.key===' '||e.key==='Enter')){swapPart(sw.dataset.slot);e.preventDefault();}
 });
-window.addEventListener('keyup',e=>{if(e.key===' '||e.key==='Enter')LAYOUT.pbs.forEach(pb=>S.pb[pb]=false);});
+window.addEventListener('keyup',e=>{if(!DEMO_ON&&(e.key===' '||e.key==='Enter'))LAYOUT.pbs.forEach(pb=>S.pb[pb]=false);});
 // 화면 크기: 1 = 화면에 맞춤(트레이너 전체가 보임). 그보다 크면 맞춤 크기의 배수로 키우고 스크롤
 const ZOOMS=[1,1.25,1.5,2,2.5,3];
 function applyZoom(){
@@ -247,6 +248,7 @@ $('quiz').addEventListener('click',e=>{
   clearResults();
 });
 function loadMission(id){
+  if(DEMO_ON)demoStop();
   if(S)save();
   UI.mission=id;const mis=cur();
   $('mTitle').textContent=(mis.no!=='∞'&&!mis.practice?`미션 ${mis.no}. `:'')+mis.title;
@@ -259,7 +261,7 @@ function loadMission(id){
   renderMissionList();
 }
 function setMode(md){UI.mode=md;$('modeTut').setAttribute('aria-pressed',md==='tut');$('modeMis').setAttribute('aria-pressed',md==='mis');loadCircuit();}
-function switchMode(md){if(UI.mode===md)return;save();setMode(md);}
+function switchMode(md){if(UI.mode===md)return;if(DEMO_ON)demoStop();save();setMode(md);}
 $('modeTut').onclick=()=>switchMode('tut');$('modeMis').onclick=()=>switchMode('mis');
 function clearResults(){$('results').innerHTML='';$('summary').hidden=true;if(UI.flash.length){UI.flash=[];}}
 $('gradeBtn').onclick=()=>{
@@ -360,6 +362,7 @@ $('wipeYes').onclick=()=>{WIPED=true;try{localStorage.removeItem(KEY);}catch(e){
 let last=performance.now();
 function loop(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;
+  if(typeof demoFrame==='function')demoFrame(dt);   // 시연 (demo-ui.js)
   stepWorld(S,dt);
   if(S.events.length){S.events=[];toast('합선이 감지되어 전원이 차단되었습니다. +24V와 0V가 곧바로 이어진 선을 찾아 지우세요.');}
   renderDyn();updateTutorial();recMotion();   // recMotion: 변위단계선도 기록 (mydiagram-ui.js)

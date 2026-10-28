@@ -46,7 +46,7 @@ for(const mis of MISSIONS.filter(m=>!m.soon).concat(EXAMS)){
     (mis.steps||[]).forEach((s,i)=>{if(s.done&&s.done.type==='quiz')assert.ok(qz,`튜토리얼 ${i+1}단계: quiz 조건인데 미션에 quiz가 없음`);});
     (mis.steps||[]).forEach((s,i)=>{if(s.g!=null)assert.ok(typeof s.g==='string'&&s.g,`튜토리얼 ${i+1}단계: 묶음 제목 g가 비어 있음`);});
     const mounts={};
-    for(const [slot,type] of Object.entries(BOARD||{})){
+    for(const [slot,type] of Object.entries(BOARD||{})){if(!type)continue;   // "" = 그 단계에서 뺀 자리 (모의 과제)
       const s=L.slots.find(x=>x.slot===slot);
       assert.ok(s,`없는 자리 ${slot}`);
       if(s.sensor){

@@ -608,6 +608,20 @@ sheet('x4.svg',{w:920,h:840,names:['A','B'],seq:['B+','A+','B-','A-'],note:['PB1
     const jy=L.Y[1]+40;L.bus(740,860,jy);L.rung(860,[{t:'no',name:'LS1',act:'ls',pressed:true},{t:'coil',name:'K4'}],{fromY:jy,dot:true,slots:[L.Y[2]]});
   }});
 
+// 모의 유1: A+ B+ B− A−. A 4/2 편솔(Y1), B 4/3 중립 블록(Y2 전진·Y3 후진). 틀린 곳 = Y2 줄의 리밋이 LS2 대신 LS1
+sheet('y1.svg',{...HS,w:900,h:980,names:['A','B'],seq:['A+','B+','B-','A-'],note:['PB1: 한 사이클','릴레이 4개','릴리프 4.0 MPa'],
+  pneu:S=>{const a=hyd(S,110,90,{name:'A',valve:'42',sols:['Y1'],sensors:[{end:'+',name:'LS2',kind:'ls'},{end:'-',name:'LS1',kind:'ls'}]});
+    hyd(S,500,90,{name:'B',valve:'43c',sols:['Y2','Y3'],sensors:[{end:'+',name:'S2',kind:'cap'},{end:'-',name:'S1',kind:'cap'}],feed:{x:a.ax,y:a.py}});},
+  elec:L=>{
+    L.rung(90,[{t:'nc',name:'K4'},{t:'no',name:'PB1',act:'pb',hold:'K1'},{t:'coil',name:'K1'}]);
+    L.rung(200,[{t:'no',name:'K1'},{t:'sol',name:'Y1'}]);
+    L.sensor(270,'S1',330);L.rung(330,[{t:'coil',name:'K2'}],{fromY:L.Y[1]});
+    L.rung(420,[{t:'no',name:'LS1',act:'ls',pressed:true},{t:'nc',name:'K3'},{t:'sol',name:'Y2'}]);
+    L.rung(540,[{t:'sensor',name:'S2',hold:'K3'},{t:'no',name:'K1'},{t:'coil',name:'K3'}]);
+    L.rung(660,[{t:'no',name:'K3'},{t:'nc',name:'K2'},{t:'sol',name:'Y3'}]);
+    L.rung(780,[{t:'no',name:'K3'},{t:'no',name:'K2'},{t:'coil',name:'K4'}]);
+  }});
+
 // 미션 0~4: 튜토리얼에서 완성 도면을 보며 배우도록 (2026-10-28 사용자 요청)
 sheet('m0.svg',{w:420,h:440,note:['PB1을 누르는 동안 H1 점등'],
   elec:L=>{L.rung(170,[{t:'no',name:'PB1',act:'pb'},{t:'lamp',name:'H1'}]);}});

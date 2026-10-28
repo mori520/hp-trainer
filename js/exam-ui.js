@@ -48,8 +48,8 @@ $('exam').addEventListener('click',e=>{
   if(id==='examNext'){
     st.stage++;const add=X.stages[st.stage].board||{};
     examRebuild(Object.assign({},UI.board,add));renderExam();
-    const names=Object.values(add).map(v=>pracValName(v));
-    if(names.length)toast(`판에 ${names.join('·')}이(가) 생겼어요.`);
+    const added=Object.values(add).filter(Boolean).map(v=>pracValName(v)),removed=Object.keys(add).filter(k=>!add[k]);
+    if(added.length||removed.length)toast([added.length?`판에 ${added.join('·')}이(가) 생겼어요.`:'',removed.length?`${removed.join('·')}은(는) 판에서 빠졌어요.`:''].filter(Boolean).join(' '));
   }
   if(id==='examRestart'){
     if(!examAsk){examAsk=true;renderExam();return;}

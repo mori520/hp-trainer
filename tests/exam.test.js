@@ -205,3 +205,50 @@ test('모의 공4 유지보수 3) 카운터 2회 + 램프: 정답 통과, 기본
   assert.deepEqual(failed(gradeStage(x4,3,x4m3())),[]);
   assert.ok(failed(gradeStage(x4,3,{...x4m2(),set:{SU:0.5,T1:3,F1:5,C1:2}})).length>0);
 });
+
+/* ---------- 모의 유1: A+ B+ B− A− (4/2 + 4/3 중립 블록) ---------- */
+const Y1={
+  hoses:()=>[h('HP1','V1_P'),h('V1_T','HT1'),h('V1_A','A_cap'),h('V1_B','A_rod'),h('HP2','V2_P'),h('V2_T','HT2'),h('V2_A','B_cap'),h('V2_B','B_rod')],
+  // K1 = 기동·유지(K4 NC로 해제), Y1(A) = K1, S1(B 후진 끝) → K2, Y2(B+) = LS2·K3NC, K3 = (S2 ∥ K3)·K1, Y3(B−) = K3·K2NC, K4 = K3·K2
+  wires:(ls='LS2')=>[
+    w('R24_6_0','K4_11','red'),w('K4_12','PB1_13','red'),w('PB1_14','K1_A1','red'),w('K4_12','K1_11','red'),w('K1_14','K1_A1','red'),w('K1_A2','R0_5_0','blue'),
+    w('R24_5_0','K1_21','red'),w('K1_24','V1_Ya_p','red'),w('V1_Ya_n','R0_5_1','blue'),
+    w('R24_1_0','S1_p','red'),w('S1_n','R0_1_0','blue'),w('S1_out','K2_A1','red'),w('K2_A2','R0_5_2','blue'),
+    w('R24_1_1',ls+'_1','red'),w(ls+'_4','K3_11','red'),w('K3_12','V2_Ya_p','red'),w('V2_Ya_n','R0_5_3','blue'),
+    w('R24_1_2','S2_p','red'),w('S2_n','R0_1_1','blue'),w('S2_out','K1_31','red'),w('R24_5_1','K3_21','red'),w('K3_24','K1_31','red'),w('K1_34','K3_A1','red'),w('K3_A2','R0_5_4','blue'),
+    w('R24_5_2','K3_31','red'),w('K3_34','K2_11','red'),w('K2_12','V2_Yb_p','red'),w('V2_Yb_n','R0_6_0','blue'),
+    w('R24_6_1','K3_41','red'),w('K3_44','K2_21','red'),w('K2_24','K4_A1','red'),w('K4_A2','R0_6_1','blue')]
+};
+// 유지보수 1): B 전방 줄 미터인 (V2 B → F1 2번, F1 1번 → B 전방), 5단
+const y1m1=()=>({wires:Y1.wires(),hoses:Y1.hoses().filter(x=>x.a!=='V2_B').concat([h('V2_B','F1_2'),h('F1_1','B_rod')]),set:{RV:4,F1:5}});
+// 유지보수 2): S2를 떼고 B 후방 줄 압력스위치 PS1 NO(1-4)로 K3를 켬
+const y1m2=()=>{const c=y1m1();c.set.PS1=3;
+  c.hoses=c.hoses.filter(x=>x.a!=='V2_A').concat([h('V2_A','PS1_a'),h('PS1_b','B_cap')]);
+  c.wires=c.wires.filter(x=>!x.a.startsWith('S2_')&&!x.b.startsWith('S2_')).concat([w('R24_1_2','PS1_1','red'),w('PS1_4','K1_31','red')]);return c;};
+// 유지보수 3): 줄마다 24V를 비상정지 NC를 거쳐 받는다 (센서 전원은 그대로), NO로 H1
+const y1m3=()=>{const c=y1m2();
+  c.wires=c.wires.map(x=>x.a.startsWith('R24_')&&!/_p$/.test(x.b)?{...x,a:'ES_12'}:x)
+    .concat([w('R24_1_3','ES_11','red'),w('R24_1_4','ES_13','red'),w('ES_14','H1_p','red'),w('H1_n','R0_2_0','blue')]);return c;};
+
+const y1=EXAMS.find(x=>x.id==='y1');
+test('모의 유1 기본 동작: 고친 회로 통과, 릴리프를 안 맞추면 실패, 도면대로 LS1로 쓰면 실패',()=>{
+  assert.deepEqual(failed(gradeStage(y1,0,{wires:Y1.wires(),hoses:Y1.hoses(),set:{RV:4}})),[]);
+  assert.deepEqual(failed(gradeStage(y1,0,{wires:Y1.wires(),hoses:Y1.hoses(),set:{}})).map(s=>s.split(' — ')[0]),['릴리프 압력 4±0.2 MPa']);
+  const f=failed(gradeStage(y1,0,{wires:Y1.wires('LS1'),hoses:Y1.hoses(),set:{RV:4}}));
+  assert.ok(f.some(s=>s.startsWith('PB1 → 변위단계선도')),f.join(' / '));
+});
+test('모의 유1 유지보수 1) 미터인: 정답 통과, 미터아웃 방향으로 끼우면 실패',()=>{
+  assert.deepEqual(failed(gradeStage(y1,1,y1m1())),[]);
+  const out=y1m1();out.hoses=out.hoses.map(x=>x.b==='F1_2'?{...x,b:'F1_1'}:x.a==='F1_1'?{...x,a:'F1_2'}:x);
+  assert.ok(failed(gradeStage(y1,1,out)).length>0);
+});
+test('모의 유1 유지보수 2) 압력스위치: 정답 통과, S2 배선 그대로(센서가 빠짐)면 실패',()=>{
+  assert.deepEqual(failed(gradeStage(y1,2,y1m2())),[]);
+  const old=y1m1();old.set.PS1=3;old.hoses=old.hoses.filter(x=>x.a!=='V2_A').concat([h('V2_A','PS1_a'),h('PS1_b','B_cap')]);
+  old.wires=old.wires.filter(x=>!x.a.startsWith('S2_')&&!x.b.startsWith('S2_'));   // 판에서 S2가 빠지면 S2 선도 빠진다
+  assert.ok(failed(gradeStage(y1,2,old)).length>0);
+});
+test('모의 유1 유지보수 3) 비상정지 + 램프: 정답 통과 (B는 중간에 멈춤), 비상정지를 안 달면 실패',()=>{
+  assert.deepEqual(failed(gradeStage(y1,3,y1m3())),[]);
+  assert.ok(failed(gradeStage(y1,3,y1m2())).length>0);
+});

@@ -44,9 +44,10 @@ function connect(a,b){
 function swapPart(slot){
   const def=LAYOUTS[cur().layout].slots.find(s=>s.slot===slot), types=def.accepts;
   const next=types[(types.indexOf(UI.board[slot])+1)%types.length];
-  const label={valve52s:'편솔',valve52d:'양솔'}[next]||next;
-  if(S.air){toast('공기 공급을 먼저 끈 뒤 밸브를 교체하세요. (수험자 유의사항)');return;}
-  const mine=x=>[x.a,x.b].some(j=>j.startsWith(def.id+'_'));
+  const label=PARTS[next].name||next;
+  if(S.air){toast(fluidText().stopFirst+' 밸브를 교체하세요. (수험자 유의사항)');return;}
+  const ids=[def.id,...Object.values(def.ids||{})];   // 자리의 부품 이름 (종류마다 다를 수 있음)
+  const mine=x=>[x.a,x.b].some(j=>ids.some(id=>j.startsWith(id+'_')));
   const hoses=S.hoses.filter(mine), wires=S.wires.filter(mine);
   if(hoses.length||wires.length){
     UI.flash=hoses.concat(wires).map(x=>x.id);renderConn();
@@ -60,7 +61,7 @@ function swapPart(slot){
   for(const k in S.cyl)if(k in old.cyl)S.cyl[k]=old.cyl[k];
   for(const k in S.valve)if(k in old.valve&&k!==def.id)S.valve[k]=old.valve[k];
   clearResults();renderConn();
-  toast(`${def.id} 밸브를 5/2 ${label} 밸브로 교체했어요.`);
+  toast(`${def.id} 밸브를 ${label}로 교체했어요.`);
 }
 // 누름버튼은 누르는 동안만(놓으면 pointerup에서 풀림), 유지형(비상정지)은 누를 때마다 켜짐/꺼짐이 바뀐다
 // 타이머·카운터 설정 ▼▲: 정해진 간격으로 올리고 내린다 (최소·최대 안에서)
@@ -131,7 +132,7 @@ sv.addEventListener('dblclick',e=>{
   const c=e.target.closest&&e.target.closest('.conn');if(!c)return;
   const id=c.dataset.id;
   if(c.dataset.type==='hose'){
-    if(S.air){toast('공기 공급을 먼저 끈 뒤 호스를 제거하세요. (수험자 유의사항)');return;}
+    if(S.air){toast(fluidText().stopFirst+' 호스를 제거하세요. (수험자 유의사항)');return;}
     S.hoses=S.hoses.filter(h=>h.id!==id);
   }else S.wires=S.wires.filter(w=>w.id!==id);
   clearResults();renderConn();
@@ -180,7 +181,7 @@ $('autoColor').onclick=()=>setAutoColor(!store.autoColor);
 /* ===================== 미션 패널 ===================== */
 // 목록: 기초 강의(lessons.js, 없으면 생략) / 미션 / 실전 연습(실전 연습·자유 실습). 칸 제목을 누르면 접고 편다(store.fold)
 const ALL=MISSIONS;
-const sectOf=x=>x.practice||x.id==='free'?'practice':'missions';
+const sectOf=x=>x.practice||x.no==='∞'?'practice':'missions';   // 실전 연습·자유 실습(no ∞)은 아래 칸
 function cur(){return ALL.find(x=>x.id===UI.mission);}
 function renderMissionList(){
   const LS=typeof LESSONS==='undefined'?[]:LESSONS, fold=store.fold||{};
@@ -191,7 +192,7 @@ function renderMissionList(){
     <span class="chip ${(store.lessonDone||{})[x.id]?'done':''}">${(store.lessonDone||{})[x.id]?'읽음':'강의'}</span></button></li>`;
   const misItem=x=>`<li><button data-m="${x.id}" aria-current="${!UI.lesson&&x.id===UI.mission}">
     <span class="no">${x.no}</span><span class="t">${x.title}</span>
-    <span class="chip ${store.done[x.id]?'done':''}">${store.done[x.id]?'완료':x.id==='free'?'자유':x.practice?'실전':'도전'}</span></button></li>`;
+    <span class="chip ${store.done[x.id]?'done':''}">${store.done[x.id]?'완료':x.no==='∞'?'자유':x.practice?'실전':'도전'}</span></button></li>`;
   const mis=ALL.filter(x=>sectOf(x)==='missions'), prac=ALL.filter(x=>sectOf(x)==='practice');
   $('missionList').innerHTML=(LS.length?head('lessons','기초 강의',LS.length)+body('lessons',LS.map(lessonItem).join('')):'')
     +head('missions','미션',mis.length)+body('missions',mis.map(misItem).join(''))
@@ -285,9 +286,10 @@ function showResults(res,passText,head){
    공개과제 내용은 넣지 않는다(저작권). 가지고 있는 공개도면을 보며 판 구성(밸브 종류·센서 위치·공압 기기)을 직접 고르고,
    스톱워치로 시간을 재며 꾸민다. 채점 대신 "내 회로 도면"으로 비교한다. 선택지는 미션 데이터의 practice.choices */
 const fmtTime=s=>`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
-const PRAC_LABEL={valveA:'밸브 V1 (실린더 A)',valveB:'밸브 V2 (실린더 B)',S1:'센서 S1',S2:'센서 S2',LS1:'리밋 LS1',LS2:'리밋 LS2',
-  MA1:'A 후방 줄 기기',MA2:'A 전방 줄 기기',MB1:'B 후방 줄 기기',MB2:'B 전방 줄 기기',R1:'공급 줄 기기'};
-const PRAC_NAME={'':'없음',valve52s:'5/2 편솔',valve52d:'5/2 양솔',fcv:'유량조절',qev:'급속배기',prv:'감압'};
+const PRAC_LABEL={valveA:'밸브 V1 (실린더 A)',valveB:'밸브 V2 (B 자리)',cylB:'B 자리 액추에이터',S1:'센서 S1',S2:'센서 S2',LS1:'리밋 LS1',LS2:'리밋 LS2',
+  MA1:'A 후방 줄 기기',MA2:'A 전방 줄 기기',MB1:'B 후방(A포트) 줄 기기',MB2:'B 전방(B포트) 줄 기기',R1:'공급 줄 기기'};
+const PRAC_NAME={'':'없음',valve52s:'5/2 편솔',valve52d:'5/2 양솔',fcv:'유량조절',qev:'급속배기',prv:'감압',
+  valve42:'4/2 편솔',valve43c:'4/3 양솔 (중립 블록)',valve43a:'4/3 양솔 (중립 ABT)',chk:'체크밸브',cylinder:'실린더',motor:'유압모터'};
 const pracValName=v=>PRAC_NAME[v]||v.replace('+',' 전진 끝').replace('-',' 후진 끝');
 function pracState(){return store.practice=store.practice||{sec:0,run:false};}
 function renderPractice(){
@@ -306,7 +308,7 @@ function renderPractice(){
 function setPracticeSlot(slot,val){
   const old=Object.assign({},UI.board),next=Object.assign({},old);
   if(val)next[slot]=val;else delete next[slot];
-  if(S.air){toast('공기 공급을 먼저 끈 뒤 판 구성을 바꾸세요.');renderPractice();return;}
+  if(S.air){toast(fluidText().stopFirst+' 판 구성을 바꾸세요.');renderPractice();return;}
   if(/^[AB][+-]$/.test(val)&&Object.values(next).filter(v=>v===val).length>2){toast('한 실린더 끝에는 센서를 2개까지 달 수 있어요.');renderPractice();return;}
   const used=S.wires.concat(S.hoses),pos={},at=j=>JACKS[j]?JACKS[j].x+','+JACKS[j].y:'';
   used.forEach(x=>[x.a,x.b].forEach(j=>pos[j]=at(j)));

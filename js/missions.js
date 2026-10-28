@@ -759,6 +759,8 @@ const MISSIONS=[
     "choices":{"valveA":["valve52s","valve52d"],"valveB":["valve52s","valve52d"],"S1":["","A+","A-","B+","B-"],"S2":["","A+","A-","B+","B-"],"LS1":["","A+","A-","B+","B-"],"LS2":["","A+","A-","B+","B-"],"MA1":["","fcv","qev"],"MA2":["","fcv","qev"],"MB1":["","fcv","qev"],"MB2":["","fcv","qev"],"R1":["","prv"]}
   }
 },
+{"id":"hfree","no":"∞","title":"유압 자유 실습","goal":"유압 파워유닛, 4/2·4/3 밸브, 실린더·유압모터를 자유롭게 연결해 보세요.","learn":"유압은 쓰고 난 기름이 밸브 T 포트 → 탱크(T)로 돌아가야 움직여요. 펌프 압력은 릴리프(RV)로 맞춥니다 (시험 4±0.2 MPa). 밸브의 ‘종류 교체’로 4/2·4/3을 바꿔 볼 수 있어요.","steps":[],
+ "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve43c","cylB":"motor","valveB":"valve43c","LS1":"A-","LS2":"A+","MA1":"fcv","R1":"chk"}},
 {"id":"free","no":"∞","title":"자유 실습","goal":"모든 부품을 자유롭게 연결하고 동작을 확인해 보세요.","learn":"채점 없이 회로를 실험하는 공간입니다. 밸브의 ‘종류 교체’로 편솔·양솔을 바꿔 볼 수 있어요.","steps":[],
  "layout":"air","board":{"cylA":"cylinder","valveA":"valve52s","cylB":"cylinder","valveB":"valve52d","LS1":"A-","LS2":"A+","S1":"B-","S2":"B+","MA1":"fcv","MB1":"qev","R1":"prv"}}
 ];

@@ -52,6 +52,6 @@ function renderDyn(){
   const o=S.out;
   LAYOUT.parts.forEach(p=>{const d=PARTS[p.type];if(d.render)d.render(p,S);});
   const sols=LAYOUT.loads.filter(l=>l.sol).map(l=>`<span class="st ${o[l.name]?'on':''}">${l.name} ${o[l.name]?'여자':'소자'}</span>`).join('');
-  const html=`<span class="st ${S.power?'on':''}">전원 ${S.power?'ON':'OFF'}</span><span class="st ${S.air?'on':''}">공기 ${S.air?'ON':'OFF'}</span>`+sols+(o.leak?'<span class="st alert">공기 누설</span>':'');
+  const html=`<span class="st ${S.power?'on':''}">전원 ${S.power?'ON':'OFF'}</span><span class="st ${S.air?'on':''}">${fluidText().supply} ${S.air?'ON':'OFF'}</span>`+sols+(o.leak?'<span class="st alert">공기 누설</span>':'');
   if(html!==lastStatus){$('status').innerHTML=html;lastStatus=html;}
 }

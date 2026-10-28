@@ -14,18 +14,20 @@ const STROKE_T=1.0;       // 실린더 전체 행정 시간(초)
    init(p,w)           월드 상태 초기값 (밸브 위치, 실린더 위치, 릴레이 상태)
    update(p,w,on,e,dt) 부하 여자 상태(on[name])로 밸브 위치·릴레이 접점 결정 (다음 계산부터 반영 = 릴레이의 짧은 지연)
                        e.hot(잭)/e.gnd(잭)로 잭이 +24V/0V에 이어졌는지도 볼 수 있다 (센서 전원)
-   pneu(p,w,u)         공압 경로 연결. 공급 'SUP', 배기 'EX'
+   pneu(p,w,u)         공압·유압 경로 연결. 공급 'SUP', 배기 'EX' (유압은 펌프 = SUP, 탱크로 돌아가는 포트 = EX)
+   source(p,w)         → 공급 압력(MPa). 서비스 유닛(공압) 설정 SU, 파워유닛(유압) 릴리프 설정 RV. fluid:'hyd'면 유압 판
    move(p,w,P,E,dt,pn) P(포트)=공급압 걸림, E(포트)=배기로 열림 → 액추에이터 이동.
                        pn.flow(공급 포트, 배기 포트) → {k:속도 배율, meter:'out'|'in'|''}, pn.press(포트) → 압력(MPa)
    dev(p,w)            공압 기기: {kind:'fcv'|'qev'|'prv', a:1차(밸브 쪽) 포트, b:2차(실린더 쪽) 포트, k:조임 배율, set:2차 압력}
                        fcv(일방향 유량조절) a→b 자유, b→a 조임 / qev(급속배기) b 쪽 배기를 그 자리에서 / prv(감압) b 쪽 압력 = min(공급, set)
+                       chk(체크밸브) a→b만 흐름 (거꾸로 흐르려 하면 막힘)
    sense(p,w)          실린더 위치로 센서·리밋스위치 감지 상태(w.sensor[이름]) 결정
    그 밖의 속성: solCount(솔레노이드 수), relayCount(릴레이 수), span(랙에서 차지하는 칸 수),
                  tag·tagCount(이름 붙이기: 타이머 'T' → T1, 카운터 'C' → C1), settings(p) → {이름:{기본값,최소,최대,간격}}
    사용자가 맞추는 설정값(타이머 초, 카운터 횟수)은 회로와 함께 c.set에 저장되고 w.set으로 읽는다 */
 const PARTS={};
 
-let LAYOUT={parts:[],rail24:[],rail0:[],buses:[],pbs:[],toggles:[],loads:[],settings:{}};
+let LAYOUT={parts:[],rail24:[],rail0:[],buses:[],pbs:[],toggles:[],loads:[],settings:{},fluid:'air'};
 function configure(layout){
   const parts=layout.parts||[];
   const each=(k,f)=>parts.forEach(p=>{const d=PARTS[p.type];if(d&&d[k])f(d[k](p),p);});
@@ -38,7 +40,8 @@ function configure(layout){
   each('toggles',r=>toggles.push(...r));
   each('loads',r=>loads.push(...r));
   const settings={};each('settings',r=>Object.assign(settings,r));
-  LAYOUT={parts,rail24,rail0,buses,pbs,toggles,loads,settings};
+  const fluid=parts.some(p=>PARTS[p.type]&&PARTS[p.type].fluid==='hyd')?'hyd':'air';   // 유압 파워유닛이 있으면 유압 판
+  LAYOUT={parts,rail24,rail0,buses,pbs,toggles,loads,settings,fluid};
 }
 // 배치 데이터(layouts.js) + 자리별 선택(board)으로 부품 목록을 만든다.
 // 랙은 줄(row)마다 왼쪽부터 칸(col)을 채운다. 솔레노이드 Y1…, 릴레이 K1…는 놓인 순서대로 이름을 붙인다
@@ -65,7 +68,7 @@ function makeParts(def,board){
       return;
     }
     const type=s.fixed||board[s.slot];if(!type)return;
-    const p={type,id:s.id,slot:s.slot,at:s.at};
+    const p={type,id:(s.ids&&s.ids[type])||s.id,slot:s.slot,at:s.at};   // ids: 종류마다 다른 이름 (예: 모터는 M)
     names(type,p);parts.push(p);
   });
   return parts;
@@ -100,16 +103,22 @@ function solveElec(w,allClosed){
   LAYOUT.loads.forEach(l=>{on[l.name]=!!(w.power&&!short&&((hot(l.a)&&gnd(l.b))||(gnd(l.a)&&hot(l.b))));});
   return{short,on,hot,gnd};
 }
-// 공압 경로. 기기를 뺀 연결(u0)로 "기기 어느 쪽 포트가 실린더 쪽인지"를 알고, 기기를 넣은 연결로 실제 흐름을 본다
+// 공압·유압 경로. 기기를 뺀 연결(u0)로 "기기 어느 쪽 포트가 실린더 쪽인지"를 알고, 기기를 넣은 연결로 실제 흐름을 본다
 const MIN_P=0.1;   // 이보다 낮은 압력(MPa)이면 실린더가 움직이지 않음
 function solvePneu(w){
   const base=()=>{const u=UF();partsWith('pneu').forEach(p=>PARTS[p.type].pneu(p,w,u));w.hoses.forEach(h=>u.u(h.a,h.b));return u;};
   const devs=partsWith('dev').map(p=>PARTS[p.type].dev(p,w));
-  const pass=devs.filter(d=>d.kind!=='prv');
+  const free=devs.filter(d=>d.kind==='fcv'||d.kind==='qev');
+  // 체크밸브: 양쪽이 공급(S)·배기(E)·그 밖(N) 중 어디에 이어졌는지 보고, 거꾸로(b→a) 흐를 자리면 막는다
+  const uc=base();free.forEach(d=>uc.u(d.a,d.b));
+  const side=id=>uc.same(id,'SUP')?'S':uc.same(id,'EX')?'E':'N';
+  const chkOn=devs.filter(d=>{if(d.kind!=='chk')return false;const a=side(d.a),b=side(d.b);return !((b==='S'&&a!=='S')||(a==='E'&&b!=='E'));});
+  const pass=free.concat(chkOn);
   const u0=base(), u1=base();pass.forEach(d=>u1.u(d.a,d.b));
   const prvOn=devs.filter(d=>d.kind==='prv'&&u1.same(d.a,'SUP'));   // 감압밸브는 1차 쪽에 공급이 있어야 지나감
   const u=base();pass.concat(prvOn).forEach(d=>u.u(d.a,d.b));
-  const main=w.air?(w.set.SU==null?0.5:w.set.SU):0;
+  const src=partsWith('source')[0];
+  const main=w.air?(src?PARTS[src.type].source(src,w):0.5):0;
   const leak=w.air&&u.same('SUP','EX');
   const press=id=>{
     if(!w.air||leak)return 0;
@@ -128,10 +137,10 @@ function solvePneu(w){
     });
     return{k,meter};
   };
-  return{leak,P,E,press,flow};
+  return{leak,P,E,press,flow,main};
 }
 function newWorld(c){
-  const w={wires:c.wires,hoses:c.hoses,set:{},power:false,air:false,t:0,pb:{},relay:{},timer:{},counter:{},modPow:{},meter:{},cylP:{},cyl:{},valve:{},sensor:{},sensorPow:{},out:{leak:false},events:[]};
+  const w={wires:c.wires,hoses:c.hoses,set:{},power:false,air:false,t:0,pb:{},relay:{},timer:{},counter:{},modPow:{},meter:{},cylP:{},cyl:{},motor:{},valve:{},sensor:{},sensorPow:{},out:{leak:false},events:[]};
   for(const k in LAYOUT.settings)w.set[k]=(c.set&&k in c.set)?c.set[k]:LAYOUT.settings[k].def;
   LAYOUT.pbs.concat(LAYOUT.toggles).forEach(id=>w.pb[id]=false); LAYOUT.loads.forEach(l=>w.out[l.name]=false);
   partsWith('init').forEach(p=>PARTS[p.type].init(p,w));
@@ -146,6 +155,7 @@ function stepWorld(w,dt){
   partsWith('move').forEach(p=>PARTS[p.type].move(p,w,pn.P,pn.E,dt,pn));
   partsWith('sense').forEach(p=>PARTS[p.type].sense(p,w));
   w.out=Object.assign({leak:pn.leak},e.on);
+  w.supP=pn.leak?0:pn.main;   // 압력계에 보일 공급 압력
   w.t+=dt;
 }
 // 랙 모듈 자체에 전원(자기 레일에 24V/0V)이 들어와 있는지. 타이머·카운터처럼 전자식 모듈이 쓴다

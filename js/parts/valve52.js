@@ -3,6 +3,7 @@
    솔레노이드 잭: 왼쪽 a(<id>_Ya_p/n), 양솔은 오른쪽 b(<id>_Yb_p/n). 이름(Y1…)은 배치 순서로 정해진다 */
 function valve52(double){
   return{
+    name:double?'5/2 양솔 밸브':'5/2 편솔 밸브',
     solCount:double?2:1,
     loads:p=>p.sols.map((name,k)=>({name,a:p.id+'_Y'+'ab'[k]+'_p',b:p.id+'_Y'+'ab'[k]+'_n',sol:true})),
     init(p,w){w.valve[p.id]=0;},

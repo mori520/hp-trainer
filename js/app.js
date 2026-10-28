@@ -6,7 +6,8 @@ const KEY='ph-trainer-v1';
 // 처음 온 사람: 기초 강의·미션 칸은 접고, 실전 연습 칸의 자유 실습을 연 상태로 시작
 let store={done:{},circuits:{},last:'free',mode:'tut',fold:{lessons:true,missions:true,hyd:true}};
 try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s)store=Object.assign(store,s);}catch(e){}
-const BOOT_LAST=store.last;   // 시작 때 마지막으로 보던 것 (그리는 중 save()가 store.last를 덮기 전에 기억)
+const BOOT_LAST=store.last;
+const FIRST_VISIT=needWelcome(store);   // 기록이 없는 처음 온 사람 → 안내 띄움 (onboard.js)   // 시작 때 마지막으로 보던 것 (그리는 중 save()가 store.last를 덮기 전에 기억)
 // 예전 잭 이름으로 저장된 배선을 새 이름(부품 id_포트)으로 옮긴다
 const OLD_IDS={CYL_cap:'A_cap',CYL_rod:'A_rod',Y1_p:'V1_Ya_p',Y1_n:'V1_Ya_n'};
 Object.values(store.circuits).forEach(c=>{if(c.board)return;[...(c.wires||[]),...(c.hoses||[])].forEach(x=>{x.a=OLD_IDS[x.a]||x.a;x.b=OLD_IDS[x.b]||x.b;});});
@@ -382,6 +383,13 @@ $('settingsBtn').onclick=()=>{const box=$('settings');box.hidden=!box.hidden;$('
 $('wipeBtn').onclick=()=>{$('wipeConfirm').hidden=false;};
 $('wipeNo').onclick=()=>{$('wipeConfirm').hidden=true;};
 $('wipeYes').onclick=()=>{WIPED=true;try{localStorage.removeItem(KEY);}catch(e){}location.reload();};
+
+// 의견 보내기: 누르는 순간 지금 보던 미션·강의 이름과 버전을 제목에 채운 주소로 (GitHub 이슈, 새 탭)
+$('feedbackBtn').addEventListener('click',()=>{
+  const L=UI.lesson&&typeof lessonById==='function'?lessonById(UI.lesson):null,m=cur();
+  const where=L?`${L.no} ${L.title}`:m?`${m.no!=null?'미션 '+m.no+' ':''}${m.title}${UI.mode==='tut'?' (튜토리얼)':''}`:'';
+  $('feedbackBtn').href=feedbackUrl(where,APP_VER);
+});
 
 /* ===================== 루프 ===================== */
 let last=performance.now();

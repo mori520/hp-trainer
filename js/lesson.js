@@ -67,3 +67,8 @@ window.addEventListener('keyup',e=>{
 });
 // 처음 열 때: 마지막에 보던 것이 강의면 그 강의부터
 if(lessonById(BOOT_LAST))openLesson(BOOT_LAST,0);
+// 처음 온 사람 안내: [기초 강의 열기] → 기초 강의 칸을 펴고 강의 1, [닫기] → 그대로 자유 실습. 어느 쪽이든 다시 안 뜸
+if(FIRST_VISIT&&!UI.lesson)$('welcome').hidden=false;
+function closeWelcome(){$('welcome').hidden=true;store.welcomed=true;save();}
+$('welcomeClose').onclick=closeWelcome;
+$('welcomeGo').onclick=()=>{closeWelcome();store.fold=Object.assign(store.fold||{},{lessons:false});openLesson(LESSONS[0].id,0);};

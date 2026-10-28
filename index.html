@@ -116,8 +116,14 @@
   <div class="diagram-body" id="mydiagBody"></div>
   <div class="mydiag-foot"><span>내가 만든 것을 도면으로 그린 거예요. 가진 도면과 비교해 보세요.</span><button class="btn" id="mydiagClear">동작 기록 지우기</button></div>
 </div>
+<div class="welcome" id="welcome" hidden role="dialog" aria-labelledby="welcomeTitle">
+  <h3 id="welcomeTitle">처음 오셨나요?</h3>
+  <p>공유압이 처음이라면 <b>기초 강의 1</b>부터 보세요. 그림을 눌러 보며 원리를 익힌 뒤 미션으로 넘어가면 쉬워요.</p>
+  <p class="welcome-sub">지금 열린 화면은 자유 실습이에요. 마음대로 선을 꽂아 봐도 돼요.</p>
+  <div class="welcome-btns"><button class="btn primary" id="welcomeGo">기초 강의 열기</button><button class="btn" id="welcomeClose">닫기</button></div>
+</div>
 <div id="toast" hidden></div>
-<span id="appVer" title="앱 버전 (배포할 때마다 바뀜)">dev</span>
+<div class="corner"><a id="feedbackBtn" href="https://github.com/mori520/hp-trainer/issues/new" target="_blank" rel="noopener" title="GitHub 계정이 필요해요. 불편한 점이나 바라는 점을 적어 주세요.">의견 보내기</a><span id="appVer" title="앱 버전 (배포할 때마다 바뀜)">dev</span></div>
 
 <!-- 불러오는 순서가 중요: 엔진 → 부품 → 데이터 → 채점 → 튜토리얼 → 렌더링 → 앱 -->
 <script src="js/engine.js"></script>
@@ -143,6 +149,7 @@
 <script src="js/mydiagram.js"></script>
 <script src="js/grader.js"></script>
 <script src="js/demo.js"></script>
+<script src="js/onboard.js"></script>
 <script src="js/tutorial.js"></script>
 <script src="js/render.js"></script>
 <script src="js/app.js"></script>

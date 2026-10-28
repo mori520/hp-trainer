@@ -351,6 +351,29 @@ const MYD=(()=>{
     if(rest.length)issues.push(`사다리로 정리할 수 없는 연결: ${rest.flatMap(x=>labels(x.n)).join(', ')}`);
     return{rungs:rungs.flatMap(r=>r.n.t==='par'?r.n.k:[r]),issues};
   }
+  // 아직 0V까지 안 이어진 줄: 24V에서 시작해 이어진 부품을 차례로 따라가 "끝이 열린 줄"로 만든다
+  // (배선하는 동안 도면이 한 칸씩 자라 보이게. 갈래가 있으면 먼저 꽂은 쪽을 따라감)
+  function partialChains(G,rungs){
+    const T=G.f('+24'),B=G.f('0V'),used=new Set();
+    const mark=n=>n.t==='el'?used.add(n.el):n.k.forEach(x=>mark(x.n));
+    rungs.forEach(r=>mark(r.n));
+    const rest=G.els.filter(el=>!used.has(el)&&G.f(el.a)!==G.f(el.b)).sort((a,b)=>a.ord-b.ord);
+    const chains=[];
+    for(;;){
+      let cur=T;const k=[];
+      for(;;){
+        const el=rest.find(x=>!used.has(x)&&(G.f(x.a)===cur||G.f(x.b)===cur));
+        if(!el)break;
+        const fwd=G.f(el.a)===cur,next=fwd?G.f(el.b):G.f(el.a);
+        if(next===T)break;
+        used.add(el);k.push({n:{t:'el',el},rep:fwd?[el.a,el.b]:[el.b,el.a],ord:el.ord});
+        if(next===B)break;cur=next;
+      }
+      if(!k.length)break;
+      chains.push({n:{t:'ser',k},rep:[k[0].rep[0],k[k.length-1].rep[1]],ord:Math.min(...k.map(x=>x.ord)),open:true});
+    }
+    return chains;
+  }
   // 그리기: 블록마다 {w,h,cx,draw(x,y,o)}. 위 연결점 (x+cx,y), 아래 연결점 (x+cx,y+h)
   const EW=86,EH=58;
   function block(x,G){
@@ -400,13 +423,17 @@ const MYD=(()=>{
   function elec(L,PARTS,w,e){
     const G=elecGraph(L,PARTS,w,e),R=reduce(G),issues=G.issues.concat(R.issues);
     if(!G.els.length)return svg(760,200,text(380,90,'아직 배선된 부품이 없어요','t','middle')+text(380,114,'선을 꽂으면 그 회로를 사다리 모양으로 그려요','s','middle'));
-    const blocks=R.rungs.map(r=>block(r,G));
+    // 다 이어진 줄 + 아직 0V까지 안 이어진 줄(끝이 열림)을 먼저 꽂은 순서대로
+    const rows=R.rungs.concat(partialChains(G,R.rungs)).sort((a,b)=>a.ord-b.ord);
+    const blocks=rows.map(r=>block(r,G));
     const x0=70,y0=40,gap=26,h=Math.max(EH,...blocks.map(b=>b.h)),W=Math.max(760,x0+blocks.reduce((s,b)=>s+b.w+gap,0)+20);
-    const o=[],yb=y0+h+20;
+    const o=[],yb=y0+h+20+(rows.some(r=>r.open)?18:0);
     o.push(line(x0-20,y0,W-20,y0,'thick2'),line(x0-20,yb,W-20,yb,'thick2'),text(x0-26,y0+5,'24V','n','end'),text(x0-26,yb+5,'0V','n','end'));
     let x=x0;blocks.forEach((b,i)=>{
-      const cx=x+b.cx;o.push(circ(cx,y0,2.6,'dot'),circ(cx,yb,2.6,'dot'));b.draw(x,y0+10,o);
-      o.push(line(cx,y0,cx,y0+10,G.hot(R.rungs[i].rep[0])?'w lhot':'w'),line(cx,y0+10+b.h,cx,yb,G.hot(R.rungs[i].rep[1])?'w lhot':'w'));
+      const cx=x+b.cx,r=rows[i];o.push(circ(cx,y0,2.6,'dot'));b.draw(x,y0+10,o);
+      o.push(line(cx,y0,cx,y0+10,G.hot(r.rep[0])?'w lhot':'w'));
+      if(r.open)o.push(circ(cx,y0+10+b.h+5,4,'open'),text(cx+8,y0+10+b.h+9,'0V 미연결','s'));   // 끝이 열린 줄
+      else o.push(circ(cx,yb,2.6,'dot'),line(cx,y0+10+b.h,cx,yb,G.hot(r.rep[1])?'w lhot':'w'));
       x+=b.w+gap;
     });
     if(!blocks.length)o.push(text(W/2,y0+h/2+10,'24V에서 0V까지 이어진 줄이 아직 없어요','t','middle'));
@@ -415,5 +442,5 @@ const MYD=(()=>{
     return svg(W,y+10,o.join(''));
   }
   // _reduce: 테스트용 (정리 결과 + 확인할 곳 전체)
-  return{pneu,disp,elec,recNew,recTick,recSeq,_reduce:(L,PARTS,w)=>{const G=elecGraph(L,PARTS,w,null),R=reduce(G);return{rungs:R.rungs,issues:G.issues.concat(R.issues)};}};
+  return{pneu,disp,elec,recNew,recTick,recSeq,_reduce:(L,PARTS,w)=>{const G=elecGraph(L,PARTS,w,null),R=reduce(G);return{rungs:R.rungs,partial:partialChains(G,R.rungs),issues:G.issues.concat(R.issues)};}};
 })();

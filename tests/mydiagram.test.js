@@ -129,3 +129,22 @@ test('유압회로도: 하중 실린더·파일럿 체크 블록·카운터밸�
   assert.equal(count(b,/class="hose"/g),8);assert.doesNotMatch(b,/빈 포트/);
   assert.match(b,/압력스위치 3\.0/);assert.match(b,/카운터밸런스 2\.0/);assert.match(b,/F1 5단/);
 });
+
+/* 튜토리얼 순서대로 선을 하나씩 꽂으면 전기회로도가 한 칸씩 자란다 (그려진 부품 수가 줄지 않음) */
+for(const id of ['m4','m9','m12']){
+  test(`전기회로도 ${id}: 선을 하나씩 꽂을 때마다 도면이 자란다`,()=>{
+    const mis=get('MISSIONS').find(x=>x.id===id);
+    const all=mis.steps.filter(s=>s.wire).length;
+    const count=n=>n.t==='el'?1:n.k.reduce((s,x)=>s+count(x.n),0);
+    let prev=0,grew=0;
+    for(let k=1;k<=all;k++){
+      const drop=new Set([...Array(all).keys()].filter(i=>i>=k));
+      const w=tutorialWorld(mis);w.wires=w.wires.filter(x=>x.base||!drop.has(+x.id.slice(1)));
+      const r=reduce(w),shown=r.rungs.concat(r.partial).reduce((s,x)=>s+count(x.n),0);
+      assert.ok(shown>=prev,`${k}번째 선에서 그려진 부품이 ${prev} → ${shown}로 줄어듦`);
+      if(shown>prev)grew++;prev=shown;
+      if(k===all)assert.equal(r.partial.length,0,'다 꽂으면 끝이 열린 줄이 없어야 함');
+    }
+    assert.ok(grew>=4,`도면이 여러 번에 걸쳐 자라야 함 (${grew}번)`);
+  });
+}

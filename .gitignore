@@ -1,0 +1,6 @@
+# 공개도면 원본 PDF(한국산업인력공단 저작물)와 개인 기획 시트는 저장소에 넣지 않는다 (CLAUDE.md "저작권 주의")
+docs/
+# git 도입 전 임시 백업
+backup/
+# 배포용 빌드 결과 (npm run build)
+dist/

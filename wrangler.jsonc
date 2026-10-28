@@ -4,5 +4,7 @@
   "compatibility_date": "2025-06-01",
   // 배포 전에 dist/를 만든다 (tools/build.js: index.html·css·js·diagrams만 복사)
   "build": { "command": "npm run build" },
-  "assets": { "directory": "./dist" }
+  "assets": { "directory": "./dist" },
+  // dev 등 main이 아닌 브랜치의 미리보기(npx wrangler preview)에 필요. 비어 있어도 됨
+  "previews": {}
 }

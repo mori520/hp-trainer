@@ -5,7 +5,7 @@ const {get}=load();
 const MISSIONS=get('MISSIONS'), LAYOUTS=get('LAYOUTS'), DEMO=get('DEMO');
 
 // 앱과 같은 순서: 판 만들기 → 빈 판(기본 전원 선) → 계획 → 매 프레임 tick + stepWorld
-function play(mis,auto){
+function play(mis,auto,speed=1){
   const L=LAYOUTS[mis.layout];
   get('configure')({parts:get('makeParts')(L,mis.board||{})});
   get('buildScene')(get('LAYOUT').parts,L.board);
@@ -14,7 +14,7 @@ function play(mis,auto){
   const r=DEMO.start(mis,plan), c={color:'red',auto,quiz:false,plugged:false}, seen=[];
   const dt=1/30;
   for(let t=0;t<900&&!r.done&&!r.fail;t+=dt){
-    DEMO.tick(r,w,c,dt,(k,v)=>seen.push(k));
+    DEMO.tick(r,w,c,dt*speed,(k,v)=>seen.push(k),dt);
     get('stepWorld')(w,dt);
     if(w.events.length)r.fail='합선: '+r.i;
   }
@@ -33,6 +33,13 @@ for(const mis of MISSIONS.filter(m=>(m.steps||[]).length)){
     }
   });
 }
+
+test('4배속으로 봐도 끝까지 간다 (누르는 시간은 실제 시간)',()=>{
+  for(const mis of MISSIONS.filter(m=>(m.steps||[]).length)){
+    const {r}=play(mis,true,4);
+    assert.ok(r.done&&!r.fail,mis.id+' '+r.fail);
+  }
+});
 
 test('자동 색을 끈 경우에도 색 고르기 단계를 직접 해 가며 끝까지 간다',()=>{
   for(const id of ['m0','m3']){

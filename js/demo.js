@@ -9,6 +9,7 @@
    - done.state  : expect를 보고 정한다. power·air 켜기/끄기, 누름버튼 true면 누른 채로 / false면 떼기,
                    유지형 스위치(비상정지)는 그 상태로. expect에 없는 버튼이 hl("@PB1btn")에 있으면 잠깐 눌렀다 떼기(탭)
    판단이 애매한 단계는 단계 데이터에 "demo":{"tap":"PB1"} / {"hold":"PB1"} / {"release":"PB1"} 을 적어 정한다.
+   "sec":0.4 를 더하면 탭을 그 시간(실제 초)만큼만 누른다 (4/3 밸브로 중간에 세우기 등).
 
    재생(DEMO.start → 매 프레임 DEMO.tick): 단계마다 쉬기 → 하기(선은 그어지는 모습 anim) → 완료 조건이 될 때까지 기다리기 → 보여 주기.
    탭했는데 조건이 안 되면 잠시 뒤 다시 탭(최대 6번). 너무 오래 안 되면 fail에 이유를 남기고 멈춘다. */
@@ -64,7 +65,7 @@ const DEMO={
         else if(!ex[k]&&held.has(k)){acts.push({release:k});held.delete(k);}
       }
       if(dm.hold&&!held.has(dm.hold)){acts.push({press:dm.hold});held.add(dm.hold);}
-      if(dm.tap)acts.push({tap:dm.tap});
+      if(dm.tap)acts.push(dm.sec?{tap:dm.tap,sec:dm.sec}:{tap:dm.tap});
       else if(!dm.hold)(s.hl||[]).forEach(h=>{
         const b=(h.match(/^@(\w+)btn$/)||[])[1];if(!b||held.has(b)||acts.some(a=>a.press===b||a.release===b))return;
         if(toggles.has(b)){if(!(b in ex)){acts.push({toggle:b});on[b]=!on[b];}}
@@ -74,10 +75,11 @@ const DEMO={
     });
   },
   start(mis,plan){return{mis,plan,i:0,phase:'pre',t:0,sub:0,taps:0,lastTap:0,timers:[],anim:null,fail:'',done:false};},
-  // 시간을 dt(초)만큼 진행한다. w: 트레이너 상태, c: tutStepDone의 c, fx(종류, 값): 화면 쪽 알림 (선 추가·색·플러그·문제 정답)
-  tick(r,w,c,dt,fx){
+  // 시간을 dt(초, 빠르기를 곱한 값)만큼 진행한다. w: 트레이너 상태, c: tutStepDone의 c, fx(종류, 값): 화면 쪽 알림 (선 추가·색·플러그·문제 정답)
+  // real: 실제로 흐른 초 (버튼을 누르고 있는 시간은 빠르기와 상관없이 실제 시간 — 기계는 늘 같은 빠르기로 움직이므로)
+  tick(r,w,c,dt,fx,real=dt){
     const T=DEMO.T, step=r.mis.steps[r.i], act=r.plan[r.i];
-    r.timers=r.timers.filter(x=>{x.t-=dt;if(x.t>0)return true;x.fn();return false;});
+    r.timers=r.timers.filter(x=>{x.t-=real;if(x.t>0)return true;x.fn();return false;});
     if(r.done||r.fail)return;
     r.t+=dt;
     const next=ph=>{r.phase=ph;r.t=0;};
@@ -110,7 +112,7 @@ const DEMO={
         else if(a.press)press(a.press,true);
         else if(a.release)press(a.release,false);
         else if(a.toggle)press(a.toggle,!w.pb[a.toggle]);
-        else if(a.tap){press(a.tap,true);r.taps=1;r.lastTap=0;r.tapBtn=a.tap;r.timers.push({t:T.tap,fn:()=>press(a.tap,false)});}
+        else if(a.tap){press(a.tap,true);r.taps=1;r.lastTap=0;r.tapBtn=a.tap;r.tapSec=a.sec||T.tap;r.timers.push({t:r.tapSec,fn:()=>press(a.tap,false)});}
         return;
       }
       return next('wait');
@@ -118,8 +120,8 @@ const DEMO={
     if(r.phase==='wait'){
       if(tutStepDone(step,w,c))return next('post');
       if(act.do==='state'&&r.tapBtn){
-        r.lastTap+=dt;
-        if(r.lastTap>=T.retry&&r.taps<6){const b=r.tapBtn;press(b,true);r.taps++;r.lastTap=0;r.timers.push({t:T.tap,fn:()=>press(b,false)});}
+        r.lastTap+=real;
+        if(r.lastTap>=T.retry&&r.taps<6){const b=r.tapBtn;press(b,true);r.taps++;r.lastTap=0;r.timers.push({t:r.tapSec,fn:()=>press(b,false)});}
       }
       if(r.t>T.limit)r.fail=`${r.i+1}단계에서 기다려도 조건이 맞지 않아요: ${step.t.replace(/<[^>]+>/g,'')}`;
       return;

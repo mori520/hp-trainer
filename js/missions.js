@@ -750,6 +750,179 @@ const MISSIONS=[
   "grading":{"press":"PB1","sequence":["A+","A-"],"repeat":2,"relayCount":1,"dwell":{"after":"A+","sec":3,"tol":0.5}}
 },
 {
+  "id":"h1","no":"H1","title":"유압 파워유닛과 4/2 밸브",
+  "goal":"릴리프 압력을 4.0 MPa로 맞추고, PB1을 누르고 있는 동안 실린더 A가 전진, 떼면 후진하도록 호스와 배선을 구성하세요.",
+  "learn":"배우는 것: 유압은 기름이 탱크로 돌아와야 움직인다(P·T·A·B 포트), 릴리프밸브로 펌프 압력 맞추기, 4/2 편솔 밸브",
+  "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve42"},"set":{"RV":3},
+  "steps":[
+    {"g":"1. 유압 호스","t":"파워유닛 <b>P</b>(펌프에서 기름이 나오는 곳)에서 밸브 <b>P</b> 포트로 호스를 연결하세요.","hose":["group:hp","V1_P"],"keep":true},
+    {"g":"1. 유압 호스","t":"밸브 <b>T</b> 포트에서 파워유닛 <b>T 탱크</b>로 연결하세요. 공기는 그 자리에서 빠지지만, 기름은 탱크로 돌아와야 해요. 이 호스가 없으면 실린더가 움직이지 않아요.","hose":["V1_T","group:ht"],"keep":true},
+    {"g":"1. 유압 호스","t":"밸브 <b>A</b>에서 <b>실린더 후방</b>으로 연결하세요. 솔레노이드가 켜지면 P→A로 기름이 갑니다.","hose":["V1_A","A_cap"],"keep":true},
+    {"g":"1. 유압 호스","t":"밸브 <b>B</b>에서 <b>실린더 전방</b>으로 연결하세요. 평상시에는 P→B라서 실린더가 후진해 있어요.","hose":["V1_B","A_rod"],"keep":true},
+    {"g":"2. 펌프와 압력","t":"파워유닛의 <b>펌프</b>를 켜세요. 압력계 바늘이 올라갑니다.","done":{"type":"state","expect":{"air":true}},"hl":["@air"],"keep":true},
+    {"g":"2. 펌프와 압력","t":"릴리프 압력을 <b>4.0 MPa</b>로 맞추세요 (▲). 시험에서는 4±0.2 MPa로 설정해요. 남는 기름은 릴리프밸브로 탱크에 돌아가요.","done":{"type":"setting","name":"RV","value":4},"hl":["@RVset"]},
+    {"g":"3. 배선","t":"배선 색을 <b>빨강</b>으로 고르세요.","done":{"type":"color","is":"red"},"btn":"c-red"},
+    {"g":"3. 배선","t":"<b>+24V 잭</b>에서 <b>PB1 13번</b>으로 연결하세요.","wire":["group:rail24","PB1_13","red"],"keep":true},
+    {"g":"3. 배선","t":"<b>PB1 14번</b>에서 밸브의 <b>Y1 +</b>로 연결하세요.","wire":["PB1_14","V1_Ya_p","red"],"keep":true},
+    {"g":"3. 배선","t":"배선 색을 <b>파랑</b>으로 바꾸세요.","done":{"type":"color","not":"red"},"btn":"c-blue"},
+    {"g":"3. 배선","t":"<b>Y1 −</b>에서 <b>0V 잭</b>으로 연결하세요.","wire":["V1_Ya_n","group:rail0","blue"],"keep":true},
+    {"g":"4. 동작 확인","t":"<b>POWER</b>를 켜세요.","done":{"type":"state","expect":{"power":true}},"hl":["@rocker"],"keep":true},
+    {"g":"4. 동작 확인","t":"<b>PB1</b>을 누르고 있어 보세요. 스풀이 옮겨 가 P→A가 되고 실린더가 전진합니다.","done":{"type":"state","expect":{"PB1":true,"A":"+"}},"hl":["@PB1btn"]},
+    {"g":"4. 동작 확인","t":"<b>PB1</b>에서 손을 떼 보세요. 스프링으로 돌아와 실린더가 후진하면 성공!","done":{"type":"state","expect":{"PB1":false,"A":"-"}},"hl":["@PB1btn"]}
+  ],
+  "grading":{
+    "setup":{"power":true,"air":true},"repeat":2,
+    "settingsCheck":[{"name":"RV","min":3.8,"max":4.2,"label":"릴리프 압력 4±0.2 MPa"}],
+    "steps":[
+      {"name":"초기 상태에서 실린더 후진 유지","set":{"PB1":false},"wait":1.5,"expect":{"A":"-"},
+       "hint":"평상시 4/2 밸브는 P→B 입니다. B가 실린더 전방에, T가 탱크에 이어졌는지 확인하세요."},
+      {"name":"PB1을 누르면 실린더 전진","set":{"PB1":true},"wait":2,"expect":{"A":"+"},
+       "hint":"Y1이 켜지면 P→A, B→T 로 바뀝니다. A가 후방 포트에, T가 탱크(T)에 이어졌는지 확인하세요."},
+      {"name":"PB1을 떼면 실린더 후진","set":{"PB1":false},"wait":2,"expect":{"A":"-"}}
+    ]
+  }
+},
+{
+  "id":"h2","no":"H2","title":"4/3 밸브로 중간 정지",
+  "goal":"PB1을 누르는 동안 실린더 A가 전진, PB2를 누르는 동안 후진하고, 둘 다 떼면 그 자리에 멈추도록 구성하세요.",
+  "learn":"배우는 것: 4/3 양솔 밸브(가운데 칸 = 중립), 중립에서 모든 포트가 막히면(올 포트 블록) 실린더가 그 자리에 선다",
+  "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve43c"},
+  "steps":[
+    {"g":"1. 유압 호스","t":"파워유닛 <b>P</b>에서 밸브 <b>P</b>로 연결하세요.","hose":["group:hp","V1_P"],"keep":true},
+    {"g":"1. 유압 호스","t":"밸브 <b>T</b>에서 <b>탱크 T</b>로 연결하세요.","hose":["V1_T","group:ht"],"keep":true},
+    {"g":"1. 유압 호스","t":"밸브 <b>A</b>에서 <b>실린더 후방</b>으로 연결하세요.","hose":["V1_A","A_cap"],"keep":true},
+    {"g":"1. 유압 호스","t":"밸브 <b>B</b>에서 <b>실린더 전방</b>으로 연결하세요.","hose":["V1_B","A_rod"],"keep":true},
+    {"g":"1. 유압 호스","t":"<b>펌프</b>를 켜세요. 밸브가 가운데(중립)라 모든 포트가 막혀서 실린더는 움직이지 않아요.","done":{"type":"state","expect":{"air":true}},"hl":["@air"],"keep":true},
+    {"g":"2. 배선","t":"배선 색을 <b>빨강</b>으로 고르세요.","done":{"type":"color","is":"red"},"btn":"c-red"},
+    {"g":"2. 배선","t":"전진 버튼: <b>+24V 잭</b>에서 <b>PB1 13번</b>으로 연결하세요.","wire":["group:rail24","PB1_13","red"],"keep":true},
+    {"g":"2. 배선","t":"<b>PB1 14번</b>에서 왼쪽 솔레노이드 <b>Y1 +</b>로 연결하세요.","wire":["PB1_14","V1_Ya_p","red"],"keep":true},
+    {"g":"2. 배선","t":"후진 버튼: <b>+24V 잭</b>에서 <b>PB2 13번</b>으로 연결하세요.","wire":["group:rail24","PB2_13","red"],"keep":true},
+    {"g":"2. 배선","t":"<b>PB2 14번</b>에서 오른쪽 솔레노이드 <b>Y2 +</b>로 연결하세요.","wire":["PB2_14","V1_Yb_p","red"],"keep":true},
+    {"g":"2. 배선","t":"배선 색을 <b>파랑</b>으로 바꾸세요.","done":{"type":"color","not":"red"},"btn":"c-blue"},
+    {"g":"2. 배선","t":"<b>Y1 −</b>에서 <b>0V 잭</b>으로 연결하세요.","wire":["V1_Ya_n","group:rail0","blue"],"keep":true},
+    {"g":"2. 배선","t":"<b>Y2 −</b>에서 <b>0V 잭</b>으로 연결하세요.","wire":["V1_Yb_n","group:rail0","blue"],"keep":true},
+    {"g":"3. 동작 확인","t":"<b>POWER</b>를 켜세요.","done":{"type":"state","expect":{"power":true}},"hl":["@rocker"],"keep":true},
+    {"g":"3. 동작 확인","t":"<b>PB1</b>을 아주 잠깐 눌렀다 떼 보세요. 실린더가 조금 나오다가 <b>그 자리에 멈춥니다</b>. 스프링이 스풀을 가운데로 돌려 놓았기 때문이에요.","done":{"type":"state","expect":{"PB1":false,"A":""}},"hl":["@PB1btn"],"demo":{"tap":"PB1","sec":0.35}},
+    {"g":"3. 동작 확인","t":"이번엔 <b>PB1</b>을 끝까지 누르고 있어 보세요. 실린더가 끝까지 전진합니다.","done":{"type":"state","expect":{"PB1":true,"A":"+"}},"hl":["@PB1btn"]},
+    {"g":"3. 동작 확인","t":"손을 떼고 <b>PB2</b>를 누르고 있어 보세요. 실린더가 후진하면 성공!","done":{"type":"state","expect":{"PB1":false,"PB2":true,"A":"-"}},"hl":["@PB2btn"]}
+  ],
+  "grading":{
+    "setup":{"power":true,"air":true},"repeat":2,
+    "steps":[
+      {"name":"초기 상태에서 실린더 후진","wait":1,"expect":{"A":"-"}},
+      {"name":"PB1을 누르는 동안 전진","set":{"PB1":true},"wait":0.4,"expect":{"A":""},
+       "hint":"PB1 → Y1(왼쪽 솔레노이드)이 켜지면 P→A가 되어 실린더가 나와야 합니다."},
+      {"name":"PB1을 떼면 그 자리에 멈춤 (중립)","set":{"PB1":false},"wait":1.5,"expect":{"A":""},
+       "hint":"버튼을 떼면 4/3 밸브가 가운데(올 포트 블록)로 돌아와 실린더가 서야 합니다. 4/2 밸브면 되돌아가 버려요."},
+      {"name":"PB1을 계속 누르면 끝까지 전진","set":{"PB1":true},"wait":2,"expect":{"A":"+"}},
+      {"name":"PB2를 누르면 후진","set":{"PB1":false,"PB2":true},"wait":2,"expect":{"A":"-"},
+       "hint":"PB2 → Y2(오른쪽 솔레노이드)가 켜지면 P→B, A→T 가 됩니다."},
+      {"name":"PB2를 떼도 후진 위치 유지","set":{"PB2":false},"wait":0.5,"expect":{"A":"-"}}
+    ]
+  }
+},
+{
+  "id":"h3","no":"H3","title":"유압모터 정회전·역회전",
+  "goal":"PB1을 누르는 동안 유압모터가 정회전, PB2를 누르는 동안 역회전하고, 떼면 멈추도록 구성하세요.",
+  "learn":"배우는 것: 유압모터(기름이 A로 들어가 B로 나가면 정회전, 반대면 역회전), 4/3 밸브로 방향 바꾸기",
+  "layout":"hyd","board":{"cylB":"motor","valveB":"valve43c"},
+  "steps":[
+    {"g":"1. 유압 호스","t":"파워유닛 <b>P</b>에서 밸브 <b>P</b>로 연결하세요.","hose":["group:hp","V2_P"],"keep":true},
+    {"g":"1. 유압 호스","t":"밸브 <b>T</b>에서 <b>탱크 T</b>로 연결하세요.","hose":["V2_T","group:ht"],"keep":true},
+    {"g":"1. 유압 호스","t":"밸브 <b>A</b>에서 모터 <b>A</b> 포트로 연결하세요.","hose":["V2_A","M_a"],"keep":true},
+    {"g":"1. 유압 호스","t":"밸브 <b>B</b>에서 모터 <b>B</b> 포트로 연결하세요.","hose":["V2_B","M_b"],"keep":true},
+    {"g":"1. 유압 호스","t":"<b>펌프</b>를 켜세요.","done":{"type":"state","expect":{"air":true}},"hl":["@air"],"keep":true},
+    {"g":"2. 배선","t":"배선 색을 <b>빨강</b>으로 고르세요.","done":{"type":"color","is":"red"},"btn":"c-red"},
+    {"g":"2. 배선","t":"<b>+24V 잭</b>에서 <b>PB1 13번</b>으로 연결하세요.","wire":["group:rail24","PB1_13","red"],"keep":true},
+    {"g":"2. 배선","t":"<b>PB1 14번</b>에서 <b>Y1 +</b>로 연결하세요.","wire":["PB1_14","V2_Ya_p","red"],"keep":true},
+    {"g":"2. 배선","t":"<b>+24V 잭</b>에서 <b>PB2 13번</b>으로 연결하세요.","wire":["group:rail24","PB2_13","red"],"keep":true},
+    {"g":"2. 배선","t":"<b>PB2 14번</b>에서 <b>Y2 +</b>로 연결하세요.","wire":["PB2_14","V2_Yb_p","red"],"keep":true},
+    {"g":"2. 배선","t":"배선 색을 <b>파랑</b>으로 바꾸세요.","done":{"type":"color","not":"red"},"btn":"c-blue"},
+    {"g":"2. 배선","t":"<b>Y1 −</b>에서 <b>0V 잭</b>으로 연결하세요.","wire":["V2_Ya_n","group:rail0","blue"],"keep":true},
+    {"g":"2. 배선","t":"<b>Y2 −</b>에서 <b>0V 잭</b>으로 연결하세요.","wire":["V2_Yb_n","group:rail0","blue"],"keep":true},
+    {"g":"3. 동작 확인","t":"<b>POWER</b>를 켜세요.","done":{"type":"state","expect":{"power":true}},"hl":["@rocker"],"keep":true},
+    {"g":"3. 동작 확인","t":"<b>PB1</b>을 누르고 있어 보세요. 모터가 <b>정회전</b>합니다.","done":{"type":"state","expect":{"PB1":true,"M":"+"}},"hl":["@PB1btn"]},
+    {"g":"3. 동작 확인","t":"손을 떼면 밸브가 가운데로 돌아와 모터가 <b>멈춥니다</b>.","done":{"type":"state","expect":{"PB1":false,"M":"0"}},"hl":["@PB1btn"]},
+    {"g":"3. 동작 확인","t":"<b>PB2</b>를 누르고 있어 보세요. 모터가 <b>역회전</b>하면 성공!","done":{"type":"state","expect":{"PB2":true,"M":"-"}},"hl":["@PB2btn"]}
+  ],
+  "grading":{
+    "setup":{"power":true,"air":true},"repeat":2,
+    "steps":[
+      {"name":"버튼을 누르지 않으면 모터 정지","wait":0.5,"expect":{"M":"0"}},
+      {"name":"PB1을 누르면 정회전","set":{"PB1":true},"wait":0.5,"expect":{"M":"+"},
+       "hint":"PB1 → Y1이 켜지면 P→A 입니다. 밸브 A가 모터 A에, B가 모터 B에, T가 탱크에 이어졌는지 확인하세요."},
+      {"name":"PB1을 떼면 정지","set":{"PB1":false},"wait":0.5,"expect":{"M":"0"}},
+      {"name":"PB2를 누르면 역회전","set":{"PB2":true},"wait":0.5,"expect":{"M":"-"},
+       "hint":"PB2 → Y2가 켜지면 P→B 로 바뀌어 반대로 돕니다."},
+      {"name":"PB2를 떼면 정지","set":{"PB2":false},"wait":0.5,"expect":{"M":"0"}}
+    ]
+  }
+},
+{
+  "id":"h4","no":"H4","title":"체크밸브와 미터인 속도제어",
+  "goal":"펌프 토출구에 체크밸브를 달고, 일방향 유량조절밸브로 실린더 A의 전진만 느리게 하세요 (실린더로 들어가는 기름을 조이는 미터인). PB1을 누르고 있으면 전진, 떼면 후진합니다.",
+  "learn":"배우는 것: 체크밸브(한쪽으로만 흐름), 미터인(들어가는 쪽 조임)과 미터아웃(나가는 쪽 조임)의 차이, 유량조절밸브를 끼우는 방향",
+  "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve42","MA1":"fcv","R1":"chk"},
+  "steps":[
+    {"g":"1. 펌프 토출구 체크밸브","t":"파워유닛 <b>P</b>에서 체크밸브 <b>CV1의 1번</b>으로 연결하세요. 체크밸브는 1→2로만 흘러요.","hose":["group:hp","CV1_1"],"keep":true},
+    {"g":"1. 펌프 토출구 체크밸브","t":"<b>CV1 2번</b>에서 밸브 <b>P</b>로 연결하세요. 펌프가 멈춰도 기름이 거꾸로 돌아가지 않아요.","hose":["CV1_2","V1_P"],"keep":true},
+    {"g":"1. 펌프 토출구 체크밸브","t":"밸브 <b>T</b>에서 <b>탱크 T</b>로 연결하세요.","hose":["V1_T","group:ht"],"keep":true},
+    {"g":"2. 미터인","t":"유량조절밸브 F1은 1→2는 자유, <b>2→1은 조여요</b>. 실린더로 <b>들어가는</b> 기름을 조이려면 밸브 쪽을 2번에 꽂아야 해요. 밸브 <b>A</b>에서 <b>F1 2번</b>(위)으로 연결하세요.","hose":["V1_A","F1_2"],"keep":true},
+    {"g":"2. 미터인","t":"<b>F1 1번</b>(아래)에서 <b>실린더 후방</b>으로 연결하세요. 호스가 엇갈려도 괜찮아요.","hose":["F1_1","A_cap"],"keep":true},
+    {"g":"2. 미터인","t":"밸브 <b>B</b>에서 <b>실린더 전방</b>으로 연결하세요.","hose":["V1_B","A_rod"],"keep":true},
+    {"g":"2. 미터인","t":"<b>F1</b>을 <b>3단</b>으로 조이세요 (▼). 숫자가 작을수록 느려요.","done":{"type":"setting","name":"F1","value":3},"hl":["@F1set"]},
+    {"g":"2. 미터인","t":"<b>펌프</b>를 켜세요.","done":{"type":"state","expect":{"air":true}},"hl":["@air"],"keep":true},
+    {"g":"3. 배선","t":"배선 색을 <b>빨강</b>으로 고르세요.","done":{"type":"color","is":"red"},"btn":"c-red"},
+    {"g":"3. 배선","t":"<b>+24V 잭</b>에서 <b>PB1 13번</b>으로 연결하세요.","wire":["group:rail24","PB1_13","red"],"keep":true},
+    {"g":"3. 배선","t":"<b>PB1 14번</b>에서 <b>Y1 +</b>로 연결하세요.","wire":["PB1_14","V1_Ya_p","red"],"keep":true},
+    {"g":"3. 배선","t":"배선 색을 <b>파랑</b>으로 바꾸세요.","done":{"type":"color","not":"red"},"btn":"c-blue"},
+    {"g":"3. 배선","t":"<b>Y1 −</b>에서 <b>0V 잭</b>으로 연결하세요.","wire":["V1_Ya_n","group:rail0","blue"],"keep":true},
+    {"g":"4. 동작 확인","t":"<b>POWER</b>를 켜세요.","done":{"type":"state","expect":{"power":true}},"hl":["@rocker"],"keep":true},
+    {"g":"4. 동작 확인","t":"<b>PB1</b>을 누르고 있어 보세요. 실린더가 <b>천천히</b> 전진합니다 (미터인).","done":{"type":"state","expect":{"PB1":true,"A":"+"}},"hl":["@PB1btn"]},
+    {"g":"4. 동작 확인","t":"손을 떼 보세요. 돌아올 때는 1→2로 자유롭게 지나가서 <b>빠르게</b> 후진하면 성공!","done":{"type":"state","expect":{"PB1":false,"A":"-"}},"hl":["@PB1btn"]}
+  ],
+  "grading":{
+    "setup":{"power":true,"air":true},"repeat":2,
+    "steps":[
+      {"name":"전진만 느리게 (1.5초 이상, 미터인)","set":{"PB1":true},"wait":4,"expect":{"A":"+"},"stroke":{"cyl":"A","dir":"+","min":1.5},"meter":{"A":"in"},
+       "hint":"실린더 후방으로 들어가는 기름이 F1을 2→1로 지나가야 조여집니다 (밸브 A → F1 2번, F1 1번 → 후방). ▼로 조여 보세요."},
+      {"name":"후진 속도는 그대로 (1.3초 안에)","set":{"PB1":false},"wait":2,"expect":{"A":"-"},"stroke":{"cyl":"A","dir":"-","max":1.3},
+       "hint":"후진할 때 후방에서 나오는 기름은 체크밸브 쪽(1→2)으로 자유롭게 지나가야 합니다."},
+      {"name":"펌프 토출구 체크밸브 방향","set":{"PB1":true},"wait":4,"expect":{"A":"+"},
+       "hint":"체크밸브를 거꾸로(2→1) 끼우면 기름이 지나가지 못해요. 파워유닛 P → CV1 1번, CV1 2번 → 밸브 P."},
+      {"name":"다시 후진","set":{"PB1":false},"wait":2,"expect":{"A":"-"}}
+    ]
+  }
+},
+{
+  "id":"h5","no":"H5","title":"유압 자기유지 + 리밋 자동 후진",
+  "goal":"PB1을 한 번 누르면 실린더 A가 전진하고, 끝에서 리밋스위치 LS2가 눌리면 자동으로 후진하게 하세요 (A+ A−). 미션 5를 유압으로 해 보는 거예요.",
+  "learn":"배우는 것: 전기회로는 공압과 똑같고 밸브·호스만 유압으로 바뀐다는 것. 4/2 편솔 + 자기유지 + 리밋스위치",
+  "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve42","LS2":"A+"},
+  "steps":[
+    {"g":"1. 유압 호스","t":"파워유닛 <b>P</b>에서 밸브 <b>P</b>로 연결하세요.","hose":["group:hp","V1_P"],"keep":true},
+    {"g":"1. 유압 호스","t":"밸브 <b>T</b>에서 <b>탱크 T</b>로 연결하세요.","hose":["V1_T","group:ht"],"keep":true},
+    {"g":"1. 유압 호스","t":"밸브 <b>A</b>에서 <b>실린더 후방</b>으로 연결하세요.","hose":["V1_A","A_cap"],"keep":true},
+    {"g":"1. 유압 호스","t":"밸브 <b>B</b>에서 <b>실린더 전방</b>으로 연결하세요.","hose":["V1_B","A_rod"],"keep":true},
+    {"g":"1. 유압 호스","t":"<b>펌프</b>를 켜세요.","done":{"type":"state","expect":{"air":true}},"hl":["@air"],"keep":true},
+    {"g":"2. 기동·자기유지","t":"배선 색을 <b>빨강</b>으로 고르세요.","done":{"type":"color","is":"red"},"btn":"c-red"},
+    {"g":"2. 기동·자기유지","t":"<b>+24V 잭</b>에서 <b>LS2 1번</b>(공통)으로 연결하세요.","wire":["group:rail24","LS2_1","red"],"keep":true,"hl":["@LS2"]},
+    {"g":"2. 기동·자기유지","t":"<b>LS2 2번</b>(NC)에서 <b>PB1 13번</b>으로 연결하세요.","wire":["LS2_2","PB1_13","red"],"keep":true},
+    {"g":"2. 기동·자기유지","t":"<b>PB1 14번</b>에서 <b>K1 A1</b>으로 연결하세요.","wire":["PB1_14","K1_A1","red"],"keep":true,"hl":["@K1coil"]},
+    {"g":"2. 기동·자기유지","t":"자기유지 선 ①: <b>LS2 2번</b>에서 <b>K1 11번</b>으로 연결하세요.","wire":["LS2_2","K1_11","red"],"keep":true},
+    {"g":"2. 기동·자기유지","t":"자기유지 선 ②: <b>K1 14번</b>에서 <b>K1 A1</b>으로 연결하세요.","wire":["K1_14","K1_A1","red"],"keep":true},
+    {"g":"3. 솔레노이드","t":"<b>+24V 잭</b>에서 <b>K1 21번</b>으로 연결하세요.","wire":["group:rail24","K1_21","red"],"keep":true},
+    {"g":"3. 솔레노이드","t":"<b>K1 24번</b>에서 <b>Y1 +</b>로 연결하세요.","wire":["K1_24","V1_Ya_p","red"],"keep":true},
+    {"g":"3. 솔레노이드","t":"배선 색을 <b>파랑</b>으로 바꾸세요.","done":{"type":"color","not":"red"},"btn":"c-blue"},
+    {"g":"3. 솔레노이드","t":"<b>K1 A2</b>에서 <b>0V 잭</b>으로 연결하세요.","wire":["K1_A2","group:rail0","blue"],"keep":true},
+    {"g":"3. 솔레노이드","t":"<b>Y1 −</b>에서 <b>0V 잭</b>으로 연결하세요.","wire":["V1_Ya_n","group:rail0","blue"],"keep":true},
+    {"g":"4. 동작 확인","t":"<b>POWER</b>를 켜세요.","done":{"type":"state","expect":{"power":true}},"hl":["@rocker"],"keep":true},
+    {"g":"4. 동작 확인","t":"<b>PB1</b>을 잠깐 눌렀다 떼 보세요. 실린더가 끝까지 전진하면서 LS2를 누릅니다.","done":{"type":"state","expect":{"A":"+"}},"hl":["@PB1btn"]},
+    {"g":"4. 동작 확인","t":"LS2가 눌리면 자기유지가 끊겨 저절로 후진합니다. 끝까지 돌아오면 성공!","done":{"type":"state","expect":{"A":"-","K1":false}}}
+  ],
+  "grading":{"press":"PB1","sequence":["A+","A-"],"repeat":2,"relayCount":1}
+},
+{
   "id":"practice","no":"실전","title":"실전 연습","steps":[],
   "goal":"가지고 있는 공개도면을 보며 판을 꾸미고 호스·배선을 하세요. 시험장처럼 채점은 없어요. 다 했으면 PB1을 두 번 눌러 변위단계선도대로 똑같이 동작하는지 직접 확인하세요.",
   "learn":"판 구성에서 밸브 종류(편솔·양솔), 센서·리밋 위치, 유지보수 기기를 도면대로 고르세요. 스톱워치로 시간을 재 보세요.",

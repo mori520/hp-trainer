@@ -4,7 +4,7 @@
 /* ===================== 상태 / 저장 ===================== */
 const KEY='ph-trainer-v1';
 // 처음 온 사람: 기초 강의·미션 칸은 접고, 실전 연습 칸의 자유 실습을 연 상태로 시작
-let store={done:{},circuits:{},last:'free',mode:'tut',fold:{lessons:true,missions:true}};
+let store={done:{},circuits:{},last:'free',mode:'tut',fold:{lessons:true,missions:true,hyd:true}};
 try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s)store=Object.assign(store,s);}catch(e){}
 const BOOT_LAST=store.last;   // 시작 때 마지막으로 보던 것 (그리는 중 save()가 store.last를 덮기 전에 기억)
 // 예전 잭 이름으로 저장된 배선을 새 이름(부품 id_포트)으로 옮긴다
@@ -181,7 +181,7 @@ $('autoColor').onclick=()=>setAutoColor(!store.autoColor);
 /* ===================== 미션 패널 ===================== */
 // 목록: 기초 강의(lessons.js, 없으면 생략) / 미션 / 실전 연습(실전 연습·자유 실습). 칸 제목을 누르면 접고 편다(store.fold)
 const ALL=MISSIONS;
-const sectOf=x=>x.practice||x.no==='∞'?'practice':'missions';   // 실전 연습·자유 실습(no ∞)은 아래 칸
+const sectOf=x=>x.practice||x.no==='∞'?'practice':x.layout==='hyd'?'hyd':'missions';   // 실전 연습·자유 실습(no ∞)은 맨 아래 칸, 유압 미션은 따로
 function cur(){return ALL.find(x=>x.id===UI.mission);}
 function renderMissionList(){
   const LS=typeof LESSONS==='undefined'?[]:LESSONS, fold=store.fold||{};
@@ -193,9 +193,10 @@ function renderMissionList(){
   const misItem=x=>`<li><button data-m="${x.id}" aria-current="${!UI.lesson&&x.id===UI.mission}">
     <span class="no">${x.no}</span><span class="t">${x.title}</span>
     <span class="chip ${store.done[x.id]?'done':''}">${store.done[x.id]?'완료':x.no==='∞'?'자유':x.practice?'실전':'도전'}</span></button></li>`;
-  const mis=ALL.filter(x=>sectOf(x)==='missions'), prac=ALL.filter(x=>sectOf(x)==='practice');
+  const mis=ALL.filter(x=>sectOf(x)==='missions'), hyd=ALL.filter(x=>sectOf(x)==='hyd'), prac=ALL.filter(x=>sectOf(x)==='practice');
   $('missionList').innerHTML=(LS.length?head('lessons','기초 강의',LS.length)+body('lessons',LS.map(lessonItem).join('')):'')
     +head('missions','미션',mis.length)+body('missions',mis.map(misItem).join(''))
+    +(hyd.length?head('hyd','유압 미션',hyd.length)+body('hyd',hyd.map(misItem).join('')):'')
     +head('practice','실전 연습',prac.length)+body('practice',prac.map(misItem).join(''));
 }
 $('missionList').addEventListener('click',e=>{

@@ -64,10 +64,12 @@ for(const mis of MISSIONS.filter(m=>!m.soon)){
     const pbs=new Set(LAYOUT.pbs), inputs=new Set([...LAYOUT.pbs,...LAYOUT.toggles]), loads=new Set(LAYOUT.loads.map(l=>l.name));
     const cyls=new Set(LAYOUT.parts.filter(p=>p.type==='cylinder').map(p=>p.id));
     const sensors=new Set(LAYOUT.parts.filter(p=>p.cyl).map(p=>p.id));
+    const motors=new Set(LAYOUT.parts.filter(p=>p.type==='motor').map(p=>p.id));
     const counters=new Set(LAYOUT.parts.filter(p=>p.type==='counter').flatMap(p=>p.tags));
     const checkExpect=(exp,at,allowInputs)=>{
       for(const [k,v] of Object.entries(exp||{})){
-        if(cyls.has(k))assert.ok(v==='+'||v==='-',`${at}: 실린더 ${k}는 "+" 또는 "-"`);
+        if(cyls.has(k))assert.ok(v==='+'||v==='-'||v==='',`${at}: 실린더 ${k}는 "+" 또는 "-" (중간에 멈춤은 "")`);
+        else if(motors.has(k))assert.ok(['+','-','0'].includes(v),`${at}: 모터 ${k}는 "+"(정회전) "-"(역회전) "0"(정지)`);
         else if(typeof v==='number')assert.ok(counters.has(k)&&Number.isInteger(v)&&v>=0,`${at}: 숫자는 카운터 값에만 (${k}=${v})`);
         else if(loads.has(k)||sensors.has(k)||(allowInputs&&(inputs.has(k)||k==='power'||k==='air')))assert.equal(typeof v,'boolean',`${at}: ${k}는 true/false`);
         else assert.fail(`${at}: 모르는 이름 ${k}`);

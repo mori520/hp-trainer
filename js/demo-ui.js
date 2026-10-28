@@ -62,7 +62,7 @@ function demoFrame(dt){
   }
   if(DM.paused)return;
   const i=r.i,c={color:UI.color,auto:store.autoColor,quiz:UI.quiz.ok,plugged:PLUGGED};
-  DEMO.tick(r,S,c,dt*DM.speed,demoFx);
+  DEMO.tick(r,S,c,dt*DM.speed,demoFx,dt);
   demoDraw(r.anim);
   if(r.done)DEMO.releaseAll(S);
   if(r.i!==i&&DM.stepOnce){DM.paused=true;DM.stepOnce=false;}

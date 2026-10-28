@@ -229,7 +229,7 @@ PARTS.chk={
 // 세로 줄에 끼우는 기기 판: devPanel(pneudev.js)과 같지만 폭·높이를 고를 수 있다
 function hydPanel(p,title,w=DEV_W,h=DEV_H){
   const [cx,ty]=p.at,g=el('g',{},G);R[p.tags[0]]=g;
-  el('rect',{x:cx-45,y:ty,width:w,height:h,rx:5,class:'panel'},g);
+  el('rect',{x:cx-45,y:ty-DEV_PAD,width:w,height:h+2*DEV_PAD,rx:5,class:'panel'},g);
   tx(title,{x:cx-45+w-6,y:ty+14,'text-anchor':'end',class:'psmall'},g);
   return{g,cx,ty,px:cx-30};
 }

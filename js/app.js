@@ -13,6 +13,9 @@ Object.values(store.circuits).forEach(c=>{if(c.board)return;[...(c.wires||[]),..
 // 스위치·릴레이 모듈 레일 잭을 6개로 늘리기 전에 저장된 기본 전원 선(3번째 잭에서 나감)을 맨 끝 잭으로 옮긴다
 const OLD_JUMP={R24_1_2:'R24_1_5',R0_1_2:'R0_1_5',R24_5_2:'R24_5_5',R0_5_2:'R0_5_5'};
 Object.values(store.circuits).forEach(c=>(c.wires||[]).forEach(x=>{if(!x.base)return;x.a=OLD_JUMP[x.a]||x.a;x.b=OLD_JUMP[x.b]||x.b;}));
+// 전원 모듈에서 나가는 기본 전원 선: 스위치 쪽은 1번째→3번째 잭, 릴레이 쪽은 2번째→1번째 잭으로 옮김 (선 양 끝이 예전 짝 그대로일 때만)
+const OLD_PAIR={'R24_0_0|R24_1_0':'R24_0_2','R24_0_1|R24_5_0':'R24_0_0','R0_0_0|R0_1_0':'R0_0_2','R0_0_1|R0_5_0':'R0_0_0'};
+Object.values(store.circuits).forEach(c=>(c.wires||[]).forEach(x=>{if(!x.base)return;const k=OLD_PAIR[x.a+'|'+x.b];if(k)x.a=k;}));
 let DEMO_ON=false;   // 시연 중(demo-ui.js): 사용자 손이 버튼을 떼게 하지 않음
 let WIPED=false;   // 모든 기록을 지운 뒤 새로고침 전까지는 다시 저장하지 않는다
 function save(){if(WIPED)return;try{if(!inTutorial())store.circuits[UI.mission]={wires:S.wires,hoses:S.hoses,board:UI.board,set:S.set,pw:1};store.last=UI.lesson||UI.mission;store.mode=UI.mode;localStorage.setItem(KEY,JSON.stringify(store));}catch(e){}}
@@ -185,6 +188,7 @@ const sectOf=x=>x.practice||x.no==='∞'?'practice':x.layout==='hyd'?'hyd':'miss
 function cur(){return ALL.find(x=>x.id===UI.mission);}
 function renderMissionList(){
   const LS=typeof LESSONS==='undefined'?[]:LESSONS, fold=store.fold||{};
+  const card=$('missionCard');card.remove();   // 미션 정보 칸은 목록을 다시 그린 뒤 선택한 미션 바로 아래로 옮긴다
   const head=(k,t,n)=>`<li class="sect"><button data-sect="${k}" aria-expanded="${!fold[k]}"><span class="caret">▾</span>${t}<small>${n}</small></button></li>`;
   const body=(k,html)=>fold[k]?'':html;
   const lessonItem=x=>`<li><button data-l="${x.id}" aria-current="${x.id===UI.lesson}">
@@ -198,12 +202,22 @@ function renderMissionList(){
     +head('missions','미션',mis.length)+body('missions',mis.map(misItem).join(''))
     +(hyd.length?head('hyd','유압 미션',hyd.length)+body('hyd',hyd.map(misItem).join('')):'')
     +head('practice','실전 연습',prac.length)+body('practice',prac.map(misItem).join(''));
+  // 선택한 미션 바로 아래(드롭다운처럼). 그 칸이 접혀 있으면 칸 제목 아래, 강의를 보는 중이면 목록 맨 끝(강의 중엔 숨김)
+  const slot=document.createElement('li');slot.className='card-slot';slot.appendChild(card);
+  const list=$('missionList'),sel=!UI.lesson&&list.querySelector('button[data-m][aria-current="true"]');
+  const head0=!UI.lesson&&list.querySelector('button[data-sect="'+sectOf(cur())+'"]');
+  if(sel)sel.closest('li').after(slot);else if(head0)head0.closest('li').after(slot);else list.appendChild(slot);
 }
 $('missionList').addEventListener('click',e=>{
   const s=e.target.closest('button[data-sect]');
   if(s){const k=s.dataset.sect;store.fold=Object.assign(store.fold||{},{[k]:!(store.fold||{})[k]});save();renderMissionList();return;}
   const l=e.target.closest('button[data-l]');if(l){openLesson(l.dataset.l,0);return;}   // lesson.js
-  const b=e.target.closest('button[data-m]');if(b){if(UI.lesson)closeLesson();loadMission(b.dataset.m);}
+  const b=e.target.closest('button[data-m]');
+  if(b&&!b.closest('#missionCard')){
+    if(UI.lesson)closeLesson();loadMission(b.dataset.m);
+    // 고른 미션이 목록 위쪽에 오게 → 바로 아래 펼쳐진 미션 정보가 보인다
+    const nb=$('missionList').querySelector('button[data-m="'+b.dataset.m+'"]');if(nb)nb.scrollIntoView({block:'start',behavior:'smooth'});
+  }
 });
 // 자리별 부품 선택(board)대로 부품 목록을 만들고 화면을 다시 그린다
 function applyBoard(board){

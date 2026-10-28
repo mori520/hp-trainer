@@ -3,10 +3,10 @@
        실린더에서 나가는 공기를 조이면 미터아웃, 들어가는 공기를 조이면 미터인 (끼운 방향에 따라 결정)
    qev 급속배기밸브 Q1: P(아래, 밸브 쪽) → A(위, 실린더 쪽). 실린더에서 나오는 공기를 그 자리에서 빼서 그쪽 움직임이 빨라짐
    prv 감압밸브 PR1: 1번(입구) → 2번(출구) 압력을 설정값(▼▲)으로 낮춘다. 1차 쪽에 공급이 없으면(거꾸로 끼움) 지나가지 않음 */
-const DEV_W=120,DEV_H=70;
+const DEV_W=120,DEV_H=70,DEV_PAD=16;   // 판은 포트(위·아래 끝)와 글자가 밖으로 나가지 않게 위아래로 DEV_PAD만큼 더 크게
 function devPanel(p,title){
   const [cx,ty]=p.at,g=el('g',{},G);R[p.tags[0]]=g;
-  el('rect',{x:cx-DEV_W/2,y:ty,width:DEV_W,height:DEV_H,rx:5,class:'panel'},g);
+  el('rect',{x:cx-DEV_W/2,y:ty-DEV_PAD,width:DEV_W,height:DEV_H+2*DEV_PAD,rx:5,class:'panel'},g);
   tx(title,{x:cx+DEV_W/2-6,y:ty+14,'text-anchor':'end',class:'psmall'},g);
   return{g,cx,ty,px:cx-30};
 }
@@ -51,7 +51,7 @@ PARTS.prv={
   dev:(p,w)=>{const N=p.tags[0];return{kind:'prv',a:N+'_1',b:N+'_2',set:w.set[N]};},
   draw(p){
     const N=p.tags[0],[x,y]=p.at,g=el('g',{},G);R[N]=g;
-    el('rect',{x,y,width:180,height:90,rx:5,class:'panel'},g);
+    el('rect',{x,y,width:180,height:104,rx:5,class:'panel'},g);   // 아래 포트 이름(1 입구·2 출구)이 테두리에 붙지 않게
     tx('감압밸브 '+N,{x:x+10,y:y+16,class:'ptitle'},g);
     pport(N+'_1',x+22,y+66,'down',g,'1 입구',0,24);
     pport(N+'_2',x+82,y+66,'down',g,'2 출구',0,24);

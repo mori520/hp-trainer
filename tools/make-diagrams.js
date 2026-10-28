@@ -275,6 +275,12 @@ function displacement(S,x,y,names,seq){
 // hyd: 유압 미션(제목 "유압회로도", 회로도 칸이 조금 더 큼). seq가 비어 있으면 변위단계선도 대신 동작 설명(note)만
 function sheet(file,{w,h,pneu,elec,elecH=300,seq,names,note,hyd}){
   const S=new Svg(w,h);
+  // 공압 기기가 없는 미션(0·2: 램프만)은 전기회로도만 그린다
+  if(!pneu){
+    S.text(16,26,'전기회로도',{c:'h'});elec(ladder(S,{top:56,bot:56+elecH,x0:50,x1:w-30}));
+    (note||[]).forEach((t,k)=>S.text(40,56+elecH+40+k*20,t));
+    fs.writeFileSync(path.join(OUT,file),S.toString());console.log('wrote diagrams/'+file);return;
+  }
   S.text(16,26,hyd?'가. 유압회로도':'가. 공기압회로도',{c:'h'});pneu(S);
   const lt=hyd?450:300;S.text(16,lt-20,'나. 전기회로도',{c:'h'});
   elec(ladder(S,{top:lt+10,bot:lt+10+elecH,x0:50,x1:w-30}));
@@ -487,3 +493,20 @@ sheet('h16.svg',{...HS,names:['A'],seq:['A+','A-'],note:['PS1 3.0 MPa'],
 // H17: H9 카운터밸런스. 틀린 곳 = 카운터밸런스가 후방 줄
 sheet('h17.svg',{...HS,names:['A'],seq:[],note:['PB1을 누르는 동안 전진(하중이 내려감), PB2를 누르는 동안 후진','떼면 그 자리에 정지 — 하중이 제 무게로 내려가지 않게'],
   pneu:S=>hyd(S,110,90,{act:'cylw',name:'A',valve:'43a',sols:['Y1','Y2'],capDev:'cbv:카운터밸런스'}),elec:pbYY});
+
+// 미션 0~4: 튜토리얼에서 완성 도면을 보며 배우도록 (2026-10-28 사용자 요청)
+sheet('m0.svg',{w:420,h:440,note:['PB1을 누르는 동안 H1 점등'],
+  elec:L=>{L.rung(170,[{t:'no',name:'PB1',act:'pb'},{t:'lamp',name:'H1'}]);}});
+sheet('m1.svg',{w:560,h:760,names:['A'],seq:['A+','A-'],note:['PB1을 누르는 동안 전진','떼면 후진'],
+  pneu:S=>{const c=cylinder(S,90,90,'A');valve(S,130,190,c,{sols:['Y1']});},elec:m1elec});
+sheet('m2.svg',{w:460,h:440,note:['PB1 안 누름: H2 점등','PB1 누름: H1 점등, H2 소등'],
+  elec:L=>{L.rung(150,[{t:'no',name:'PB1',act:'pb'},{t:'lamp',name:'H1'}]);L.rung(310,[{t:'nc',name:'PB1',act:'pb'},{t:'lamp',name:'H2'}]);}});
+sheet('m3.svg',{w:560,h:760,names:['A'],seq:['A+','A-'],note:['PB1을 누르는 동안 K1 → Y1 전진','떼면 후진'],
+  pneu:S=>{const c=cylinder(S,90,90,'A');valve(S,130,190,c,{sols:['Y1']});},
+  elec:L=>{L.rung(150,[{t:'no',name:'PB1',act:'pb'},{t:'coil',name:'K1'}]);L.rung(330,[{t:'no',name:'K1'},{t:'sol',name:'Y1'}]);}});
+sheet('m4.svg',{w:560,h:760,names:['A'],seq:['A+','A-'],note:['PB1: 전진 (손을 떼도 유지)','PB2: 후진'],
+  pneu:S=>{const c=cylinder(S,90,90,'A');valve(S,130,190,c,{sols:['Y1']});},
+  elec:L=>{
+    L.rung(140,[{t:'nc',name:'PB2',act:'pb'},{t:'no',name:'PB1',act:'pb',hold:'K1'},{t:'coil',name:'K1'}]);
+    L.rung(300,[{t:'no',name:'K1'},{t:'sol',name:'Y1'}]);
+  }});

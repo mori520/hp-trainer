@@ -276,7 +276,8 @@ function loadMission(id){
   setMode(hasSteps?UI.mode:'mis');
   renderMissionList();
 }
-function setMode(md){UI.mode=md;$('modeTut').setAttribute('aria-pressed',md==='tut');$('modeMis').setAttribute('aria-pressed',md==='mis');loadCircuit();}
+function setMode(md){UI.mode=md;$('modeTut').setAttribute('aria-pressed',md==='tut');$('modeMis').setAttribute('aria-pressed',md==='mis');loadCircuit();
+  if(typeof tutorialWindows==='function')tutorialWindows();}   // 튜토리얼이면 도면 창 둘을 나란히 (mydiagram-ui.js)
 function switchMode(md){if(UI.mode===md)return;if(DEMO_ON)demoStop();save();setMode(md);}
 $('modeTut').onclick=()=>switchMode('tut');$('modeMis').onclick=()=>switchMode('mis');
 function clearResults(){$('results').innerHTML='';$('summary').hidden=true;if(UI.flash.length){UI.flash=[];}}

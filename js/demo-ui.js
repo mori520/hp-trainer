@@ -13,10 +13,9 @@ function demoStart(){
   DM.run=DEMO.start(cur(),DEMO.plan(cur(),JACKS,S.wires.concat(S.hoses)));
   DM.paused=false;DM.stepOnce=false;DM.endT=0;DM.color=UI.color;DEMO_ON=true;
   document.body.classList.add('demo-on');$('demoBar').hidden=false;demoUpdateBtn();
-  // 도면 창은 작게 오른쪽 위로 (트레이너 앞을 많이 가리지 않게). 사용자가 옮겨 둔 창이면 그대로
-  const box=$('mydiag');DM.sized=box.hidden&&!box.style.left&&!box.style.width;   // 사용자가 옮기거나 크기를 바꾼 창은 그대로
-  if(DM.sized){box.style.width='min(440px,32vw)';box.style.height='min(400px,46vh)';}
-  showMyDiagram(true);demoBarText();
+  // 내 회로 도면이 닫혀 있으면 튜토리얼 배치(오른쪽에 완성 도면 + 내 회로 도면)로 다시 펼친다 (mydiagram-ui.js)
+  if($('mydiag').hidden)arrangeWindows(true);else showMyDiagram(true);
+  demoBarText();
 }
 // 끝내기: 누르던 버튼을 떼고, 플러그는 원래대로, 판은 빈 판으로
 function demoStop(){
@@ -26,7 +25,6 @@ function demoStop(){
   $('demoPath').setAttribute('d','');$('demoHand').setAttribute('r',0);
   PLUGGED=!!store.plugged;
   setColor(DM.color||UI.color);   // 시연이 바꾼 툴바 색을 원래대로
-  if(DM.sized){const box=$('mydiag');box.style.width=box.style.height='';DM.sized=false;}
   loadCircuit();demoUpdateBtn();
 }
 function demoBarText(){

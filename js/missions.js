@@ -30,7 +30,7 @@ const MISSIONS=[
   "id":"m0","no":"0","title":"PB1으로 램프 켜기",
   "goal":"PB1을 누르고 있는 동안만 램프 H1이 켜지도록 배선하세요.",
   "learn":"배우는 것: 전원 +24V / 0V, 잭 연결, NO 접점, 배선 색 규칙",
-  "layout":"air","board":{"cylA":"cylinder","valveA":"valve52s"},
+  "layout":"air","board":{"cylA":"cylinder","valveA":"valve52s"},"diagram":"diagrams/m0.svg",
   "steps":[
     {"t":"툴바에서 배선 색을 <b>빨강</b>으로 고르세요. + 쪽 배선은 적색이 규칙입니다.","done":{"type":"color","is":"red"},"btn":"c-red"},
     {"t":"<b>+24V 잭</b>(모듈 위쪽 빨간 잭)에서 <b>PB1의 13번</b> 잭으로 끌어 연결하세요.","wire":["group:rail24","PB1_13","red"],"keep":true},
@@ -54,7 +54,7 @@ const MISSIONS=[
   "id":"m1","no":"1","title":"PB1으로 실린더 전진",
   "goal":"PB1을 누르고 있으면 실린더 A가 전진하고, 떼면 후진하도록 호스와 배선을 구성하세요.",
   "learn":"배우는 것: 솔레노이드, 5/2 편솔 밸브, 호스 연결, 공기 공급",
-  "layout":"air","board":{"cylA":"cylinder","valveA":"valve52s"},
+  "layout":"air","board":{"cylA":"cylinder","valveA":"valve52s"},"diagram":"diagrams/m1.svg",
   "steps":[
     {"t":"<b>분배기</b> 출구에서 <b>밸브 1번</b>(공급, P) 포트로 호스를 연결하세요.","hose":["group:dist","V1_1"],"keep":true},
     {"t":"<b>밸브 4번</b>(A) 포트에서 <b>실린더 후방</b> 포트로 연결하세요. 솔레노이드가 켜지면 이쪽으로 공기가 갑니다.","hose":["V1_4","A_cap"],"keep":true},
@@ -84,7 +84,7 @@ const MISSIONS=[
   "id":"m2","no":"2","title":"NO와 NC 접점 비교",
   "goal":"PB1을 누르지 않을 때는 H2만, 누르고 있는 동안은 H1만 켜지도록 배선하세요.",
   "learn":"배우는 것: NO 접점(평소 열림, 13-14)과 NC 접점(평소 닫힘, 11-12)의 차이",
-  "layout":"air","board":{},
+  "layout":"air","board":{},"diagram":"diagrams/m2.svg",
   "steps":[
     {"t":"배선 색을 <b>빨강</b>으로 고르세요.","done":{"type":"color","is":"red"},"btn":"c-red"},
     {"t":"<b>+24V 잭</b>에서 <b>PB1 13번</b>(NO)으로 연결하세요.","wire":["group:rail24","PB1_13","red"],"keep":true},
@@ -112,7 +112,7 @@ const MISSIONS=[
   "id":"m3","no":"3","title":"릴레이로 실린더 전진",
   "goal":"PB1을 누르면 릴레이 K1이 켜지고, K1의 접점이 Y1을 켜서 실린더 A가 전진하도록 구성하세요. 떼면 후진합니다.",
   "learn":"배우는 것: 릴레이 코일(A1-A2)과 접점(11-14)이 따로 있다는 것. 버튼은 코일만, 솔레노이드는 접점이 켭니다",
-  "layout":"air","board":{"cylA":"cylinder","valveA":"valve52s"},
+  "layout":"air","board":{"cylA":"cylinder","valveA":"valve52s"},"diagram":"diagrams/m3.svg",
   "steps":[
     {"t":"먼저 호스: <b>분배기</b>에서 <b>밸브 1번</b>으로 연결하세요.","hose":["group:dist","V1_1"],"keep":true},
     {"t":"<b>밸브 4번</b>에서 <b>실린더 후방</b>으로 연결하세요.","hose":["V1_4","A_cap"],"keep":true},
@@ -144,7 +144,7 @@ const MISSIONS=[
   "id":"m4","no":"4","title":"자기유지회로",
   "goal":"PB1을 잠깐 눌렀다 떼도 실린더 A가 전진한 채로 있고, PB2를 누르면 후진하도록 구성하세요.",
   "learn":"배우는 것: 자기유지(릴레이가 자기 접점으로 전기를 계속 받음), 정지 버튼을 NC로 앞에 다는 이유",
-  "layout":"air","board":{"cylA":"cylinder","valveA":"valve52s"},
+  "layout":"air","board":{"cylA":"cylinder","valveA":"valve52s"},"diagram":"diagrams/m4.svg",
   "steps":[
     {"t":"먼저 호스: <b>분배기</b>에서 <b>밸브 1번</b>으로 연결하세요.","hose":["group:dist","V1_1"],"keep":true},
     {"t":"<b>밸브 4번</b>에서 <b>실린더 후방</b>으로 연결하세요.","hose":["V1_4","A_cap"],"keep":true},

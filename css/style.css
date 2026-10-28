@@ -329,3 +329,8 @@ body.in-lesson .mydiag{display:none}
 .mdsvg .t{font:13px var(--sans);fill:#111} .mdsvg .s{font:11px var(--sans);fill:#444} .mdsvg .n{font:bold 13px var(--sans);fill:#111}
 .mdsvg .live{font:bold 13px var(--sans);fill:#b35a00}
 .mdsvg .bad{font:bold 13px var(--sans);fill:#c0302b} .mdsvg .good{font:bold 13px var(--sans);fill:#1d7f46}
+
+/* 튜토리얼에서 도면 창 둘이 오른쪽에 붙어 있는 동안: 트레이너를 그 왼쪽에 맞춤 (mydiagram-ui.js updateDock) */
+body.docked .stage{margin-right:var(--dock,0px)}
+body.docked #sv{min-width:0}
+body.in-lesson.docked .stage{margin-right:0}

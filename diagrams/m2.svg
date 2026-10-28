@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 440" width="460" height="440">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#111"/></marker></defs>
+<style>
+.w{stroke:#111;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.thin{stroke:#bbb;stroke-width:1;fill:none}
+.thick{stroke:#111;stroke-width:4;fill:none}
+.dash{stroke:#111;stroke-width:1.4;fill:none;stroke-dasharray:4 3}
+.arw{stroke:#111;stroke-width:1.4;fill:none;marker-end:url(#ar)}
+.fill{fill:#111;stroke:#111}
+.dot{fill:#111}
+.t{font:13px "Malgun Gothic","Apple SD Gothic Neo",sans-serif;fill:#111}
+.s{font:11px "Malgun Gothic","Apple SD Gothic Neo",sans-serif;fill:#444}
+.h{font:bold 15px "Malgun Gothic","Apple SD Gothic Neo",sans-serif;fill:#111}
+.n{font:bold 13px "Malgun Gothic","Apple SD Gothic Neo",sans-serif;fill:#111}
+</style>
+<rect width="100%" height="100%" fill="#fff"/>
+<text x="16" y="26" text-anchor="start" class="h">전기회로도</text>
+<line x1="50" y1="56" x2="430" y2="56" class="w"/>
+<line x1="50" y1="356" x2="430" y2="356" class="w"/>
+<text x="44" y="61" text-anchor="end" class="n">24V</text>
+<text x="44" y="361" text-anchor="end" class="n">0V</text>
+<circle cx="150" cy="56" r="2.6" class="dot"/>
+<line x1="150" y1="56" x2="150" y2="91" class="w"/>
+<path d="M150,91V103M150,119V131M150,119L141,104" class="w"/>
+<line x1="146" y1="111" x2="130" y2="111" class="dash"/>
+<path d="M130,105V117M130,105H125M130,117H125" class="w"/>
+<text x="118" y="116" text-anchor="end" class="t">PB1</text>
+<line x1="150" y1="131" x2="150" y2="302" class="w"/>
+<circle cx="150" cy="311" r="10" class="w"/>
+<path d="M143,304L157,318M157,304L143,318" class="w"/>
+<text x="168" y="316" text-anchor="start" class="t">H1</text>
+<line x1="150" y1="320" x2="150" y2="356" class="w"/>
+<circle cx="150" cy="356" r="2.6" class="dot"/>
+<circle cx="310" cy="56" r="2.6" class="dot"/>
+<line x1="310" y1="56" x2="310" y2="91" class="w"/>
+<path d="M310,91V103H319M310,119V131M310,119L321,100" class="w"/>
+<line x1="306" y1="111" x2="290" y2="111" class="dash"/>
+<path d="M290,105V117M290,105H285M290,117H285" class="w"/>
+<text x="278" y="116" text-anchor="end" class="t">PB1</text>
+<line x1="310" y1="131" x2="310" y2="302" class="w"/>
+<circle cx="310" cy="311" r="10" class="w"/>
+<path d="M303,304L317,318M317,304L303,318" class="w"/>
+<text x="328" y="316" text-anchor="start" class="t">H2</text>
+<line x1="310" y1="320" x2="310" y2="356" class="w"/>
+<circle cx="310" cy="356" r="2.6" class="dot"/>
+<text x="40" y="396" text-anchor="start" class="t">PB1 안 누름: H2 점등</text>
+<text x="40" y="416" text-anchor="start" class="t">PB1 누름: H1 점등, H2 소등</text>
+</svg>

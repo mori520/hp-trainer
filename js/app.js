@@ -311,6 +311,9 @@ function setPracticeSlot(slot,val){
   if(val)next[slot]=val;else delete next[slot];
   if(S.air){toast(fluidText().stopFirst+' 판 구성을 바꾸세요.');renderPractice();return;}
   if(/^[AB][+-]$/.test(val)&&Object.values(next).filter(v=>v===val).length>2){toast('한 실린더 끝에는 센서를 2개까지 달 수 있어요.');renderPractice();return;}
+  // 센서·리밋은 실린더에만 단다 (B 자리를 모터로 바꾸면 B에 단 센서를 먼저 떼야 함)
+  const slots=LAYOUTS[cur().layout].slots, noCyl=Object.entries(next).find(([k,v])=>{const m=/^(\w+)[+-]$/.exec(v);if(!m||!slots.find(x=>x.slot===k&&x.sensor))return false;const c=slots.find(x=>x.id===m[1]);return !c||next[c.slot]!=='cylinder';});
+  if(noCyl){toast(`${noCyl[0]}은(는) 실린더에만 달 수 있어요. 센서 위치를 먼저 바꾸세요.`);renderPractice();return;}
   const used=S.wires.concat(S.hoses),pos={},at=j=>JACKS[j]?JACKS[j].x+','+JACKS[j].y:'';
   used.forEach(x=>[x.a,x.b].forEach(j=>pos[j]=at(j)));
   applyBoard(next);

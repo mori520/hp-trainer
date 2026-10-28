@@ -932,6 +932,16 @@ const MISSIONS=[
     "choices":{"valveA":["valve52s","valve52d"],"valveB":["valve52s","valve52d"],"S1":["","A+","A-","B+","B-"],"S2":["","A+","A-","B+","B-"],"LS1":["","A+","A-","B+","B-"],"LS2":["","A+","A-","B+","B-"],"MA1":["","fcv","qev"],"MA2":["","fcv","qev"],"MB1":["","fcv","qev"],"MB2":["","fcv","qev"],"R1":["","prv"]}
   }
 },
+{
+  "id":"hpractice","no":"실전","title":"실전 연습 (유압)","steps":[],
+  "goal":"가지고 있는 유압 공개도면을 보며 판을 꾸미고 호스·배선을 하세요. 채점은 없어요. 다 했으면 PB1을 두 번 눌러 변위단계선도대로 똑같이 동작하는지 직접 확인하세요.",
+  "learn":"판 구성에서 밸브 종류(4/2·4/3), B 자리(실린더·유압모터), 리밋·센서 위치, 유지보수 기기를 도면대로 고르세요. 릴리프 압력도 직접 맞추세요.",
+  "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve42","cylB":"cylinder","valveB":"valve43c"},"set":{"RV":2},
+  "practice":{
+    "check":["릴리프 압력 4±0.2 MPa","밸브 T 포트는 모두 탱크로 (빠지면 안 움직여요)","+ 배선 적색, − 배선 청색·흑색","전기회로도의 오류를 고쳐 배선 (릴레이 개수는 그대로)","PB1을 두 번 눌러 두 번 다 똑같이 동작하는지"],
+    "choices":{"valveA":["valve42","valve43c","valve43a"],"cylB":["cylinder","motor"],"valveB":["valve42","valve43c","valve43a"],"S1":["","A+","A-","B+","B-"],"S2":["","A+","A-","B+","B-"],"LS1":["","A+","A-","B+","B-"],"LS2":["","A+","A-","B+","B-"],"MA1":["","fcv","chk"],"MA2":["","fcv","chk"],"MB1":["","fcv","chk"],"MB2":["","fcv","chk"],"R1":["","chk"]}
+  }
+},
 {"id":"hfree","no":"∞","title":"유압 자유 실습","goal":"유압 파워유닛, 4/2·4/3 밸브, 실린더·유압모터를 자유롭게 연결해 보세요.","learn":"유압은 쓰고 난 기름이 밸브 T 포트 → 탱크(T)로 돌아가야 움직여요. 펌프 압력은 릴리프(RV)로 맞춥니다 (시험 4±0.2 MPa). 밸브의 ‘종류 교체’로 4/2·4/3을 바꿔 볼 수 있어요.","steps":[],
  "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve43c","cylB":"motor","valveB":"valve43c","LS1":"A-","LS2":"A+","MA1":"fcv","R1":"chk"}},
 {"id":"free","no":"∞","title":"자유 실습","goal":"모든 부품을 자유롭게 연결하고 동작을 확인해 보세요.","learn":"채점 없이 회로를 실험하는 공간입니다. 밸브의 ‘종류 교체’로 편솔·양솔을 바꿔 볼 수 있어요.","steps":[],

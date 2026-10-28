@@ -197,7 +197,7 @@ function renderMissionList(){
     <span class="chip ${(store.lessonDone||{})[x.id]?'done':''}">${(store.lessonDone||{})[x.id]?'읽음':'강의'}</span></button></li>`;
   const misItem=x=>`<li><button data-m="${x.id}" aria-current="${!UI.lesson&&x.id===UI.mission}">
     <span class="no">${x.no}</span><span class="t">${x.title}</span>
-    <span class="chip ${store.done[x.id]?'done':''}">${store.done[x.id]?'완료':x.no==='∞'?'자유':x.practice?'실전':x.exam?'모의':'도전'}</span></button></li>`;
+    <span class="chip ${store.done[x.id]?'done':''}">${store.done[x.id]?'완료':x.no==='∞'?'자유':x.practice?'실전':x.exam?examChip(x):'도전'}</span></button></li>`;
   const mis=ALL.filter(x=>sectOf(x)==='missions'), hyd=ALL.filter(x=>sectOf(x)==='hyd'), exam=ALL.filter(x=>sectOf(x)==='exam'), prac=ALL.filter(x=>sectOf(x)==='practice');
   $('missionList').innerHTML=(LS.length?head('lessons','기초 강의',LS.length)+body('lessons',LS.map(lessonItem).join('')):'')
     +head('missions','미션',mis.length)+body('missions',mis.map(misItem).join(''))
@@ -230,6 +230,8 @@ function applyBoard(board){
 }
 // 미션의 기본 판. 모의 과제는 지금 단계까지 더한 판
 function examState(id){store.exam=store.exam||{};return store.exam[id]=store.exam[id]||{stage:0,passed:[],sec:0,run:false};}
+// 모의 과제 목록 표시: 통과한 단계 수 (예 "2/4"), 아직 없으면 "모의"
+function examChip(x){const n=((store.exam||{})[x.id]||{passed:[]}).passed.length;return n?`${n}/${x.exam.stages.length}`:'모의';}
 function baseBoard(mis){return mis.exam?examBoard(mis,examState(mis.id).stage):mis.board;}
 // 튜토리얼은 열 때마다 빈 판에서 시작하고 배선을 저장하지 않는다. 미션 모드·자유 실습은 저장된 배선을 불러온다
 function inTutorial(){return UI.mode==='tut'&&(cur().steps||[]).length>0;}

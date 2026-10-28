@@ -295,6 +295,9 @@ body.in-lesson .stage>.toolbar,body.in-lesson .stage>.canvas-wrap,body.in-lesson
 .lfig .lbadge{fill:var(--accent)} .lfig .lbadge-t{font:700 10px var(--sans);fill:var(--accent-ink);text-anchor:middle}
 .lfig .lpiston{fill:var(--piston)} .lfig .lrod{stroke:var(--steel-edge);stroke-width:7;stroke-linecap:round}
 .lfig .lobj{fill:var(--warn)}
+.lfig .lspin{transform-box:fill-box;transform-origin:center;animation:lspin 1.2s linear infinite} .lfig .lspin.rev{animation-direction:reverse}
+@keyframes lspin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.lfig .lspin{animation-duration:6s}}
 .lfig .tap{cursor:pointer} .lfig .tap:focus-visible{outline:none} .lfig .tap:focus-visible .lbtn{stroke:var(--accent);stroke-width:3}
 .lfig .lbtn{fill:var(--accent);stroke:none} .lfig .lbtn.down{fill:var(--ok)}
 .lfig .lbt{fill:var(--accent-ink);font-weight:700;pointer-events:none}

@@ -27,6 +27,23 @@ test('공기압회로도: 유량조절밸브·누설 표시',()=>{
   assert.match(s,/F1 4단/);
   assert.match(s,/공기 누설/);
 });
+test('유압회로도: 파워유닛·4/2·체크밸브·유량조절, 남는 P·T 포트는 빈 포트로 안 셈',()=>{
+  const hinfo={set:{RV:4,F1:3},leak:false,valve:{}};
+  const hoses=[{a:'HP1',b:'CV1_1'},{a:'CV1_2',b:'V1_P'},{a:'V1_T',b:'HT1'},{a:'V1_A',b:'F1_2'},{a:'F1_1',b:'A_cap'},{a:'V1_B',b:'A_rod'}];
+  const s=MYD.pneu(parts('h4'),hoses,hinfo);
+  assert.equal(count(s,/class="hose"/g),6);
+  assert.doesNotMatch(s,/빈 포트/);
+  assert.match(s,/릴리프 4\.0 MPa/);assert.match(s,/CV1/);assert.match(s,/F1 3단/);
+  assert.match(MYD.pneu(parts('h4'),hoses.slice(0,2),hinfo),/빈 포트\(○\) 7개/);   // 밸브 T·A·B, F1 두 개, 실린더 후방·전방
+  assert.match(MYD.pneu(parts('h4'),hoses,{...hinfo,leak:true}),/P→T 직결/);
+});
+test('유압회로도: 4/3 밸브는 칸 3개, 모터 포트 A·B',()=>{
+  const s=MYD.pneu(parts('h3'),[{a:'HP1',b:'V2_P'},{a:'V2_T',b:'HT1'},{a:'V2_A',b:'M_a'},{a:'V2_B',b:'M_b'}],{set:{RV:4},leak:false,valve:{V2:1}});
+  assert.equal(count(s,/class="hose"/g),4);
+  assert.doesNotMatch(s,/빈 포트/);
+  assert.match(s,/유압모터/);
+  assert.equal(count(s,/class="w act"/g),1,'지금 칸 하나만 진하게');
+});
 test('변위단계선도: 두 회차 비교, 머문 시간 칸',()=>{
   const same=MYD.disp([{seq:['A+','A-']},{seq:['A+','A-']}],['A']);
   assert.match(same,/두 번 모두 같은 순서/);

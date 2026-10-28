@@ -17,6 +17,7 @@ function renderMyDiagram(force){
   if(!force&&key===MYUI.key)return;
   MYUI.key=key;$('mydiagBody').innerHTML=myDiagramSvg();
   box.querySelectorAll('[data-mytab]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.mytab===MYUI.tab));
+  box.querySelector('[data-mytab="pneu"]').textContent=LAYOUT.fluid==='hyd'?'유압회로도':'공기압회로도';
 }
 function showMyDiagram(on){$('mydiag').hidden=!on;if(on)renderMyDiagram(true);}
 $('mydiagBtn').onclick=()=>showMyDiagram($('mydiag').hidden);

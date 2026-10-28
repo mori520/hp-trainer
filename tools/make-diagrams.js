@@ -431,3 +431,13 @@ sheet('h11.svg',{...HS,w:780,names:['A'],seq:['A+','wait:3초','A-'],note:['A+ �
     L.rung(440,[{t:'no',name:'LS2',act:'ls'},{t:'coil',name:'T1 (3초)'}]);
     const jy=L.Y[0]+34;L.bus(440,600,jy);L.rung(600,[{t:'sol',name:'Y2'}],{fromY:jy,dot:true});   // LS2 NO 아래에서 갈라져 Y2(모터)도
   }});
+sheet('h12.svg',{...HS,w:660,h:990,elecH:360,names:['A'],seq:['A+','A-'],note:['PB2: 연속 반복','비상정지 ON: 후진 + H1 점등','비상정지 OFF: 초기화'],
+  pneu:S=>hyd(S,110,90,{name:'A',valve:'42',sols:['Y1'],sensors:[{end:'-',name:'LS1',kind:'ls'},{end:'+',name:'LS2',kind:'ls'}]}),
+  elec:L=>{
+    const busY=L.top+80, slots=[L.top+130,L.top+200,L.top+270];
+    L.drop(90,{t:'nc',name:'ES',act:'es'},busY);L.bus(90,480,busY);
+    L.rung(170,[{t:'no',name:'PB2',act:'pb',hold:'K1'},{t:'coil',name:'K1'}],{fromY:busY,slots,dot:true});
+    L.rung(320,[{t:'nc',name:'LS2',act:'ls'},{t:'no',name:'K1',hold:'K2',span:2},{t:'no',name:'LS1',act:'ls'},{t:'coil',name:'K2'}],{fromY:busY,slots,dot:true});
+    L.rung(480,[{t:'no',name:'K2'},{t:'sol',name:'Y1'}],{fromY:busY,slots,dot:true});
+    L.rung(590,[{t:'no',name:'ES',act:'es'},{t:'lamp',name:'H1'}],{slots});
+  }});

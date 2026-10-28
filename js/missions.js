@@ -1152,6 +1152,54 @@ const MISSIONS=[
   }
 },
 {
+  "id":"h12","no":"H12","title":"유압 연속동작 + 비상정지 + 램프",
+  "goal":"PB2로 연속동작(A+ A− 반복). 동작 중 비상정지를 누르면 실린더가 후진하고 램프 H1이 켜지며, 비상정지를 풀면 램프가 꺼지고 초기화되어 PB2로 다시 시작하게 하세요.",
+  "learn":"배우는 것: 미션 12의 전기회로를 유압판에서 그대로 쓰기. 비상정지로 솔레노이드가 꺼지면 4/2 편솔 밸브가 스프링으로 돌아가 실린더가 후진 (유압 공개과제의 연속동작·비상정지 유지보수 문항과 같은 동작)",
+  "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve42","LS1":"A-","LS2":"A+"},"diagram":"diagrams/h12.svg",
+  "steps":[
+    {"g":"1. 유압 회로","t":"파워유닛 <b>P</b> → 밸브 <b>P</b>.","hose":["group:hp","V1_P"],"keep":true},
+    {"g":"1. 유압 회로","t":"밸브 <b>T</b> → <b>탱크 T</b>.","hose":["V1_T","group:ht"],"keep":true},
+    {"g":"1. 유압 회로","t":"밸브 <b>A</b> → <b>실린더 후방</b>.","hose":["V1_A","A_cap"],"keep":true},
+    {"g":"1. 유압 회로","t":"밸브 <b>B</b> → <b>실린더 전방</b>.","hose":["V1_B","A_rod"],"keep":true},
+    {"g":"1. 유압 회로","t":"<b>펌프</b>를 켜세요.","done":{"type":"state","expect":{"air":true}},"hl":["@air"],"keep":true},
+    {"g":"2. 비상정지 — 제어 전원","t":"<b>+24V</b> → <b>비상정지 11번</b>(NC). 이제부터 회로는 모두 <b>비상정지 12번</b>에서 전기를 받아요. 비상정지를 누르면 전부 끊깁니다.","wire":["group:rail24","ES_11","red"],"keep":true,"hl":["@ESbtn"]},
+    {"g":"3. K1 — 연속 기억 (PB2)","t":"<b>비상정지 12번</b> → <b>PB2 13번</b>.","wire":["ES_12","PB2_13","red"],"keep":true},
+    {"g":"3. K1 — 연속 기억 (PB2)","t":"<b>PB2 14번</b> → <b>K1 A1</b>.","wire":["PB2_14","K1_A1","red"],"keep":true,"hl":["@K1coil"]},
+    {"g":"3. K1 — 연속 기억 (PB2)","t":"자기유지 ①: <b>비상정지 12번</b> → <b>K1 11번</b>.","wire":["ES_12","K1_11","red"],"keep":true},
+    {"g":"3. K1 — 연속 기억 (PB2)","t":"자기유지 ②: <b>K1 14번</b> → <b>K1 A1</b>.","wire":["K1_14","K1_A1","red"],"keep":true},
+    {"g":"3. K1 — 연속 기억 (PB2)","t":"<b>K1 A2</b> → <b>0V</b>.","wire":["K1_A2","group:rail0","blue"],"keep":true},
+    {"g":"4. K2 — 한 사이클 (LS1 시작, LS2 끝)","t":"<b>비상정지 12번</b> → <b>LS2 1번</b>.","wire":["ES_12","LS2_1","red"],"keep":true,"hl":["@LS2"]},
+    {"g":"4. K2 — 한 사이클 (LS1 시작, LS2 끝)","t":"<b>LS2 2번</b>(NC) → <b>K1 21번</b>.","wire":["LS2_2","K1_21","red"],"keep":true},
+    {"g":"4. K2 — 한 사이클 (LS1 시작, LS2 끝)","t":"<b>K1 24번</b> → <b>LS1 1번</b>.","wire":["K1_24","LS1_1","red"],"keep":true,"hl":["@LS1"]},
+    {"g":"4. K2 — 한 사이클 (LS1 시작, LS2 끝)","t":"<b>LS1 4번</b> → <b>K2 A1</b>.","wire":["LS1_4","K2_A1","red"],"keep":true,"hl":["@K2coil"]},
+    {"g":"4. K2 — 한 사이클 (LS1 시작, LS2 끝)","t":"자기유지 ①: <b>LS2 2번</b> → <b>K2 11번</b>.","wire":["LS2_2","K2_11","red"],"keep":true},
+    {"g":"4. K2 — 한 사이클 (LS1 시작, LS2 끝)","t":"자기유지 ②: <b>K2 14번</b> → <b>K2 A1</b>.","wire":["K2_14","K2_A1","red"],"keep":true},
+    {"g":"4. K2 — 한 사이클 (LS1 시작, LS2 끝)","t":"<b>K2 A2</b> → <b>0V</b>.","wire":["K2_A2","group:rail0","blue"],"keep":true},
+    {"g":"5. Y1 — A 전진","t":"<b>비상정지 12번</b> → <b>K2 21번</b>.","wire":["ES_12","K2_21","red"],"keep":true},
+    {"g":"5. Y1 — A 전진","t":"<b>K2 24번</b> → <b>Y1 +</b>.","wire":["K2_24","V1_Ya_p","red"],"keep":true},
+    {"g":"5. Y1 — A 전진","t":"<b>Y1 −</b> → <b>0V</b>.","wire":["V1_Ya_n","group:rail0","blue"],"keep":true},
+    {"g":"6. 램프 — 비상정지 표시","t":"<b>+24V</b> → <b>비상정지 13번</b>(NO).","wire":["group:rail24","ES_13","red"],"keep":true},
+    {"g":"6. 램프 — 비상정지 표시","t":"<b>비상정지 14번</b> → <b>H1 +</b>.","wire":["ES_14","H1_p","red"],"keep":true},
+    {"g":"6. 램프 — 비상정지 표시","t":"<b>H1 −</b> → <b>0V</b>.","wire":["H1_n","group:rail0","blue"],"keep":true},
+    {"g":"7. 동작 확인","t":"<b>POWER</b>를 켜세요.","done":{"type":"state","expect":{"power":true}},"hl":["@rocker"],"keep":true},
+    {"g":"7. 동작 확인","t":"<b>PB2</b>를 잠깐 눌러 연속동작을 시작하세요.","done":{"type":"state","expect":{"A":"+"}},"hl":["@PB2btn"]},
+    {"g":"7. 동작 확인","t":"연속동작 중에 <b>비상정지</b>를 누르세요. 눌린 채로 유지되고, 실린더가 후진하며 H1이 켜집니다.","done":{"type":"state","expect":{"ES":true,"A":"-","H1":true}},"hl":["@ESbtn"]},
+    {"g":"7. 동작 확인","t":"<b>비상정지</b>를 한 번 더 눌러 풀어 주세요. 램프가 꺼지고, 다시 시작 전 상태(초기화)가 됩니다.","done":{"type":"state","expect":{"ES":false,"H1":false,"K1":false}},"hl":["@ESbtn"]},
+    {"g":"7. 동작 확인","t":"<b>PB2</b>를 누르면 연속동작이 다시 시작됩니다. 성공!","done":{"type":"state","expect":{"A":"+"}},"hl":["@PB2btn"]}
+  ],
+  "grading":{
+    "setup":{"power":true,"air":true},"relayCount":2,
+    "steps":[
+      {"name":"PB2를 한 번 누르면 A+ A− 연속동작","tap":"PB2","wait":5,"movesRepeat":["A+","A-"]},
+      {"name":"비상정지 ON → 실린더 후진, 램프 점등","set":{"ES":true},"wait":1.5,"expect":{"A":"-","H1":true},
+       "hint":"비상정지 NC(11-12)가 K1·K2·Y1 회로 전체의 전원 앞에 있어야 하고, NO(13-14)로 램프를 켭니다."},
+      {"name":"비상정지 OFF → 램프 소등, 초기화되어 멈춘 채로","set":{"ES":false},"wait":2.5,"moves":[],"expect":{"H1":false,"A":"-","K1":false},
+       "hint":"비상정지를 풀어도 K1 자기유지가 끊긴 상태여야 합니다(초기화)."},
+      {"name":"초기화 후 PB2로 다시 연속동작","tap":"PB2","wait":5,"movesRepeat":["A+","A-"]}
+    ]
+  }
+},
+{
   "id":"hpractice","no":"실전","title":"실전 연습 (유압)","steps":[],
   "goal":"가지고 있는 유압 공개도면을 보며 판을 꾸미고 호스·배선을 하세요. 채점은 없어요. 다 했으면 PB1을 두 번 눌러 변위단계선도대로 똑같이 동작하는지 직접 확인하세요.",
   "learn":"판 구성에서 밸브 종류(4/2·4/3), B 자리(실린더·유압모터), 리밋·센서 위치, 유지보수 기기를 도면대로 고르세요. 릴리프 압력도 직접 맞추세요.",

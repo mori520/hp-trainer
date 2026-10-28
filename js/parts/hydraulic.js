@@ -190,7 +190,9 @@ PARTS.motor={
   draw(p){
     const [x,y]=p.at, cx=x+115, cy=y+30;
     const g=el('g',{},G);
-    tx('유압모터 '+p.id,{x,y:y-28,class:'btxt'},g);
+    // 모터는 몸통이 작아서 글자·포트가 판 위에 떠 보이지 않게 밝은 판을 깐다 (회전 표시 글자까지 포함)
+    el('rect',{x:x-12,y:y-46,width:CYL_W+84,height:172,rx:6,class:'panel'},g);
+    tx('유압모터 '+p.id,{x,y:y-26,class:'ptitle'},g);
     el('rect',{x:x+20,y:y+60,width:16,height:16,class:'steel'},g);
     el('rect',{x:x+CYL_W-46,y:y+60,width:16,height:16,class:'steel'},g);
     el('path',{d:`M${x+28},${y+60}V${cy}H${cx-44}M${x+CYL_W-38},${y+60}V${cy}H${cx+44}`,class:'sym'},g);

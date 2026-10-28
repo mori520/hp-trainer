@@ -4,7 +4,7 @@
 /* ===================== 상태 / 저장 ===================== */
 const KEY='ph-trainer-v1';
 // 처음 온 사람: 기초 강의·미션 칸은 접고, 실전 연습 칸의 자유 실습을 연 상태로 시작
-let store={done:{},circuits:{},last:'free',mode:'tut',fold:{lessons:true,missions:true,hyd:true}};
+let store={done:{},circuits:{},last:'free',mode:'tut',fold:{lessons:true,missions:true,hyd:true,exam:true}};
 try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s)store=Object.assign(store,s);}catch(e){}
 const BOOT_LAST=store.last;
 const FIRST_VISIT=needWelcome(store);   // 기록이 없는 처음 온 사람 → 안내 띄움 (onboard.js)   // 시작 때 마지막으로 보던 것 (그리는 중 save()가 store.last를 덮기 전에 기억)
@@ -184,8 +184,8 @@ $('autoColor').onclick=()=>setAutoColor(!store.autoColor);
 
 /* ===================== 미션 패널 ===================== */
 // 목록: 기초 강의(lessons.js, 없으면 생략) / 미션 / 실전 연습(실전 연습·자유 실습). 칸 제목을 누르면 접고 편다(store.fold)
-const ALL=MISSIONS;
-const sectOf=x=>x.practice||x.no==='∞'?'practice':x.layout==='hyd'?'hyd':'missions';   // 실전 연습·자유 실습(no ∞)은 맨 아래 칸, 유압 미션은 따로
+const ALL=MISSIONS.concat(typeof EXAMS==='undefined'?[]:EXAMS);   // 모의 과제(exams.js)도 목록에
+const sectOf=x=>x.exam?'exam':x.practice||x.no==='∞'?'practice':x.layout==='hyd'?'hyd':'missions';   // 실전 연습·자유 실습(no ∞)은 맨 아래 칸, 유압 미션·모의 과제는 따로
 function cur(){return ALL.find(x=>x.id===UI.mission);}
 function renderMissionList(){
   const LS=typeof LESSONS==='undefined'?[]:LESSONS, fold=store.fold||{};
@@ -197,11 +197,12 @@ function renderMissionList(){
     <span class="chip ${(store.lessonDone||{})[x.id]?'done':''}">${(store.lessonDone||{})[x.id]?'읽음':'강의'}</span></button></li>`;
   const misItem=x=>`<li><button data-m="${x.id}" aria-current="${!UI.lesson&&x.id===UI.mission}">
     <span class="no">${x.no}</span><span class="t">${x.title}</span>
-    <span class="chip ${store.done[x.id]?'done':''}">${store.done[x.id]?'완료':x.no==='∞'?'자유':x.practice?'실전':'도전'}</span></button></li>`;
-  const mis=ALL.filter(x=>sectOf(x)==='missions'), hyd=ALL.filter(x=>sectOf(x)==='hyd'), prac=ALL.filter(x=>sectOf(x)==='practice');
+    <span class="chip ${store.done[x.id]?'done':''}">${store.done[x.id]?'완료':x.no==='∞'?'자유':x.practice?'실전':x.exam?'모의':'도전'}</span></button></li>`;
+  const mis=ALL.filter(x=>sectOf(x)==='missions'), hyd=ALL.filter(x=>sectOf(x)==='hyd'), exam=ALL.filter(x=>sectOf(x)==='exam'), prac=ALL.filter(x=>sectOf(x)==='practice');
   $('missionList').innerHTML=(LS.length?head('lessons','기초 강의',LS.length)+body('lessons',LS.map(lessonItem).join('')):'')
     +head('missions','미션',mis.length)+body('missions',mis.map(misItem).join(''))
     +(hyd.length?head('hyd','유압 미션',hyd.length)+body('hyd',hyd.map(misItem).join('')):'')
+    +(exam.length?head('exam','모의 과제',exam.length)+body('exam',exam.map(misItem).join('')):'')
     +head('practice','실전 연습',prac.length)+body('practice',prac.map(misItem).join(''));
   // 선택한 미션 바로 아래(드롭다운처럼). 그 칸이 접혀 있으면 칸 제목 아래, 강의를 보는 중이면 목록 맨 끝(강의 중엔 숨김)
   const slot=document.createElement('li');slot.className='card-slot';slot.appendChild(card);
@@ -227,13 +228,19 @@ function applyBoard(board){
   configure({parts:makeParts(def,board)});
   buildScene(LAYOUT.parts,def.board);buildHits();lastHL=null;   // null: 다음 renderHL이 반드시 다시 그림(남은 강조 지우기 포함)
 }
+// 미션의 기본 판. 모의 과제는 지금 단계까지 더한 판
+function examState(id){store.exam=store.exam||{};return store.exam[id]=store.exam[id]||{stage:0,passed:[],sec:0,run:false};}
+function baseBoard(mis){return mis.exam?examBoard(mis,examState(mis.id).stage):mis.board;}
 // 튜토리얼은 열 때마다 빈 판에서 시작하고 배선을 저장하지 않는다. 미션 모드·자유 실습은 저장된 배선을 불러온다
 function inTutorial(){return UI.mode==='tut'&&(cur().steps||[]).length>0;}
 function loadCircuit(){
   const mis=cur();
   // 기본 전원 선이 없는 회로(빈 판·튜토리얼·예전 저장)에는 넣어 준다
   const c=withJumpers(LAYOUTS[mis.layout],(!inTutorial()&&store.circuits[mis.id])||{wires:[],hoses:[],set:Object.assign({},mis.set)});
-  applyBoard(Object.assign({},mis.board,c.board));   // 저장된 선택(밸브 교체 등)을 미션 기본값 위에 덮는다. 새로 생긴 자리는 기본값으로
+  // 저장된 선택(밸브 교체 등)을 미션 기본값 위에 덮는다. 새로 생긴 자리는 기본값으로
+  // 모의 과제: 지금 단계까지의 판(examBoard) 위에, 그 판에 있는 자리의 저장된 선택만 덮는다 (처음부터 다시 하면 기기가 빠지게)
+  const base=baseBoard(mis);
+  applyBoard(Object.assign({},base,mis.exam?Object.fromEntries(Object.entries(c.board||{}).filter(([k])=>k in base)):c.board));
   // 지금 배치에 없는 잭에 꽂힌 선은 버린다
   const ok=x=>JACKS[x.a]&&JACKS[x.b];
   S=newWorld(clone({wires:c.wires.filter(ok),hoses:c.hoses.filter(ok),set:c.set}));
@@ -241,7 +248,7 @@ function loadCircuit(){
   UI.stepIdx=0;UI.flash=[];lastStepsKey='';
   // 오류 찾기: 튜토리얼은 매번 새로, 미션 모드는 한 번 맞히면 기억
   UI.quiz={tried:[],ok:!inTutorial()&&!!(store.quiz||{})[mis.id]};renderQuiz();
-  renderPractice();
+  renderPractice();if(typeof renderExam==='function')renderExam();   // 모의 과제 (exam-ui.js)
   if(typeof recReset==='function')recReset();   // 미션이 바뀌면 동작 기록도 새로
   clearResults();renderConn();
 }
@@ -268,7 +275,7 @@ function loadMission(id){
   if(DEMO_ON)demoStop();
   if(S)save();
   UI.mission=id;const mis=cur();
-  $('mTitle').textContent=(mis.no!=='∞'&&!mis.practice?`미션 ${mis.no}. `:'')+mis.title;
+  $('mTitle').textContent=(mis.exam?`${mis.no}. `:mis.no!=='∞'&&!mis.practice?`미션 ${mis.no}. `:'')+mis.title;
   $('mGoal').textContent=mis.goal;$('mLearn').textContent=mis.learn;
   const hasSteps=(mis.steps||[]).length>0;
   $('modeBox').hidden=!hasSteps;$('gradeBtn').hidden=!mis.grading;
@@ -376,7 +383,7 @@ $('diagramHead').addEventListener('pointerdown',e=>{
 $('resetBtn').onclick=()=>{$('resetConfirm').hidden=false;};
 $('resetNo').onclick=()=>{$('resetConfirm').hidden=true;};
 // 배선 초기화: 직접 그은 선·호스는 지우고 기본 전원 선은 다시 꽂는다
-$('resetYes').onclick=()=>{$('resetConfirm').hidden=true;applyBoard(Object.assign({},cur().board));S=newWorld(withJumpers(LAYOUTS[cur().layout],{wires:[],hoses:[],set:Object.assign({},cur().set)}));UI.stepIdx=0;clearResults();renderConn();};
+$('resetYes').onclick=()=>{$('resetConfirm').hidden=true;applyBoard(Object.assign({},baseBoard(cur())));S=newWorld(withJumpers(LAYOUTS[cur().layout],{wires:[],hoses:[],set:Object.assign({},cur().set)}));UI.stepIdx=0;clearResults();renderConn();};
 
 // 설정 ⚙ → 모든 기록 지우기: 한 번 더 확인받고 저장을 지운 뒤 새로고침 (처음 온 사람과 같은 상태: 자유 실습, 강의·미션 칸 접힘)
 $('settingsBtn').onclick=()=>{const box=$('settings');box.hidden=!box.hidden;$('settingsBtn').setAttribute('aria-expanded',!box.hidden);$('wipeConfirm').hidden=true;};

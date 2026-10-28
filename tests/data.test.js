@@ -4,7 +4,7 @@ const test=require('node:test'), assert=require('node:assert/strict'), vm=requir
 const {load,htmlIds}=require('./load.js');
 
 const {ctx,get}=load();
-const PARTS=get('PARTS'), LAYOUTS=get('LAYOUTS'), MISSIONS=get('MISSIONS'), IDS=htmlIds();
+const PARTS=get('PARTS'), LAYOUTS=get('LAYOUTS'), MISSIONS=get('MISSIONS'), EXAMS=get('EXAMS'), IDS=htmlIds();
 const DONE_TYPES=new Set(['color','state','setting','quiz']);
 
 test('배치 데이터: 자리에 적힌 부품 종류가 라이브러리에 있다',()=>{
@@ -23,9 +23,16 @@ test('배치 데이터: 자리에 적힌 부품 종류가 라이브러리에 있
   }
 });
 
-for(const mis of MISSIONS.filter(m=>!m.soon)){
+// 모의 과제(exams.js)도 같이: 판은 모든 단계의 board를 더한 것, 채점은 단계마다
+for(const mis of MISSIONS.filter(m=>!m.soon).concat(EXAMS)){
   test(`미션 ${mis.id}: 배치·튜토리얼·채점 데이터가 올바르다`,()=>{
     const L=LAYOUTS[mis.layout];
+    const BOARD=Object.assign({},mis.board,...(mis.exam?mis.exam.stages.map(s=>s.board||{}):[]));
+    if(mis.exam){
+      assert.ok(Array.isArray(mis.exam.req)&&mis.exam.req.length&&mis.exam.explain,'exam: req·explain');
+      mis.exam.stages.forEach((s,i)=>assert.ok(s.name&&s.task&&s.grading,`exam 단계 ${i+1}: name·task·grading`));
+      assert.ok(mis.diagram,'모의 과제는 도면이 있어야 함');
+    }
     assert.ok(L,`없는 배치 ${mis.layout}`);
     if(mis.diagram)assert.ok(require('fs').existsSync(require('path').join(__dirname,'..',mis.diagram)),`없는 도면 파일 ${mis.diagram}`);
     // 오류 찾기 문제: 정답 하나, 틀린 보기마다 이유(why), 해설
@@ -39,20 +46,20 @@ for(const mis of MISSIONS.filter(m=>!m.soon)){
     (mis.steps||[]).forEach((s,i)=>{if(s.done&&s.done.type==='quiz')assert.ok(qz,`튜토리얼 ${i+1}단계: quiz 조건인데 미션에 quiz가 없음`);});
     (mis.steps||[]).forEach((s,i)=>{if(s.g!=null)assert.ok(typeof s.g==='string'&&s.g,`튜토리얼 ${i+1}단계: 묶음 제목 g가 비어 있음`);});
     const mounts={};
-    for(const [slot,type] of Object.entries(mis.board||{})){
+    for(const [slot,type] of Object.entries(BOARD||{})){
       const s=L.slots.find(x=>x.slot===slot);
       assert.ok(s,`없는 자리 ${slot}`);
       if(s.sensor){
         const m=/^(\w+)([+-])$/.exec(type);
         assert.ok(m,`${slot}: 위치는 "A+"·"A-" 모양 (지금 ${type})`);
         const cs=L.slots.find(x=>x.id===m[1]);
-        assert.ok(cs&&['cylinder','cylw'].includes(mis.board[cs.slot]),`${slot}: 실린더 ${m[1]}가 배치되어 있지 않음`);
+        assert.ok(cs&&['cylinder','cylw'].includes(BOARD[cs.slot]),`${slot}: 실린더 ${m[1]}가 배치되어 있지 않음`);
         mounts[type]=(mounts[type]||0)+1;
         assert.ok(mounts[type]<=2,`${type}에 센서가 3개 이상 (최대 2개)`);
       }else assert.ok((s.accepts||[]).includes(type),`${slot}에 ${type}은 놓을 수 없음`);
     }
     // 실제로 그려서 잭 목록을 얻는다
-    get('configure')({parts:get('makeParts')(L,mis.board||{})});
+    get('configure')({parts:get('makeParts')(L,BOARD||{})});
     const LAYOUT=get('LAYOUT');
     get('buildScene')(LAYOUT.parts,L.board);
     const JACKS=get('JACKS'), R=get('R'), GROUPS=get('JACK_GROUPS');
@@ -125,12 +132,13 @@ for(const mis of MISSIONS.filter(m=>!m.soon)){
       for(const v of vals)assert.ok(v===''||(sd.sensor?/^\w+[+-]$/.test(v):(sd.accepts||[]).includes(v)),`실전 연습 ${slot}: ${v}는 놓을 수 없음`);
     }
     // 같은 곳을 쓰는 자리(excludes)를 함께 쓰지 않는다
-    for(const sd of L.slots)if((mis.board||{})[sd.slot])(sd.excludes||[]).forEach(e=>assert.ok(!(mis.board||{})[e],`${sd.slot}과 ${e}는 함께 쓸 수 없음`));
-    for(const g of (mis.grading?[mis.grading]:[])){
+    for(const sd of L.slots)if((BOARD||{})[sd.slot])(sd.excludes||[]).forEach(e=>assert.ok(!(BOARD||{})[e],`${sd.slot}과 ${e}는 함께 쓸 수 없음`));
+    for(const g of (mis.grading?[mis.grading]:[]).concat(mis.exam?mis.exam.stages.map(s=>s.grading):[])){
     (g.settingsCheck||[]).forEach(s=>assert.ok(LAYOUT.settings[s.name]&&s.label,`settingsCheck: ${s.name}`));
     (g.steps||[]).forEach((s,i)=>{
       if(s.stroke)assert.ok(cyls.has(s.stroke.cyl)&&['+','-'].includes(s.stroke.dir)&&(s.stroke.min!=null||s.stroke.max!=null),`채점 ${i+1}: stroke`);
       for(const k in s.meter||{})assert.ok(cyls.has(k)&&['out','in','bleed'].includes(s.meter[k]),`채점 ${i+1}: meter`);
+      for(const k in s.meterOn||{})assert.ok(/^(\w+)[+-]$/.test(k)&&cyls.has(k.slice(0,-1))&&['out','in','bleed'].includes(s.meterOn[k]),`채점 ${i+1}: meterOn`);
       for(const k in s.pressureAt||{})assert.ok(cyls.has(k)&&s.pressureAt[k].length===2,`채점 ${i+1}: pressureAt`);
     });
     const setOk=k=>k==='power'||k==='air'||inputs.has(k);

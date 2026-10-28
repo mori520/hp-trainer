@@ -1,9 +1,9 @@
 /* 테스트용 로더: 브라우저용 스크립트를 Node에서 그대로 불러온다.
-   index.html의 <script src> 순서를 읽어, 화면 조작 파일(tutorial·render·app·lesson·mydiagram-ui·demo-ui)만 빼고 실행한다.
+   index.html의 <script src> 순서를 읽어, 화면 조작 파일(tutorial·render·app·exam-ui·lesson·mydiagram-ui·demo-ui)만 빼고 실행한다.
    그림 그리기(buildScene)도 돌 수 있게 아주 작은 가짜 DOM을 넣는다. */
 const fs=require('fs'), path=require('path'), vm=require('vm');
 const ROOT=path.join(__dirname,'..');
-const SKIP=new Set(['js/tutorial.js','js/render.js','js/app.js','js/lesson.js','js/mydiagram-ui.js','js/demo-ui.js']);
+const SKIP=new Set(['js/tutorial.js','js/render.js','js/app.js','js/exam-ui.js','js/lesson.js','js/mydiagram-ui.js','js/demo-ui.js']);
 
 function fakeEl(){
   const e={children:[],attrs:{},style:{},dataset:{},textContent:'',

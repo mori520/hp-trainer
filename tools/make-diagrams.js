@@ -543,6 +543,23 @@ sheet('h18.svg',{...HS,w:780,h:960,names:['A','M'],motors:['M'],seq:['A+','M+','
     L.rung(600,[{t:'no',name:'K1'},{t:'sol',name:'Y2'}]);
   }});
 
+/* ---------- 모의 과제 (exams.js, 직접 설계한 회로). 전기회로도에 틀린 곳이 하나씩 있다 ---------- */
+// 모의 공1: A+ B+ A− B−. A 편솔(Y1), B 양솔(Y2 전진·Y3 후진). 틀린 곳 = K2 코일을 S1(A 전진 끝) 대신 S2(A 후진 끝)로 켬
+sheet('x1.svg',{w:900,h:840,names:['A','B'],seq:['A+','B+','A-','B-'],note:['PB1: 한 사이클','릴레이 4개'],
+  pneu:S=>{
+    const a=cylinder(S,60,90,'A',[{end:'+',name:'S1',kind:'cap'},{end:'-',name:'S2',kind:'cap'}]);valve(S,100,190,a,{sols:['Y1']});
+    const b=cylinder(S,460,90,'B',[{end:'+',name:'LS2',kind:'ls'},{end:'-',name:'LS1',kind:'ls'}]);valve(S,500,190,b,{double:true,sols:['Y2','Y3']});
+  },
+  elec:L=>{
+    L.rung(100,[{t:'nc',name:'K4'},{t:'no',name:'PB1',act:'pb',hold:'K1'},{t:'coil',name:'K1'}]);
+    L.rung(220,[{t:'no',name:'K1'},{t:'nc',name:'K3'},{t:'sol',name:'Y1'}]);
+    L.sensor(300,'S2',360);L.rung(360,[{t:'coil',name:'K2'}],{fromY:L.Y[1]});
+    L.rung(450,[{t:'no',name:'K2'},{t:'sol',name:'Y2'}]);
+    L.rung(560,[{t:'no',name:'K1'},{t:'no',name:'LS2',act:'ls',hold:'K3'},{t:'coil',name:'K3'}]);
+    L.rung(700,[{t:'sensor',name:'S2'},{t:'no',name:'K3'},{t:'sol',name:'Y3'}]);
+    L.rung(820,[{t:'no',name:'K3'},{t:'no',name:'LS1',act:'ls',pressed:true},{t:'coil',name:'K4'}]);
+  }});
+
 // 미션 0~4: 튜토리얼에서 완성 도면을 보며 배우도록 (2026-10-28 사용자 요청)
 sheet('m0.svg',{w:420,h:440,note:['PB1을 누르는 동안 H1 점등'],
   elec:L=>{L.rung(170,[{t:'no',name:'PB1',act:'pb'},{t:'lamp',name:'H1'}]);}});

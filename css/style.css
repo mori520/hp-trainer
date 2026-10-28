@@ -113,6 +113,20 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
 .prac-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .practice .clock{font:600 18px var(--mono);padding:2px 10px;border:1px solid var(--line);border-radius:6px;letter-spacing:.04em}
 .prac-top .btn{padding:5px 10px}
+.ex-req summary,.ex-explain summary{cursor:pointer;font-weight:600;font-size:13px}
+.ex-req .req{margin-top:4px!important}
+.ex-stages{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;font-size:13px}
+.ex-stages li{display:flex;gap:6px;align-items:baseline;color:var(--muted)}
+.ex-stages li .m{width:14px;flex:none;text-align:center;font-weight:700}
+.ex-stages li.pass{color:var(--ok)}
+.ex-stages li.cur{color:var(--ink);font-weight:600}
+.ex-task{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:6px;padding:8px 10px;font-size:13px}
+.ex-task p{margin:4px 0 0}
+.ex-btns{display:flex;gap:8px;flex-wrap:wrap}
+.ex-explain p{margin:6px 0 0;font-size:13px}
+.exam .fb{margin:0;font-size:13px}
+.exam .fb.ok{color:var(--ok)}
+.exam .link{align-self:flex-start;background:none;border:0;padding:0;color:var(--muted);font-size:12px;text-decoration:underline}
 .practice .req{margin:0;padding-left:18px;font-size:12.5px;color:var(--muted);display:flex;flex-direction:column;gap:2px}
 .prac-board{border:1px solid var(--line);border-radius:8px;padding:6px 10px}
 .prac-board summary{cursor:pointer;font-weight:600;font-size:13px}

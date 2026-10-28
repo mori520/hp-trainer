@@ -923,6 +923,176 @@ const MISSIONS=[
   "grading":{"press":"PB1","sequence":["A+","A-"],"repeat":2,"relayCount":1}
 },
 {
+  "id":"h6","no":"H6","title":"블리드오프 속도제어",
+  "goal":"펌프의 두 번째 P 포트에서 양방향 유량조절밸브를 거쳐 탱크로 기름 일부를 흘려 보내, 실린더 A의 속도를 느리게 하세요 (블리드오프). PB1을 누르고 있으면 전진, 떼면 후진합니다.",
+  "learn":"배우는 것: 블리드오프(펌프 기름 일부를 탱크로 빼서 실린더로 가는 양을 줄임), 양방향 유량조절밸브, 많이 열수록 느려진다는 점",
+  "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve42","R1":"thr"},
+  "steps":[
+    {"g":"1. 기본 호스","t":"파워유닛 <b>P</b>에서 밸브 <b>P</b>로 연결하세요.","hose":["HP1","V1_P"],"keep":true},
+    {"g":"1. 기본 호스","t":"밸브 <b>T</b>에서 <b>탱크 T</b>로 연결하세요.","hose":["V1_T","group:ht"],"keep":true},
+    {"g":"1. 기본 호스","t":"밸브 <b>A</b>에서 <b>실린더 후방</b>으로 연결하세요.","hose":["V1_A","A_cap"],"keep":true},
+    {"g":"1. 기본 호스","t":"밸브 <b>B</b>에서 <b>실린더 전방</b>으로 연결하세요.","hose":["V1_B","A_rod"],"keep":true},
+    {"g":"2. 블리드오프","t":"파워유닛의 남은 <b>P 포트</b>(두 번째)에서 양방향 유량조절 <b>F1의 1번</b>으로 연결하세요.","hose":["HP2","F1_1"],"keep":true},
+    {"g":"2. 블리드오프","t":"<b>F1 2번</b>에서 <b>탱크 T</b>로 연결하세요. 이제 펌프 기름 일부가 F1을 지나 탱크로 새어 나가요.","hose":["F1_2","group:ht"],"keep":true},
+    {"g":"2. 블리드오프","t":"<b>F1</b>을 <b>6단</b>으로 맞추세요 (▼). 블리드오프는 <b>많이 열수록</b> 탱크로 많이 빠져서 실린더가 느려져요.","done":{"type":"setting","name":"F1","value":6},"hl":["@F1set"]},
+    {"g":"2. 블리드오프","t":"<b>펌프</b>를 켜세요.","done":{"type":"state","expect":{"air":true}},"hl":["@air"],"keep":true},
+    {"g":"3. 배선","t":"배선 색을 <b>빨강</b>으로 고르세요.","done":{"type":"color","is":"red"},"btn":"c-red"},
+    {"g":"3. 배선","t":"<b>+24V 잭</b>에서 <b>PB1 13번</b>으로 연결하세요.","wire":["group:rail24","PB1_13","red"],"keep":true},
+    {"g":"3. 배선","t":"<b>PB1 14번</b>에서 <b>Y1 +</b>로 연결하세요.","wire":["PB1_14","V1_Ya_p","red"],"keep":true},
+    {"g":"3. 배선","t":"배선 색을 <b>파랑</b>으로 바꾸세요.","done":{"type":"color","not":"red"},"btn":"c-blue"},
+    {"g":"3. 배선","t":"<b>Y1 −</b>에서 <b>0V 잭</b>으로 연결하세요.","wire":["V1_Ya_n","group:rail0","blue"],"keep":true},
+    {"g":"4. 동작 확인","t":"<b>POWER</b>를 켜세요.","done":{"type":"state","expect":{"power":true}},"hl":["@rocker"],"keep":true},
+    {"g":"4. 동작 확인","t":"<b>PB1</b>을 누르고 있어 보세요. 실린더가 천천히 전진합니다.","done":{"type":"state","expect":{"PB1":true,"A":"+"}},"hl":["@PB1btn"]},
+    {"g":"4. 동작 확인","t":"손을 떼면 후진합니다. F1을 더 열거나 조여서 빠르기가 어떻게 바뀌는지도 해 보세요.","done":{"type":"state","expect":{"PB1":false,"A":"-"}},"hl":["@PB1btn"]}
+  ],
+  "grading":{
+    "setup":{"power":true,"air":true},"repeat":2,
+    "steps":[
+      {"name":"전진이 느려짐 (1.5초 이상, 블리드오프)","set":{"PB1":true},"wait":4,"expect":{"A":"+"},"stroke":{"cyl":"A","dir":"+","min":1.5},"meter":{"A":"bleed"},
+       "hint":"펌프 P(두 번째 포트) → F1 → 탱크 T 로 이어 기름 일부를 빼야 합니다. F1을 더 열어 보세요(많이 열수록 느림)."},
+      {"name":"PB1을 떼면 후진","set":{"PB1":false},"wait":4,"expect":{"A":"-"}}
+    ]
+  }
+},
+{
+  "id":"h7","no":"H7","title":"유압 감압밸브 (2차 압력)",
+  "goal":"실린더 A 후방 줄에 감압밸브를 달아, 전진할 때 실린더에 걸리는 압력을 2.0 MPa로 낮추세요. 릴리프는 4.0 MPa 그대로입니다.",
+  "learn":"배우는 것: 감압밸브(1차 압력을 원하는 2차 압력으로 낮춤), 릴리프(전체 최고 압력)와 감압(그 줄만)의 차이",
+  "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve42","MA1":"hprv"},
+  "steps":[
+    {"g":"1. 유압 호스","t":"파워유닛 <b>P</b>에서 밸브 <b>P</b>로 연결하세요.","hose":["group:hp","V1_P"],"keep":true},
+    {"g":"1. 유압 호스","t":"밸브 <b>T</b>에서 <b>탱크 T</b>로 연결하세요.","hose":["V1_T","group:ht"],"keep":true},
+    {"g":"1. 유압 호스","t":"밸브 <b>A</b>에서 감압밸브 <b>PR1의 1번</b>(입구)으로 연결하세요.","hose":["V1_A","PR1_1"],"keep":true},
+    {"g":"1. 유압 호스","t":"<b>PR1 2번</b>(출구)에서 <b>실린더 후방</b>으로 연결하세요.","hose":["PR1_2","A_cap"],"keep":true},
+    {"g":"1. 유압 호스","t":"밸브 <b>B</b>에서 <b>실린더 전방</b>으로 연결하세요.","hose":["V1_B","A_rod"],"keep":true},
+    {"g":"2. 압력","t":"<b>PR1</b>의 2차 압력을 <b>2.0 MPa</b>로 맞추세요 (▼).","done":{"type":"setting","name":"PR1","value":2},"hl":["@PR1set"]},
+    {"g":"2. 압력","t":"<b>펌프</b>를 켜세요.","done":{"type":"state","expect":{"air":true}},"hl":["@air"],"keep":true},
+    {"g":"3. 배선","t":"배선 색을 <b>빨강</b>으로 고르세요.","done":{"type":"color","is":"red"},"btn":"c-red"},
+    {"g":"3. 배선","t":"<b>+24V 잭</b>에서 <b>PB1 13번</b>으로 연결하세요.","wire":["group:rail24","PB1_13","red"],"keep":true},
+    {"g":"3. 배선","t":"<b>PB1 14번</b>에서 <b>Y1 +</b>로 연결하세요.","wire":["PB1_14","V1_Ya_p","red"],"keep":true},
+    {"g":"3. 배선","t":"배선 색을 <b>파랑</b>으로 바꾸세요.","done":{"type":"color","not":"red"},"btn":"c-blue"},
+    {"g":"3. 배선","t":"<b>Y1 −</b>에서 <b>0V 잭</b>으로 연결하세요.","wire":["V1_Ya_n","group:rail0","blue"],"keep":true},
+    {"g":"4. 동작 확인","t":"<b>POWER</b>를 켜세요.","done":{"type":"state","expect":{"power":true}},"hl":["@rocker"],"keep":true},
+    {"g":"4. 동작 확인","t":"<b>PB1</b>을 누르고 있어 보세요. 실린더는 2.0 MPa로 전진해요 (압력계는 릴리프 4.0 그대로).","done":{"type":"state","expect":{"PB1":true,"A":"+"}},"hl":["@PB1btn"]},
+    {"g":"4. 동작 확인","t":"손을 떼면 후진합니다. 돌아오는 기름은 감압밸브 안의 체크밸브로 그냥 지나가요. 성공!","done":{"type":"state","expect":{"PB1":false,"A":"-"}},"hl":["@PB1btn"]}
+  ],
+  "grading":{
+    "setup":{"power":true,"air":true},"repeat":2,
+    "settingsCheck":[{"name":"PR1","min":1.9,"max":2.1,"label":"감압밸브 2차 압력 2.0 MPa"},{"name":"RV","min":3.8,"max":4.2,"label":"릴리프 압력 4±0.2 MPa"}],
+    "steps":[
+      {"name":"전진할 때 실린더 압력 2.0 MPa","set":{"PB1":true},"wait":2,"expect":{"A":"+"},"pressureAt":{"A":[1.9,2.1]},
+       "hint":"밸브 A → PR1 1번(입구), PR1 2번(출구) → 실린더 후방. 거꾸로 끼우면 지나가지 못해요."},
+      {"name":"PB1을 떼면 후진","set":{"PB1":false},"wait":2,"expect":{"A":"-"}}
+    ]
+  }
+},
+{
+  "id":"h8","no":"H8","title":"압력스위치로 자동 후진",
+  "goal":"PB1을 한 번 누르면 실린더 A가 전진하고, 끝에 닿아 후방 압력이 오르면 압력스위치 PS1이 자기유지를 끊어 자동으로 후진하게 하세요 (A+ A−).",
+  "learn":"배우는 것: 압력스위치(설정 압력 이상이면 접점이 바뀜), 리밋스위치 대신 압력으로 끝을 알아내기. 설정값은 릴리프보다 낮아야 해요",
+  "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve42","MA1":"psw"},
+  "steps":[
+    {"g":"1. 유압 호스","t":"파워유닛 <b>P</b>에서 밸브 <b>P</b>로 연결하세요.","hose":["group:hp","V1_P"],"keep":true},
+    {"g":"1. 유압 호스","t":"밸브 <b>T</b>에서 <b>탱크 T</b>로 연결하세요.","hose":["V1_T","group:ht"],"keep":true},
+    {"g":"1. 유압 호스","t":"밸브 <b>A</b>에서 압력스위치 블록 <b>PS1 아래 포트</b>로 연결하세요. 압력스위치는 지나가는 줄의 압력을 봐요.","hose":["V1_A","PS1_a"],"keep":true},
+    {"g":"1. 유압 호스","t":"<b>PS1 위 포트</b>에서 <b>실린더 후방</b>으로 연결하세요.","hose":["PS1_b","A_cap"],"keep":true},
+    {"g":"1. 유압 호스","t":"밸브 <b>B</b>에서 <b>실린더 전방</b>으로 연결하세요.","hose":["V1_B","A_rod"],"keep":true},
+    {"g":"1. 유압 호스","t":"<b>펌프</b>를 켜세요.","done":{"type":"state","expect":{"air":true}},"hl":["@air"],"keep":true},
+    {"g":"2. 기동·자기유지","t":"배선 색을 <b>빨강</b>으로 고르세요.","done":{"type":"color","is":"red"},"btn":"c-red"},
+    {"g":"2. 기동·자기유지","t":"<b>+24V 잭</b>에서 <b>PS1 1번</b>(공통)으로 연결하세요.","wire":["group:rail24","PS1_1","red"],"keep":true,"hl":["@PS1"]},
+    {"g":"2. 기동·자기유지","t":"<b>PS1 2번</b>(NC)에서 <b>PB1 13번</b>으로 연결하세요. 압력이 3.0 MPa를 넘으면 이 길이 끊겨요.","wire":["PS1_2","PB1_13","red"],"keep":true},
+    {"g":"2. 기동·자기유지","t":"<b>PB1 14번</b>에서 <b>K1 A1</b>으로 연결하세요.","wire":["PB1_14","K1_A1","red"],"keep":true,"hl":["@K1coil"]},
+    {"g":"2. 기동·자기유지","t":"자기유지 선 ①: <b>PS1 2번</b>에서 <b>K1 11번</b>으로 연결하세요.","wire":["PS1_2","K1_11","red"],"keep":true},
+    {"g":"2. 기동·자기유지","t":"자기유지 선 ②: <b>K1 14번</b>에서 <b>K1 A1</b>으로 연결하세요.","wire":["K1_14","K1_A1","red"],"keep":true},
+    {"g":"3. 솔레노이드","t":"<b>+24V 잭</b>에서 <b>K1 21번</b>으로 연결하세요.","wire":["group:rail24","K1_21","red"],"keep":true},
+    {"g":"3. 솔레노이드","t":"<b>K1 24번</b>에서 <b>Y1 +</b>로 연결하세요.","wire":["K1_24","V1_Ya_p","red"],"keep":true},
+    {"g":"3. 솔레노이드","t":"배선 색을 <b>파랑</b>으로 바꾸세요.","done":{"type":"color","not":"red"},"btn":"c-blue"},
+    {"g":"3. 솔레노이드","t":"<b>K1 A2</b>에서 <b>0V 잭</b>으로 연결하세요.","wire":["K1_A2","group:rail0","blue"],"keep":true},
+    {"g":"3. 솔레노이드","t":"<b>Y1 −</b>에서 <b>0V 잭</b>으로 연결하세요.","wire":["V1_Ya_n","group:rail0","blue"],"keep":true},
+    {"g":"4. 동작 확인","t":"<b>POWER</b>를 켜세요.","done":{"type":"state","expect":{"power":true}},"hl":["@rocker"],"keep":true},
+    {"g":"4. 동작 확인","t":"<b>PB1</b>을 잠깐 눌렀다 떼 보세요. 전진하는 동안은 압력이 낮아 PS1이 꺼져 있다가, 끝에 닿으면 압력이 올라 PS1이 켜져요.","done":{"type":"state","expect":{"A":"+"}},"hl":["@PB1btn"]},
+    {"g":"4. 동작 확인","t":"PS1이 자기유지를 끊어 저절로 후진합니다. 끝까지 돌아오면 성공!","done":{"type":"state","expect":{"A":"-","K1":false}}}
+  ],
+  "grading":{"press":"PB1","sequence":["A+","A-"],"repeat":2,"relayCount":1}
+},
+{
+  "id":"h9","no":"H9","title":"카운터밸런스 (자중 낙하 방지)",
+  "goal":"무거운 하중이 달린 실린더 A가 버튼을 떼면 그 자리에 서 있도록, 전방 줄에 카운터밸런스 밸브를 다세요. PB1을 누르는 동안 전진(내려감), PB2를 누르는 동안 후진(올라감)합니다.",
+  "learn":"배우는 것: 4/3 ABT 중립은 A·B가 탱크로 열려 하중이 제 무게로 내려감(자중 낙하), 카운터밸런스는 반대쪽에서 밀어 줄 때만 열려서 막아 줌",
+  "layout":"hyd","board":{"cylA":"cylw","valveA":"valve43a","MA2":"cbv"},
+  "steps":[
+    {"g":"1. 유압 호스","t":"파워유닛 <b>P</b>에서 밸브 <b>P</b>로 연결하세요.","hose":["group:hp","V1_P"],"keep":true},
+    {"g":"1. 유압 호스","t":"밸브 <b>T</b>에서 <b>탱크 T</b>로 연결하세요.","hose":["V1_T","group:ht"],"keep":true},
+    {"g":"1. 유압 호스","t":"밸브 <b>A</b>에서 <b>실린더 후방</b>으로 연결하세요.","hose":["V1_A","A_cap"],"keep":true},
+    {"g":"1. 유압 호스","t":"하중이 내려갈 때 빠져나오는 쪽은 <b>전방</b>이에요. 밸브 <b>B</b>에서 카운터밸런스 <b>CB1의 1번</b>(아래)으로 연결하세요.","hose":["V1_B","CB1_1"],"keep":true},
+    {"g":"1. 유압 호스","t":"<b>CB1 2번</b>(위)에서 <b>실린더 전방</b>으로 연결하세요. 이제 전방 기름은 후방에서 밀어 줄 때(설정 2.0 MPa 이상)만 빠져나가요.","hose":["CB1_2","A_rod"],"keep":true},
+    {"g":"1. 유압 호스","t":"<b>펌프</b>를 켜세요. 밸브가 ABT 중립인데도 하중이 내려가지 않으면 카운터밸런스가 일하는 거예요.","done":{"type":"state","expect":{"air":true}},"hl":["@air"],"keep":true},
+    {"g":"2. 배선","t":"배선 색을 <b>빨강</b>으로 고르세요.","done":{"type":"color","is":"red"},"btn":"c-red"},
+    {"g":"2. 배선","t":"<b>+24V 잭</b>에서 <b>PB1 13번</b>으로 연결하세요.","wire":["group:rail24","PB1_13","red"],"keep":true},
+    {"g":"2. 배선","t":"<b>PB1 14번</b>에서 <b>Y1 +</b>로 연결하세요.","wire":["PB1_14","V1_Ya_p","red"],"keep":true},
+    {"g":"2. 배선","t":"<b>+24V 잭</b>에서 <b>PB2 13번</b>으로 연결하세요.","wire":["group:rail24","PB2_13","red"],"keep":true},
+    {"g":"2. 배선","t":"<b>PB2 14번</b>에서 <b>Y2 +</b>로 연결하세요.","wire":["PB2_14","V1_Yb_p","red"],"keep":true},
+    {"g":"2. 배선","t":"배선 색을 <b>파랑</b>으로 바꾸세요.","done":{"type":"color","not":"red"},"btn":"c-blue"},
+    {"g":"2. 배선","t":"<b>Y1 −</b>에서 <b>0V 잭</b>으로 연결하세요.","wire":["V1_Ya_n","group:rail0","blue"],"keep":true},
+    {"g":"2. 배선","t":"<b>Y2 −</b>에서 <b>0V 잭</b>으로 연결하세요.","wire":["V1_Yb_n","group:rail0","blue"],"keep":true},
+    {"g":"3. 동작 확인","t":"<b>POWER</b>를 켜세요.","done":{"type":"state","expect":{"power":true}},"hl":["@rocker"],"keep":true},
+    {"g":"3. 동작 확인","t":"<b>PB1</b>을 잠깐 눌렀다 떼 보세요. 조금 내려가다가 손을 떼면 그 자리에 섭니다.","done":{"type":"state","expect":{"PB1":false,"A":""}},"hl":["@PB1btn"],"demo":{"tap":"PB1","sec":0.35}},
+    {"g":"3. 동작 확인","t":"<b>PB2</b>를 누르고 있어 하중을 끝까지 올려 보세요. 성공!","done":{"type":"state","expect":{"PB2":true,"A":"-"}},"hl":["@PB2btn"]}
+  ],
+  "grading":{
+    "setup":{"power":true,"air":true},"repeat":2,
+    "steps":[
+      {"name":"버튼을 누르지 않으면 하중이 내려가지 않음","wait":2,"expect":{"A":"-"},
+       "hint":"ABT 중립에서는 전방 기름이 탱크로 빠져 하중이 제 무게로 내려가요. 전방 줄에 카운터밸런스를 끼우세요 (밸브 B → CB1 1번, CB1 2번 → 전방)."},
+      {"name":"PB1을 누르는 동안 내려감","set":{"PB1":true},"wait":0.4,"expect":{"A":""},
+       "hint":"PB1 → Y1이 켜져 P→A(후방)로 밀면, 그 압력으로 카운터밸런스가 열려야 해요."},
+      {"name":"PB1을 떼면 그 자리에 섬","set":{"PB1":false},"wait":2,"expect":{"A":""}},
+      {"name":"PB2를 누르면 끝까지 올라감","set":{"PB2":true},"wait":2,"expect":{"A":"-"},
+       "hint":"올라갈 때는 기름이 카운터밸런스를 1→2로 지나 전방으로 들어가요."},
+      {"name":"PB2를 떼도 그대로","set":{"PB2":false},"wait":1,"expect":{"A":"-"}}
+    ]
+  }
+},
+{
+  "id":"h10","no":"H10","title":"로킹 회로 (파일럿 체크)",
+  "goal":"파일럿 체크 블록으로 하중 실린더 A를 아무 위치에서나 꽉 고정하세요. PB1을 누르는 동안 전진, PB2를 누르는 동안 후진하고, 떼면 그 자리에 섭니다. 펌프를 꺼도 움직이지 않아야 해요.",
+  "learn":"배우는 것: 파일럿 조작 체크밸브(반대쪽 줄에 압력이 있을 때만 거꾸로 열림), ABT 중립 4/3 밸브와 함께 쓰는 로킹 회로",
+  "layout":"hyd","board":{"cylA":"cylw","valveA":"valve43a","LA":"lock"},
+  "steps":[
+    {"g":"1. 유압 호스","t":"파워유닛 <b>P</b>에서 밸브 <b>P</b>로 연결하세요.","hose":["group:hp","V1_P"],"keep":true},
+    {"g":"1. 유압 호스","t":"밸브 <b>T</b>에서 <b>탱크 T</b>로 연결하세요.","hose":["V1_T","group:ht"],"keep":true},
+    {"g":"1. 유압 호스","t":"밸브 <b>A</b>에서 파일럿 체크 <b>PC1의 A1</b>으로 연결하세요.","hose":["V1_A","PC1_A1"],"keep":true},
+    {"g":"1. 유압 호스","t":"<b>PC1 A2</b>에서 <b>실린더 후방</b>으로 연결하세요.","hose":["PC1_A2","A_cap"],"keep":true},
+    {"g":"1. 유압 호스","t":"밸브 <b>B</b>에서 <b>PC1 B1</b>으로 연결하세요.","hose":["V1_B","PC1_B1"],"keep":true},
+    {"g":"1. 유압 호스","t":"<b>PC1 B2</b>에서 <b>실린더 전방</b>으로 연결하세요. 한쪽 줄에 압력이 걸려야 다른 쪽 체크가 열려 기름이 빠져나가요.","hose":["PC1_B2","A_rod"],"keep":true},
+    {"g":"1. 유압 호스","t":"<b>펌프</b>를 켜세요.","done":{"type":"state","expect":{"air":true}},"hl":["@air"],"keep":true},
+    {"g":"2. 배선","t":"배선 색을 <b>빨강</b>으로 고르세요.","done":{"type":"color","is":"red"},"btn":"c-red"},
+    {"g":"2. 배선","t":"<b>+24V 잭</b>에서 <b>PB1 13번</b>으로 연결하세요.","wire":["group:rail24","PB1_13","red"],"keep":true},
+    {"g":"2. 배선","t":"<b>PB1 14번</b>에서 <b>Y1 +</b>로 연결하세요.","wire":["PB1_14","V1_Ya_p","red"],"keep":true},
+    {"g":"2. 배선","t":"<b>+24V 잭</b>에서 <b>PB2 13번</b>으로 연결하세요.","wire":["group:rail24","PB2_13","red"],"keep":true},
+    {"g":"2. 배선","t":"<b>PB2 14번</b>에서 <b>Y2 +</b>로 연결하세요.","wire":["PB2_14","V1_Yb_p","red"],"keep":true},
+    {"g":"2. 배선","t":"배선 색을 <b>파랑</b>으로 바꾸세요.","done":{"type":"color","not":"red"},"btn":"c-blue"},
+    {"g":"2. 배선","t":"<b>Y1 −</b>에서 <b>0V 잭</b>으로 연결하세요.","wire":["V1_Ya_n","group:rail0","blue"],"keep":true},
+    {"g":"2. 배선","t":"<b>Y2 −</b>에서 <b>0V 잭</b>으로 연결하세요.","wire":["V1_Yb_n","group:rail0","blue"],"keep":true},
+    {"g":"3. 동작 확인","t":"<b>POWER</b>를 켜세요.","done":{"type":"state","expect":{"power":true}},"hl":["@rocker"],"keep":true},
+    {"g":"3. 동작 확인","t":"<b>PB1</b>을 잠깐 눌렀다 떼 보세요. 중간에서 꽉 고정됩니다.","done":{"type":"state","expect":{"PB1":false,"A":""}},"hl":["@PB1btn"],"demo":{"tap":"PB1","sec":0.35}},
+    {"g":"3. 동작 확인","t":"<b>PB2</b>를 누르고 있어 끝까지 후진시켜 보세요. 성공!","done":{"type":"state","expect":{"PB2":true,"A":"-"}},"hl":["@PB2btn"]}
+  ],
+  "grading":{
+    "setup":{"power":true,"air":true},"repeat":2,
+    "steps":[
+      {"name":"버튼을 누르지 않으면 움직이지 않음","wait":2,"expect":{"A":"-"},
+       "hint":"ABT 중립에서는 실린더 양쪽이 탱크로 열려요. 두 줄 모두 파일럿 체크를 거치게 하세요 (A → A1, A2 → 후방, B → B1, B2 → 전방)."},
+      {"name":"PB1을 누르는 동안 전진","set":{"PB1":true},"wait":0.4,"expect":{"A":""}},
+      {"name":"PB1을 떼면 그 자리에 고정","set":{"PB1":false},"wait":2,"expect":{"A":""}},
+      {"name":"펌프를 꺼도 그 자리 (로킹)","set":{"air":false},"wait":2,"expect":{"A":""}},
+      {"name":"펌프를 켜고 PB2를 누르면 후진","set":{"air":true,"PB2":true},"wait":2,"expect":{"A":"-"},
+       "hint":"후방 기름이 빠지려면 B 줄(B1) 압력으로 A쪽 체크가 열려야 해요. 블록의 A·B를 바꿔 꽂지 않았는지 보세요."},
+      {"name":"PB2를 떼도 그대로","set":{"PB2":false},"wait":1,"expect":{"A":"-"}}
+    ]
+  }
+},
+{
   "id":"practice","no":"실전","title":"실전 연습","steps":[],
   "goal":"가지고 있는 공개도면을 보며 판을 꾸미고 호스·배선을 하세요. 시험장처럼 채점은 없어요. 다 했으면 PB1을 두 번 눌러 변위단계선도대로 똑같이 동작하는지 직접 확인하세요.",
   "learn":"판 구성에서 밸브 종류(편솔·양솔), 센서·리밋 위치, 유지보수 기기를 도면대로 고르세요. 스톱워치로 시간을 재 보세요.",
@@ -939,7 +1109,7 @@ const MISSIONS=[
   "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve42","cylB":"cylinder","valveB":"valve43c"},"set":{"RV":2},
   "practice":{
     "check":["릴리프 압력 4±0.2 MPa","밸브 T 포트는 모두 탱크로 (빠지면 안 움직여요)","+ 배선 적색, − 배선 청색·흑색","전기회로도의 오류를 고쳐 배선 (릴레이 개수는 그대로)","PB1을 두 번 눌러 두 번 다 똑같이 동작하는지"],
-    "choices":{"valveA":["valve42","valve43c","valve43a"],"cylB":["cylinder","motor"],"valveB":["valve42","valve43c","valve43a"],"S1":["","A+","A-","B+","B-"],"S2":["","A+","A-","B+","B-"],"LS1":["","A+","A-","B+","B-"],"LS2":["","A+","A-","B+","B-"],"MA1":["","fcv","chk"],"MA2":["","fcv","chk"],"MB1":["","fcv","chk"],"MB2":["","fcv","chk"],"R1":["","chk"]}
+    "choices":{"cylA":["cylinder","cylw"],"valveA":["valve42","valve43c","valve43a"],"cylB":["cylinder","cylw","motor"],"valveB":["valve42","valve43c","valve43a"],"S1":["","A+","A-","B+","B-"],"S2":["","A+","A-","B+","B-"],"LS1":["","A+","A-","B+","B-"],"LS2":["","A+","A-","B+","B-"],"MA1":["","fcv","thr","chk","cbv","hprv","psw"],"MA2":["","fcv","thr","chk","cbv","hprv","psw"],"MB1":["","fcv","thr","chk","cbv","hprv","psw"],"MB2":["","fcv","thr","chk","cbv","hprv","psw"],"LA":["","lock"],"LB":["","lock"],"R1":["","chk","thr"]}
   }
 },
 {"id":"hfree","no":"∞","title":"유압 자유 실습","goal":"유압 파워유닛, 4/2·4/3 밸브, 실린더·유압모터를 자유롭게 연결해 보세요.","learn":"유압은 쓰고 난 기름이 밸브 T 포트 → 탱크(T)로 돌아가야 움직여요. 펌프 압력은 릴리프(RV)로 맞춥니다 (시험 4±0.2 MPa). 밸브의 ‘종류 교체’로 4/2·4/3을 바꿔 볼 수 있어요.","steps":[],

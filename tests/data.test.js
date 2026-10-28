@@ -119,12 +119,18 @@ for(const mis of MISSIONS.filter(m=>!m.soon)){
 
     for(const k in mis.set||{})assert.ok(LAYOUT.settings[k],`처음 설정값 set: 없는 설정 ${k}`);
     // 실전 연습: 판 구성 선택지가 배치의 자리와 맞는지
-    if(mis.practice)for(const slot of Object.keys(mis.practice.choices||{}))assert.ok(L.slots.some(s=>s.slot===slot),`실전 연습: 없는 자리 ${slot}`);
+    if(mis.practice)for(const [slot,vals] of Object.entries(mis.practice.choices||{})){
+      const sd=L.slots.find(s=>s.slot===slot);
+      assert.ok(sd,`실전 연습: 없는 자리 ${slot}`);
+      for(const v of vals)assert.ok(v===''||(sd.sensor?/^\w+[+-]$/.test(v):(sd.accepts||[]).includes(v)),`실전 연습 ${slot}: ${v}는 놓을 수 없음`);
+    }
+    // 같은 곳을 쓰는 자리(excludes)를 함께 쓰지 않는다
+    for(const sd of L.slots)if((mis.board||{})[sd.slot])(sd.excludes||[]).forEach(e=>assert.ok(!(mis.board||{})[e],`${sd.slot}과 ${e}는 함께 쓸 수 없음`));
     for(const g of (mis.grading?[mis.grading]:[])){
     (g.settingsCheck||[]).forEach(s=>assert.ok(LAYOUT.settings[s.name]&&s.label,`settingsCheck: ${s.name}`));
     (g.steps||[]).forEach((s,i)=>{
       if(s.stroke)assert.ok(cyls.has(s.stroke.cyl)&&['+','-'].includes(s.stroke.dir)&&(s.stroke.min!=null||s.stroke.max!=null),`채점 ${i+1}: stroke`);
-      for(const k in s.meter||{})assert.ok(cyls.has(k)&&['out','in'].includes(s.meter[k]),`채점 ${i+1}: meter`);
+      for(const k in s.meter||{})assert.ok(cyls.has(k)&&['out','in','bleed'].includes(s.meter[k]),`채점 ${i+1}: meter`);
       for(const k in s.pressureAt||{})assert.ok(cyls.has(k)&&s.pressureAt[k].length===2,`채점 ${i+1}: pressureAt`);
     });
     const setOk=k=>k==='power'||k==='air'||inputs.has(k);

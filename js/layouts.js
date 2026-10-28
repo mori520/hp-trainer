@@ -7,7 +7,8 @@
              accepts(놓을 수 있는 종류. 둘 이상이면 화면에서 교체 가능), fixed(항상 놓이는 부품)
              공압 기기 자리 MA1·MA2(실린더 A 후방·전방 줄), MB1·MB2(B), R1(공급 줄, 감압밸브)
              sensor(센서 자리: 부품 종류). 위치는 미션 board에서 "A+"(실린더 A 전진 끝)/"A-"(후진 끝)로 정한다
-             ids(종류마다 다른 부품 이름, 예: {"motor":"M"} → 그 자리에 모터를 놓으면 이름이 M)
+             ids(종류마다 다른 부품 이름, 예: {"motor":"M"} → 그 자리에 모터를 놓으면 이름이 M),
+             excludes(같은 곳을 쓰는 자리: 이 자리에 부품이 있으면 그 자리들은 비워야 함)
    "hyd"(유압 판)는 랙이 공압 판과 같고, 서비스 유닛 대신 유압 파워유닛, 5/2 대신 4/2·4/3 밸브, B 자리에 실린더 또는 유압모터.
    기기 자리 MA1…에는 유량조절(일방향·양방향)·체크·카운터밸런스·감압·압력스위치, LA·LB(실린더 두 포트 아래 한 칸)에는
    파일럿 체크 블록, R1(파워유닛 옆)에는 체크밸브(펌프 토출구) 또는 양방향 유량조절(P→T 블리드오프)을 끼운다.
@@ -73,8 +74,8 @@ const LAYOUTS={
     {"slot":"MA2","id":"MA2","at":[492,860],"accepts":["fcv","thr","chk","cbv","hprv","psw"]},
     {"slot":"MB1","id":"MB1","at":[778,860],"accepts":["fcv","thr","chk","cbv","hprv","psw"]},
     {"slot":"MB2","id":"MB2","at":[942,860],"accepts":["fcv","thr","chk","cbv","hprv","psw"]},
-    {"slot":"LA","id":"LA","at":[410,860],"accepts":["lock"]},
-    {"slot":"LB","id":"LB","at":[860,860],"accepts":["lock"]},
+    {"slot":"LA","id":"LA","at":[410,860],"accepts":["lock"],"excludes":["MA1","MA2"]},
+    {"slot":"LB","id":"LB","at":[860,860],"accepts":["lock"],"excludes":["MB1","MB2"]},
     {"slot":"R1","id":"R1","at":[146,1090],"accepts":["chk","thr"]},
     {"slot":"S1","id":"S1","sensor":"capsensor"},
     {"slot":"S2","id":"S2","sensor":"capsensor"},

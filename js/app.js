@@ -287,10 +287,11 @@ function showResults(res,passText,head){
    공개과제 내용은 넣지 않는다(저작권). 가지고 있는 공개도면을 보며 판 구성(밸브 종류·센서 위치·공압 기기)을 직접 고르고,
    스톱워치로 시간을 재며 꾸민다. 채점 대신 "내 회로 도면"으로 비교한다. 선택지는 미션 데이터의 practice.choices */
 const fmtTime=s=>`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
-const PRAC_LABEL={valveA:'밸브 V1 (실린더 A)',valveB:'밸브 V2 (B 자리)',cylB:'B 자리 액추에이터',S1:'센서 S1',S2:'센서 S2',LS1:'리밋 LS1',LS2:'리밋 LS2',
+const PRAC_LABEL={valveA:'밸브 V1 (실린더 A)',valveB:'밸브 V2 (B 자리)',cylA:'A 자리 실린더',cylB:'B 자리 액추에이터',LA:'A 파일럿 체크 블록',LB:'B 파일럿 체크 블록',S1:'센서 S1',S2:'센서 S2',LS1:'리밋 LS1',LS2:'리밋 LS2',
   MA1:'A 후방 줄 기기',MA2:'A 전방 줄 기기',MB1:'B 후방(A포트) 줄 기기',MB2:'B 전방(B포트) 줄 기기',R1:'공급 줄 기기'};
 const PRAC_NAME={'':'없음',valve52s:'5/2 편솔',valve52d:'5/2 양솔',fcv:'유량조절',qev:'급속배기',prv:'감압',
-  valve42:'4/2 편솔',valve43c:'4/3 양솔 (중립 블록)',valve43a:'4/3 양솔 (중립 ABT)',chk:'체크밸브',cylinder:'실린더',motor:'유압모터'};
+  valve42:'4/2 편솔',valve43c:'4/3 양솔 (중립 블록)',valve43a:'4/3 양솔 (중립 ABT)',chk:'체크밸브',cylinder:'실린더',motor:'유압모터',
+  cylw:'하중 실린더',thr:'양방향 유량조절',hprv:'감압',cbv:'카운터밸런스',psw:'압력스위치',lock:'파일럿 체크'};
 const pracValName=v=>PRAC_NAME[v]||v.replace('+',' 전진 끝').replace('-',' 후진 끝');
 function pracState(){return store.practice=store.practice||{sec:0,run:false};}
 function renderPractice(){
@@ -314,6 +315,9 @@ function setPracticeSlot(slot,val){
   // 센서·리밋은 실린더에만 단다 (B 자리를 모터로 바꾸면 B에 단 센서를 먼저 떼야 함)
   const slots=LAYOUTS[cur().layout].slots, noCyl=Object.entries(next).find(([k,v])=>{const m=/^(\w+)[+-]$/.exec(v);if(!m||!slots.find(x=>x.slot===k&&x.sensor))return false;const c=slots.find(x=>x.id===m[1]);return !c||!['cylinder','cylw'].includes(next[c.slot]);});
   if(noCyl){toast(`${noCyl[0]}은(는) 실린더에만 달 수 있어요. 센서 위치를 먼저 바꾸세요.`);renderPractice();return;}
+  // 같은 곳을 쓰는 자리(파일럿 체크 블록 ↔ 줄 기기 두 칸)는 함께 쓰지 않는다
+  const clash=slots.find(x=>next[x.slot]&&(x.excludes||[]).some(e=>next[e]));
+  if(clash){toast(`${PRAC_LABEL[clash.slot]||clash.slot}과(와) ${clash.excludes.map(e=>PRAC_LABEL[e]||e).join('·')}는 같은 곳이라 함께 쓸 수 없어요.`);renderPractice();return;}
   const used=S.wires.concat(S.hoses),pos={},at=j=>JACKS[j]?JACKS[j].x+','+JACKS[j].y:'';
   used.forEach(x=>[x.a,x.b].forEach(j=>pos[j]=at(j)));
   applyBoard(next);

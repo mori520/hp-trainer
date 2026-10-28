@@ -67,9 +67,9 @@ const LAYOUTS={
   "slots":[
     {"slot":"pump","id":"HPU","at":[46,678],"fixed":"hpu"},
     {"slot":"cylA","id":"A","at":[300,740],"accepts":["cylinder","cylw"]},
-    {"slot":"valveA","id":"V1","at":[290,950],"accepts":["valve42","valve43c","valve43a"]},
+    {"slot":"valveA","id":"V1","at":[290,950],"accepts":["valve42","valve43c","valve43a","valve22"]},
     {"slot":"cylB","id":"B","ids":{"motor":"M"},"at":[750,740],"accepts":["cylinder","cylw","motor"]},
-    {"slot":"valveB","id":"V2","at":[740,950],"accepts":["valve42","valve43c","valve43a"]},
+    {"slot":"valveB","id":"V2","at":[740,950],"accepts":["valve42","valve43c","valve43a","valve22"]},
     {"slot":"MA1","id":"MA1","at":[328,860],"accepts":["fcv","thr","chk","cbv","hprv","psw"]},
     {"slot":"MA2","id":"MA2","at":[492,860],"accepts":["fcv","thr","chk","cbv","hprv","psw"]},
     {"slot":"MB1","id":"MB1","at":[778,860],"accepts":["fcv","thr","chk","cbv","hprv","psw"]},

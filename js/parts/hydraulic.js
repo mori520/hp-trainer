@@ -6,6 +6,7 @@
    - valve43c 4/3 양솔 밸브(중립 올 포트 블록): Ya 여자 P→A·B→T, Yb 여자 P→B·A→T, 둘 다 꺼지면 가운데(모두 막힘 → 그 자리 정지)
    - valve43a 4/3 양솔 밸브(중립 ABT 접속): 가운데에서 A·B·T가 이어지고 P만 막힘 (파일럿 체크와 쓰는 로킹 회로용)
    - motor    유압모터: A로 들어가 B로 나가면 정회전("+"), 반대면 역회전("-"), 아니면 정지("0"). 상태 w.motor[id]={dir,ang}
+   - valve22  2/2 편솔 밸브: 평상시 막힘 / Y 여자 P→A
    - chk      체크밸브 CV: 1→2만 흐름 (펌프 토출구 역류 방지 등)
    밸브 포트 잭 이름: <id>_P / _T / _A / _B, 솔레노이드는 5/2 밸브와 같이 <id>_Ya_p/n, <id>_Yb_p/n */
 PARTS.hpu={
@@ -133,6 +134,42 @@ function valve4(kind){
     }
   };
 }
+/* valve22 2/2 편솔 밸브: 평상시 막힘, Y 여자면 P→A 열림 (포트 <id>_P 아래, <id>_A 위). 한 방향 모터 켜고 끄기 등 */
+PARTS.valve22={
+  name:'2/2 편솔 밸브',solCount:1,
+  loads:p=>[{name:p.sols[0],a:p.id+'_Ya_p',b:p.id+'_Ya_n',sol:true}],
+  init(p,w){w.valve[p.id]=0;},
+  update(p,w,on){w.valve[p.id]=on[p.sols[0]]?1:0;},
+  pneu(p,w,u){if(w.valve[p.id])u.u(p.id+'_P',p.id+'_A');},
+  draw(p){
+    const [x,y]=p.at, W=400, id=p.id, L=x+180, T=y+62, B=y+112, BW=70, ax=L+35;
+    const vg=el('g',{},G);
+    el('rect',{x,y,width:W,height:200,rx:6,class:'panel'},vg);
+    tx('2/2 편솔 밸브',{x:x+14,y:y+22,class:'ptitle'},vg);
+    const sw=el('g',{class:'swap',tabindex:0,role:'button','aria-label':'밸브 종류 교체'},vg);
+    sw.dataset.slot=p.slot;
+    el('rect',{x:x+W-100,y:y+7,width:90,height:22,rx:5},sw);
+    tx('⇄ 종류 교체',{x:x+W-55,y:y+22,'text-anchor':'middle'},sw);
+    ejack(id+'_Ya_p',x+34,y+82,'red',vg,p.sols[0]+' +',0,-16);
+    ejack(id+'_Ya_n',x+34,y+132,'blue',vg,p.sols[0]+' −',0,26);
+    p.r.led=[el('circle',{cx:x+64,cy:y+108,r:5,class:'led'},vg)];
+    [[ax,36,ax,62],[ax,112,ax,158]].forEach(([a,b,c,d])=>el('line',{x1:a,y1:y+b,x2:c,y2:y+d,class:'sym'},vg));
+    pport(id+'_A',ax,y+36,'up',vg,'A',-16,4);
+    pport(id+'_P',ax,y+158,'down',vg,'P',-16,4);
+    const sp=p.r.spool=el('g',{class:'spool'},vg);
+    el('rect',{x:L-BW,y:T,width:BW,height:50,fill:'none',class:'sym'},sp);
+    el('rect',{x:L,y:T,width:BW,height:50,fill:'none',class:'sym'},sp);
+    el('line',{x1:L-BW+35,y1:B,x2:L-BW+35,y2:T+3,class:'sym','marker-end':'url(#ah)'},sp);   // 여자: P→A
+    el('path',{d:`M${ax},${T}V${T+10}M${ax-6},${T+10}H${ax+6}M${ax},${B}V${B-10}M${ax-6},${B-10}H${ax+6}`,class:'sym'},sp);   // 평상시: 막힘
+    el('rect',{x:L-BW-24,y:T+10,width:24,height:30,fill:'none',class:'sym'},sp);
+    el('line',{x1:L-BW-20,y1:T+36,x2:L-BW-4,y2:T+14,class:'sym'},sp);
+    el('path',{d:`M${L+BW},${T+25} l6,-8 l8,16 l8,-16 l8,16 l6,-8`,class:'sym'},sp);
+  },
+  render(p,w){
+    p.r.spool.style.transform=w.valve[p.id]?'translateX(70px)':'translateX(0)';
+    p.r.led[0].classList.toggle('sol',w.out[p.sols[0]]);
+  }
+};
 PARTS.valve42=valve4('42');
 PARTS.valve43c=valve4('43c');
 PARTS.valve43a=valve4('43a');

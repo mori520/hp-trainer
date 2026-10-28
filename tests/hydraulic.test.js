@@ -115,12 +115,13 @@ test('유압 판의 모든 부품이 그리기·화면 갱신 중 오류 없이 
   for(const board of [{cylA:'cylinder',valveA:'valve42',cylB:'motor',valveB:'valve43c',MA1:'fcv',MB1:'chk',R1:'chk',LS1:'A-',LS2:'A+'},
                       {cylA:'cylinder',valveA:'valve43a',cylB:'cylinder',valveB:'valve42',S1:'B+'},
                       {cylA:'cylw',valveA:'valve43a',LA:'lock',cylB:'cylw',valveB:'valve43c',MB1:'psw',MB2:'cbv',R1:'thr',LS2:'A+'},
-                      {cylA:'cylinder',valveA:'valve42',MA1:'hprv',MA2:'thr',cylB:'cylinder',valveB:'valve43a',LB:'lock'}]){
+                      {cylA:'cylinder',valveA:'valve42',MA1:'hprv',MA2:'thr',cylB:'cylinder',valveB:'valve43a',LB:'lock'},
+                      {cylA:'cylinder',valveA:'valve22',cylB:'motor',valveB:'valve22'}]){
     get('configure')({parts:get('makeParts')(HYD(),board)});
     const parts=get('LAYOUT').parts;
     get('buildScene')(parts,HYD().board);
     const J=get('JACKS');
-    for(const id of ['HP1','HT3','V1_P','V1_T','V1_A','V1_B'])assert.ok(J[id],id);
+    for(const id of ['HP1','HT3','V1_P','V1_A'])assert.ok(J[id],id);
     const s=get('newWorld')({wires:[],hoses:[]});
     for(const on of [false,true]){s.air=on;for(const k in s.valve)s.valve[k]=on?2:1;for(const p of parts)if(get('PARTS')[p.type].render)get('PARTS')[p.type].render(p,s);}
   }
@@ -202,4 +203,11 @@ test('파일럿 체크 블록(로킹 회로): ABT 중립에서 꽉 고정, Y1·Y
   run(s,{},2);assert.equal(s.cyl.A,mid,'로킹');
   run(s,{PB2:true},1.5);assert.equal(end(s.cyl.A),'-');
   run(s,{PB2:false,air:false},2);assert.equal(end(s.cyl.A),'-','펌프를 꺼도 그대로');
+});
+
+test('2/2 밸브: 평상시 막힘, Y 여자면 P→A. 한 방향 모터를 켜고 끈다',()=>{
+  const s=world({cylB:'motor',valveB:'valve22'},{wires:pbWires('V2'),hoses:[h('HP1','V2_P'),h('V2_A','M_a'),h('M_b','HT1')]});
+  run(s,{power:true,air:true},.3);assert.equal(s.motor.M.dir,0);assert.equal(s.out.leak,false);
+  run(s,{PB1:true},.3);assert.equal(s.motor.M.dir,1);
+  run(s,{PB1:false},.3);assert.equal(s.motor.M.dir,0);
 });

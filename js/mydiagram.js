@@ -92,6 +92,15 @@ const MYD=(()=>{
     o.push(text(rb+6,vy-6,'A','s','end'),text(rb+42,vy-6,'B','s'),text(rb+6,vy+H+14,'P','s','end'),text(rb+42,vy+H+14,'T','s'));
     ports[p.id+'_A']=[rb+12,vy-8,'up'];ports[p.id+'_B']=[rb+36,vy-8,'up'];ports[p.id+'_P']=[rb+12,vy+H+8,'down'];ports[p.id+'_T']=[rb+36,vy+H+8,'down'];
   }
+  // 2/2 밸브: 왼쪽 칸(여자) P→A, 오른쪽 칸(평상시) 막힘. 포트 A 위, P 아래
+  function valve22(p,x,o,ports,st){
+    const W=48,H=36,vy=VY,x0=x+40,rb=x0+W;
+    o.push(rect(x0,vy,W,H,st?'w act':'w'),rect(rb,vy,W,H,st?'w':'w act'),path(`M${x0+24},${vy+H}L${x0+24},${vy+3}`,'arw'));
+    o.push(path(`M${rb+24},${vy}V${vy+8}M${rb+19},${vy+8}H${rb+29}M${rb+24},${vy+H}V${vy+H-8}M${rb+19},${vy+H-8}H${rb+29}`));
+    o.push(rect(x0-24,vy+8,24,20),line(x0-24,vy+28,x0,vy+8),text(x0-30,vy+23,p.sols[0]||'','t','end'),path(`M${rb+W},${vy+18}l4,-6l6,12l6,-12l4,6`));
+    o.push(path(`M${rb+24},${vy}V${vy-8}M${rb+24},${vy+H}V${vy+H+8}`),text(rb+18,vy-6,'A','s','end'),text(rb+18,vy+H+14,'P','s','end'));
+    ports[p.id+'_A']=[rb+24,vy-8,'up'];ports[p.id+'_P']=[rb+24,vy+H+8,'down'];
+  }
   // 유압모터: 동그라미 + 안쪽 삼각형 2개(양방향). 포트 A·B는 실린더 후방·전방 자리
   function motor(p,x,o,ports){
     const cx=x+80,cy=CY+12;
@@ -166,6 +175,7 @@ const MYD=(()=>{
       valve(p,COL[cylId],o,ports,(info.valve||{})[p.id]);
     });
     parts.filter(p=>/^valve4/.test(p.type)).forEach(p=>valve4(p,p.slot==='valveB'?COL.B:COL.A,o,ports,(info.valve||{})[p.id]));
+    parts.filter(p=>p.type==='valve22').forEach(p=>valve22(p,p.slot==='valveB'?COL.B:COL.A,o,ports,(info.valve||{})[p.id]));
     parts.filter(p=>['fcv','qev','chk','thr','hprv','cbv','psw'].includes(p.type)).forEach(p=>{
       if(p.slot==='R1'){if(p.type==='chk')check(p,330,SUPY-30,o,ports);else hdev(p,330,SUPY-30,o,ports,info);return;}   // 펌프 토출구 체크밸브 / 블리드오프
       const m=/^M([AB])([12])$/.exec(p.slot)||[];const x0=COL[m[1]]??60,x=m[2]==='2'?x0+148:x0+12;

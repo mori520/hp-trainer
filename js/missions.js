@@ -1300,13 +1300,42 @@ const MISSIONS=[
   }
 },
 {
+  "id":"h15","no":"H15","title":"2/2 밸브로 모터 켜고 끄기",
+  "goal":"PB1을 누르고 있는 동안만 유압모터가 한 방향(정회전)으로 돌도록, 2/2 편솔 밸브로 구성하세요. 모터에서 나온 기름은 바로 탱크로 보냅니다.",
+  "learn":"배우는 것: 2/2 밸브(열림·닫힘만 있는 밸브), 한 방향으로만 도는 모터는 B 포트를 바로 탱크에 이어도 된다는 것",
+  "layout":"hyd","board":{"cylB":"motor","valveB":"valve22"},"diagram":"diagrams/h15.svg",
+  "steps":[
+    {"g":"1. 유압 호스","t":"파워유닛 <b>P</b>에서 2/2 밸브 <b>P</b>로 연결하세요.","hose":["group:hp","V2_P"],"keep":true},
+    {"g":"1. 유압 호스","t":"밸브 <b>A</b>에서 모터 <b>A</b>로 연결하세요.","hose":["V2_A","M_a"],"keep":true},
+    {"g":"1. 유압 호스","t":"모터 <b>B</b>에서 <b>탱크 T</b>로 바로 연결하세요. 2/2 밸브엔 T 포트가 없어서, 나온 기름은 여기서 탱크로 돌아가요.","hose":["M_b","group:ht"],"keep":true},
+    {"g":"1. 유압 호스","t":"<b>펌프</b>를 켜세요. 밸브가 막혀 있어 모터는 아직 안 돌아요.","done":{"type":"state","expect":{"air":true}},"hl":["@air"],"keep":true},
+    {"g":"2. 배선","t":"배선 색을 <b>빨강</b>으로 고르세요.","done":{"type":"color","is":"red"},"btn":"c-red"},
+    {"g":"2. 배선","t":"<b>+24V 잭</b>에서 <b>PB1 13번</b>으로 연결하세요.","wire":["group:rail24","PB1_13","red"],"keep":true},
+    {"g":"2. 배선","t":"<b>PB1 14번</b>에서 <b>Y1 +</b>로 연결하세요.","wire":["PB1_14","V2_Ya_p","red"],"keep":true},
+    {"g":"2. 배선","t":"배선 색을 <b>파랑</b>으로 바꾸세요.","done":{"type":"color","not":"red"},"btn":"c-blue"},
+    {"g":"2. 배선","t":"<b>Y1 −</b>에서 <b>0V 잭</b>으로 연결하세요.","wire":["V2_Ya_n","group:rail0","blue"],"keep":true},
+    {"g":"3. 동작 확인","t":"<b>POWER</b>를 켜세요.","done":{"type":"state","expect":{"power":true}},"hl":["@rocker"],"keep":true},
+    {"g":"3. 동작 확인","t":"<b>PB1</b>을 누르고 있어 보세요. 밸브가 열려 모터가 돕니다.","done":{"type":"state","expect":{"PB1":true,"M":"+"}},"hl":["@PB1btn"]},
+    {"g":"3. 동작 확인","t":"손을 떼면 밸브가 닫혀 모터가 멈춥니다. 성공!","done":{"type":"state","expect":{"PB1":false,"M":"0"}},"hl":["@PB1btn"]}
+  ],
+  "grading":{
+    "setup":{"power":true,"air":true},"repeat":2,
+    "steps":[
+      {"name":"버튼을 누르지 않으면 모터 정지","wait":0.5,"expect":{"M":"0"}},
+      {"name":"PB1을 누르는 동안 정회전","set":{"PB1":true},"wait":0.5,"expect":{"M":"+"},
+       "hint":"2/2 밸브 P ← 파워유닛 P, 밸브 A → 모터 A, 모터 B → 탱크 T. 모터 B가 탱크로 안 이어지면 돌지 못해요."},
+      {"name":"PB1을 떼면 정지","set":{"PB1":false},"wait":0.5,"expect":{"M":"0"}}
+    ]
+  }
+},
+{
   "id":"hpractice","no":"실전","title":"실전 연습 (유압)","steps":[],
   "goal":"가지고 있는 유압 공개도면을 보며 판을 꾸미고 호스·배선을 하세요. 채점은 없어요. 다 했으면 PB1을 두 번 눌러 변위단계선도대로 똑같이 동작하는지 직접 확인하세요.",
   "learn":"판 구성에서 밸브 종류(4/2·4/3), B 자리(실린더·유압모터), 리밋·센서 위치, 유지보수 기기를 도면대로 고르세요. 릴리프 압력도 직접 맞추세요.",
   "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve42","cylB":"cylinder","valveB":"valve43c"},"set":{"RV":2},
   "practice":{
     "check":["릴리프 압력 4±0.2 MPa","밸브 T 포트는 모두 탱크로 (빠지면 안 움직여요)","+ 배선 적색, − 배선 청색·흑색","전기회로도의 오류를 고쳐 배선 (릴레이 개수는 그대로)","PB1을 두 번 눌러 두 번 다 똑같이 동작하는지"],
-    "choices":{"cylA":["cylinder","cylw"],"valveA":["valve42","valve43c","valve43a"],"cylB":["cylinder","cylw","motor"],"valveB":["valve42","valve43c","valve43a"],"S1":["","A+","A-","B+","B-"],"S2":["","A+","A-","B+","B-"],"LS1":["","A+","A-","B+","B-"],"LS2":["","A+","A-","B+","B-"],"MA1":["","fcv","thr","chk","cbv","hprv","psw"],"MA2":["","fcv","thr","chk","cbv","hprv","psw"],"MB1":["","fcv","thr","chk","cbv","hprv","psw"],"MB2":["","fcv","thr","chk","cbv","hprv","psw"],"LA":["","lock"],"LB":["","lock"],"R1":["","chk","thr"]}
+    "choices":{"cylA":["cylinder","cylw"],"valveA":["valve42","valve43c","valve43a","valve22"],"cylB":["cylinder","cylw","motor"],"valveB":["valve42","valve43c","valve43a","valve22"],"S1":["","A+","A-","B+","B-"],"S2":["","A+","A-","B+","B-"],"LS1":["","A+","A-","B+","B-"],"LS2":["","A+","A-","B+","B-"],"MA1":["","fcv","thr","chk","cbv","hprv","psw"],"MA2":["","fcv","thr","chk","cbv","hprv","psw"],"MB1":["","fcv","thr","chk","cbv","hprv","psw"],"MB2":["","fcv","thr","chk","cbv","hprv","psw"],"LA":["","lock"],"LB":["","lock"],"R1":["","chk","thr"]}
   }
 },
 {"id":"hfree","no":"∞","title":"유압 자유 실습","goal":"유압 파워유닛, 4/2·4/3 밸브, 실린더·유압모터를 자유롭게 연결해 보세요.","learn":"유압은 쓰고 난 기름이 밸브 T 포트 → 탱크(T)로 돌아가야 움직여요. 펌프 압력은 릴리프(RV)로 맞춥니다 (시험 4±0.2 MPa). 밸브의 ‘종류 교체’로 4/2·4/3을 바꿔 볼 수 있어요.","steps":[],

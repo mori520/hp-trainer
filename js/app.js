@@ -290,7 +290,7 @@ const fmtTime=s=>`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).pad
 const PRAC_LABEL={valveA:'밸브 V1 (실린더 A)',valveB:'밸브 V2 (B 자리)',cylA:'A 자리 실린더',cylB:'B 자리 액추에이터',LA:'A 파일럿 체크 블록',LB:'B 파일럿 체크 블록',S1:'센서 S1',S2:'센서 S2',LS1:'리밋 LS1',LS2:'리밋 LS2',
   MA1:'A 후방 줄 기기',MA2:'A 전방 줄 기기',MB1:'B 후방(A포트) 줄 기기',MB2:'B 전방(B포트) 줄 기기',R1:'공급 줄 기기'};
 const PRAC_NAME={'':'없음',valve52s:'5/2 편솔',valve52d:'5/2 양솔',fcv:'유량조절',qev:'급속배기',prv:'감압',
-  valve42:'4/2 편솔',valve43c:'4/3 양솔 (중립 블록)',valve43a:'4/3 양솔 (중립 ABT)',chk:'체크밸브',cylinder:'실린더',motor:'유압모터',
+  valve42:'4/2 편솔',valve22:'2/2 편솔',valve43c:'4/3 양솔 (중립 블록)',valve43a:'4/3 양솔 (중립 ABT)',chk:'체크밸브',cylinder:'실린더',motor:'유압모터',
   cylw:'하중 실린더',thr:'양방향 유량조절',hprv:'감압',cbv:'카운터밸런스',psw:'압력스위치',lock:'파일럿 체크'};
 const pracValName=v=>PRAC_NAME[v]||v.replace('+',' 전진 끝').replace('-',' 후진 끝');
 function pracState(){return store.practice=store.practice||{sec:0,run:false};}

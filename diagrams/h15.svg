@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 910" width="560" height="910">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#111"/></marker></defs>
+<style>
+.w{stroke:#111;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.thin{stroke:#bbb;stroke-width:1;fill:none}
+.thick{stroke:#111;stroke-width:4;fill:none}
+.dash{stroke:#111;stroke-width:1.4;fill:none;stroke-dasharray:4 3}
+.arw{stroke:#111;stroke-width:1.4;fill:none;marker-end:url(#ar)}
+.fill{fill:#111;stroke:#111}
+.dot{fill:#111}
+.t{font:13px "Malgun Gothic","Apple SD Gothic Neo",sans-serif;fill:#111}
+.s{font:11px "Malgun Gothic","Apple SD Gothic Neo",sans-serif;fill:#444}
+.h{font:bold 15px "Malgun Gothic","Apple SD Gothic Neo",sans-serif;fill:#111}
+.n{font:bold 13px "Malgun Gothic","Apple SD Gothic Neo",sans-serif;fill:#111}
+</style>
+<rect width="100%" height="100%" fill="#fff"/>
+<text x="16" y="26" text-anchor="start" class="h">가. 유압회로도</text>
+<text x="110" y="80" text-anchor="start" class="n">M</text>
+<text x="214" y="86" text-anchor="start" class="s">유압모터</text>
+<circle cx="190" cy="102" r="20" class="w"/>
+<path d="M184,84L190,92L196,84Z" class="fill"/>
+<path d="M184,120L190,112L196,120Z" class="fill"/>
+<path d="M122,130V102H170M258,130V102H210" class="w"/>
+<rect x="150" y="240" width="48" height="36" class="w"/>
+<rect x="198" y="240" width="48" height="36" class="w"/>
+<path d="M174,276L174,243" class="arw"/>
+<path d="M222,240V248M217,248H227M222,276V268M217,268H227" class="w"/>
+<rect x="126" y="248" width="24" height="20" class="w"/>
+<line x1="126" y1="268" x2="150" y2="248" class="w"/>
+<text x="120" y="263" text-anchor="end" class="t">Y1</text>
+<path d="M246,258l4,-6l6,12l6,-12l6,12l4,-6" class="w"/>
+<text x="216" y="234" text-anchor="end" class="s">A</text>
+<text x="216" y="290" text-anchor="end" class="s">P</text>
+<path d="M222,240V222H122V130" class="w"/>
+<path d="M258,130V370" class="w"/>
+<path d="M248,370V378H268V370" class="w"/>
+<path d="M222,276V320H100V332" class="w"/>
+<circle cx="100" cy="346" r="13" class="w"/>
+<path d="M93,350L100,339L107,350Z" class="fill"/>
+<line x1="100" y1="359" x2="100" y2="370" class="w"/>
+<path d="M90,370V378H110V370" class="w"/>
+<path d="M140,320V332" class="w"/>
+<rect x="130" y="332" width="20" height="20" class="w"/>
+<line x1="134" y1="348" x2="146" y2="336" class="arw"/>
+<path d="M140,352V370" class="w"/>
+<path d="M130,370V378H150V370" class="w"/>
+<text x="154" y="348" text-anchor="start" class="s">릴리프 4.0 MPa</text>
+<text x="16" y="430" text-anchor="start" class="h">나. 전기회로도</text>
+<line x1="50" y1="460" x2="530" y2="460" class="w"/>
+<line x1="50" y1="760" x2="530" y2="760" class="w"/>
+<text x="44" y="465" text-anchor="end" class="n">24V</text>
+<text x="44" y="765" text-anchor="end" class="n">0V</text>
+<circle cx="170" cy="460" r="2.6" class="dot"/>
+<line x1="170" y1="460" x2="170" y2="495" class="w"/>
+<path d="M170,495V507M170,523V535M170,523L161,508" class="w"/>
+<line x1="166" y1="515" x2="150" y2="515" class="dash"/>
+<path d="M150,509V521M150,509H145M150,521H145" class="w"/>
+<text x="138" y="520" text-anchor="end" class="t">PB1</text>
+<line x1="170" y1="535" x2="170" y2="706" class="w"/>
+<rect x="158" y="706" width="24" height="18" class="w"/>
+<line x1="158" y1="724" x2="182" y2="706" class="w"/>
+<text x="188" y="720" text-anchor="start" class="t">Y1</text>
+<line x1="170" y1="724" x2="170" y2="760" class="w"/>
+<circle cx="170" cy="760" r="2.6" class="dot"/>
+<text x="16" y="810" text-anchor="start" class="h">다. 동작</text>
+<text x="40" y="850" text-anchor="start" class="t">PB1을 누르는 동안 모터 정회전</text>
+<text x="40" y="870" text-anchor="start" class="t">떼면 정지</text>
+</svg>

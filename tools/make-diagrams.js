@@ -192,6 +192,7 @@ function hmotor(S,x,y,name){
 function hyd(S,x,y,o){
   const act=o.act==='motor'?hmotor(S,x,y,o.name):cylinder(S,x,y,o.name,o.sensors||[]);
   if(o.act==='cylw'){S.rect(x+204,y+20,20,18);S.text(x+214,y+33,'W',{anchor:'middle',c:'s'});S.text(x+232,y+33,'하중',{c:'s'});}
+  if(o.valve==='22')return hyd22(S,act,y,x,o);
   const three=o.valve!=='42',abt=o.valve==='43a',W=48,H=36,vy=y+150,vx=x+20;
   const boxes=three?['par','mid','cross']:['par','cross'],rb=vx+W;
   boxes.forEach((b,i)=>{
@@ -233,6 +234,24 @@ function hyd(S,x,y,o){
   S.text(rx+14,py+28,`릴리프 ${o.rv||'4.0'} MPa`,{c:'s'});
   if(o.supply==='bleed'){const bx=pumpX-40;S.path(`M${pumpX},${py}H${bx}V${py+12}`);S.path(`M${bx-5},${py+16}Q${bx},${py+22} ${bx-5},${py+28}M${bx+5},${py+16}Q${bx},${py+22} ${bx+5},${py+28}`);S.line(bx-8,py+30,bx+8,py+14,'arw');S.path(`M${bx},${py+30}V${py+50}`);tank(S,bx,py+50);S.text(bx,py+72,'블리드오프',{anchor:'middle',c:'s'});}
   S.path(`M${bxp},${vy+H}V${py+50}`);tank(S,bxp,py+50);
+  return{py,ax};
+}
+
+// 2/2 밸브(평상시 막힘) → 액추에이터 A 포트, 액추에이터 B 포트는 바로 탱크 (한 방향 모터)
+function hyd22(S,act,y,x,o){
+  const W=48,H=36,vy=y+150,vx=x+40,rb=vx+W,ax=rb+24;
+  S.rect(vx,vy,W,H).rect(rb,vy,W,H);S.path(`M${vx+24},${vy+H}L${vx+24},${vy+3}`,'arw');
+  S.path(`M${ax},${vy}V${vy+8}M${ax-5},${vy+8}H${ax+5}M${ax},${vy+H}V${vy+H-8}M${ax-5},${vy+H-8}H${ax+5}`);
+  S.rect(vx-24,vy+8,24,20);S.line(vx-24,vy+28,vx,vy+8);S.text(vx-30,vy+23,o.sols[0],{anchor:'end'});S.path(`M${rb+W},${vy+18}l4,-6l6,12l6,-12l6,12l4,-6`);
+  S.text(ax-6,vy-6,'A',{anchor:'end',c:'s'}).text(ax-6,vy+H+14,'P',{anchor:'end',c:'s'});
+  S.path(`M${ax},${vy}V${vy-18}H${act.cap[0]}V${act.cap[1]}`);
+  S.path(`M${act.rod[0]},${act.rod[1]}V${vy+H+94}`);tank(S,act.rod[0],vy+H+94);
+  const py=vy+H+44,pumpX=vx-50;
+  S.path(`M${ax},${vy+H}V${py}H${pumpX}V${py+12}`);
+  S.add(`<circle cx="${pumpX}" cy="${py+26}" r="13" class="w"/>`);S.path(`M${pumpX-7},${py+30}L${pumpX},${py+19}L${pumpX+7},${py+30}Z`,'fill');
+  S.line(pumpX,py+39,pumpX,py+50);tank(S,pumpX,py+50);
+  const rx=pumpX+40;S.path(`M${rx},${py}V${py+12}`);S.rect(rx-10,py+12,20,20);S.line(rx-6,py+28,rx+6,py+16,'arw');S.path(`M${rx},${py+32}V${py+50}`);tank(S,rx,py+50);
+  S.text(rx+14,py+28,`릴리프 ${o.rv||'4.0'} MPa`,{c:'s'});
   return{py,ax};
 }
 
@@ -457,3 +476,5 @@ sheet('h14.svg',{...HS,w:580,names:['A'],seq:['A+','A-'],note:['PB2: 연속 반�
     L.rung(300,[{t:'nc',name:'LS2',act:'ls'},{t:'no',name:'K1',hold:'K2',span:2},{t:'no',name:'LS1',act:'ls'},{t:'coil',name:'K2'}]);
     L.rung(470,[{t:'no',name:'K2'},{t:'sol',name:'Y1'}]);
   }});
+sheet('h15.svg',{...HS,names:['M'],seq:[],note:['PB1을 누르는 동안 모터 정회전','떼면 정지'],
+  pneu:S=>hyd(S,110,90,{act:'motor',name:'M',valve:'22',sols:['Y1']}),elec:pbY});

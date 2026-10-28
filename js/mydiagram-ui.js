@@ -1,46 +1,14 @@
 /* ===================== 내 회로 도면: 창 =====================
    "내 회로 도면" 버튼 → 떠 있는 창(탭: 공기압회로도 / 변위단계선도 / 전기회로도). 띄운 채로 배선하거나 버튼을 누르면 바로바로 다시 그린다.
-   변위단계선도는 실린더가 끝에 닿을 때마다 기록한다: 움직이기 시작하면 기록 시작, 모두 끝에 멈춘 채 1.5초 지나면 한 번(회차) 끝.
+   변위단계선도 기록(MYD.recTick)은 매 프레임 app.js 루프에서 recMotion()으로 부른다.
    app.js 다음에 불러온다 (S·UI·cur·LAYOUT을 쓴다). 그림은 mydiagram.js */
 const MYUI={tab:'pneu',key:''};
-const REC={at:{},cur:null,runs:[],last:0,ver:0};
-const REST=1.5;   // 이만큼 모두 멈춰 있으면 한 회차가 끝난 것으로 본다
-function recReset(){REC.at={};REC.cur=null;REC.runs=[];REC.ver++;}
-// 매 프레임(app.js 루프): 실린더가 끝에 닿거나 떠난 순간을 기록
-function recMotion(){
-  if(!S)return;
-  let moving=false;
-  for(const k in S.cyl){
-    const e=cylEnd(S.cyl[k]),prev=REC.at[k];
-    if(prev===undefined){REC.at[k]=e;continue;}
-    if(!e)moving=true;
-    if(e===prev)continue;
-    REC.at[k]=e;
-    if(!e){   // 끝에서 떠남
-      if(!REC.cur)REC.cur={ev:[]};
-      REC.cur.ev.push({k,t:S.t,dep:true});
-    }else if(REC.cur)REC.cur.ev.push({k,e,t:S.t});
-    REC.last=S.t;REC.ver++;
-  }
-  if(REC.cur&&!moving&&S.t-REC.last>REST){
-    REC.runs.push(REC.cur);if(REC.runs.length>2)REC.runs.shift();
-    REC.cur=null;REC.ver++;
-  }
-}
-// 기록 → 변위단계선도 칸: 도착마다 한 칸, 도착 뒤 다음 출발까지 1초 넘게 머물면 "wait:n초" 칸을 끼운다
-function recSeq(run){
-  const seq=[],ev=run.ev;
-  ev.forEach((x,i)=>{
-    if(x.dep)return;
-    seq.push(x.k+x.e);
-    const nx=ev.slice(i+1).find(y=>y.dep);
-    if(nx&&nx.t-x.t>1)seq.push(`wait:${(nx.t-x.t).toFixed(1)}초`);
-  });
-  return{seq};
-}
+const REC=MYD.recNew();
+function recReset(){Object.assign(REC,MYD.recNew(),{ver:REC.ver+1});}
+function recMotion(){if(S)MYD.recTick(REC,S);}
 function myDiagramSvg(){
   if(MYUI.tab==='pneu')return MYD.pneu(LAYOUT.parts,S.hoses,{set:S.set,leak:S.out.leak,valve:S.valve});
-  if(MYUI.tab==='disp')return MYD.disp(REC.runs.map(recSeq),Object.keys(S.cyl),REC.cur&&recSeq(REC.cur));
+  if(MYUI.tab==='disp')return MYD.disp(REC.runs.map(MYD.recSeq),Object.keys(S.cyl),REC.cur&&MYD.recSeq(REC.cur));
   return MYD.elec(LAYOUT,PARTS,S,solveElec(S,false));
 }
 function renderMyDiagram(force){

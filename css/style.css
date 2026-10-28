@@ -308,4 +308,5 @@ body.in-lesson .mydiag{display:none}
 .mdsvg .dash{stroke:#111;stroke-width:1.3;stroke-dasharray:3 3;fill:none} .mdsvg .thick2{stroke:#111;stroke-width:2.4}
 .mdsvg .dot{fill:#111} .mdsvg .open{fill:#fff;stroke:#c0302b;stroke-width:1.4}
 .mdsvg .t{font:13px var(--sans);fill:#111} .mdsvg .s{font:11px var(--sans);fill:#444} .mdsvg .n{font:bold 13px var(--sans);fill:#111}
+.mdsvg .live{font:bold 13px var(--sans);fill:#b35a00}
 .mdsvg .bad{font:bold 13px var(--sans);fill:#c0302b} .mdsvg .good{font:bold 13px var(--sans);fill:#1d7f46}

@@ -75,3 +75,29 @@ test('전기회로도: 그림이 만들어진다 (접점 이름·번호)',()=>{
   const s=MYD.elec(get('LAYOUT'),get('PARTS'),w,null);
   assert.match(s,/^<svg /);assert.match(s,/PB2/);assert.match(s,/11-12/);assert.doesNotMatch(s,/확인할 곳/);
 });
+
+/* 변위단계선도 기록: 엔진을 돌리며 매 프레임 recTick */
+function runRec(id,set,presses){
+  const mis=get('MISSIONS').find(x=>x.id===id),L=get('LAYOUTS')[mis.layout];parts(id);get('buildScene')(get('LAYOUT').parts,L.board);
+  const J=get('JACKS'),G=get('JACK_GROUPS'),pick=s=>s.startsWith('group:')?Object.keys(J).find(G[s.slice(6)]):s;
+  const w=get('newWorld')(get('withJumpers')(L,{wires:mis.steps.filter(s=>s.wire).map((s,i)=>({id:'t'+i,a:pick(s.wire[0]),b:pick(s.wire[1]),color:s.wire[2]})),
+    hoses:mis.steps.filter(s=>s.hose).map((s,i)=>({id:'h'+i,a:pick(s.hose[0]),b:pick(s.hose[1])})),set}));
+  w.power=true;w.air=true;
+  const rec=MYD.recNew(),step=sec=>{for(let t=0;t<sec;t+=0.02){get('stepWorld')(w,0.02);MYD.recTick(rec,w);}};
+  step(1);
+  presses.forEach(([wait])=>{w.pb.PB1=true;step(0.2);w.pb.PB1=false;step(wait);});
+  return JSON.parse(JSON.stringify(rec.runs.map(MYD.recSeq).map(r=>r.seq)));
+}
+test('기록: 타이머로 3초 머물러도 한 회차 (A+ 3초 A−)',()=>{
+  const runs=runRec('m11',{T1:3},[[8]]);
+  assert.equal(runs.length,1);
+  assert.equal(runs[0][0],'A+');assert.match(runs[0][1],/^wait:3\.\d초$/);assert.equal(runs[0][2],'A-');
+});
+test('기록: 끝나고 1초 넘게 기다렸다 다시 누르면 2회차로 나뉜다',()=>{
+  const runs=runRec('m8',{},[[7],[7]]);
+  assert.deepEqual(runs,[['A+','B+','B-','A-'],['A+','B+','B-','A-']]);
+});
+test('기록: 끝나자마자(1초 안에) 다시 누르면 한 회차로 붙는다 (그래서 안내가 필요)',()=>{
+  const runs=runRec('m5',{},[[2.6],[5]]);   // m5 한 사이클 ≈2.2초 → 0.4초 쉬고 다시 누름
+  assert.equal(runs.length,1);assert.deepEqual(runs[0],['A+','A-','A+','A-']);
+});

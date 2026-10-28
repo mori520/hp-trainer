@@ -106,6 +106,42 @@ const MYD=(()=>{
     return svg(760,420,o.join('')+lines.join('')+ends.join('')+notes.join(''));
   }
 
+  /* ---------- 변위단계선도 기록 ----------
+     매 프레임 recTick(rec, w): 실린더가 끝에 닿거나 떠난 순간을 남긴다. 누가 움직이기 시작하면 한 회차 시작,
+     모든 실린더가 회차를 시작할 때의 자리로 돌아와 REST초 동안 멈춰 있으면 그 회차 끝 (최근 2회차만 둔다).
+     타이머로 중간에 머무는 동안은 처음 자리가 아니라서 회차가 끊기지 않는다 */
+  const REST=1;
+  const recNew=()=>({at:{},cur:null,runs:[],last:0,ver:0});
+  function recTick(rec,w){
+    let moving=false;
+    for(const k in w.cyl){
+      const e=cylEnd(w.cyl[k]),prev=rec.at[k];
+      if(prev===undefined){rec.at[k]=e;continue;}
+      if(!e)moving=true;
+      if(e===prev)continue;
+      if(!e&&!rec.cur)rec.cur={ev:[],start:Object.assign({},rec.at)};   // 회차 시작: 지금 자리 기억
+      rec.at[k]=e;
+      if(rec.cur)rec.cur.ev.push(e?{k,e,t:w.t}:{k,t:w.t,dep:true});
+      rec.last=w.t;rec.ver++;
+    }
+    const home=rec.cur&&Object.keys(rec.cur.start).every(k=>rec.at[k]===rec.cur.start[k]);
+    if(rec.cur&&!moving&&home&&w.t-rec.last>REST){
+      rec.runs.push(rec.cur);if(rec.runs.length>2)rec.runs.shift();
+      rec.cur=null;rec.ver++;
+    }
+  }
+  // 기록 → 변위단계선도 칸: 도착마다 한 칸, 도착 뒤 다음 출발까지 1초 넘게 머물면 "wait:n초" 칸을 끼운다
+  function recSeq(run){
+    const seq=[],ev=run.ev;
+    ev.forEach((x,i)=>{
+      if(x.dep)return;
+      seq.push(x.k+x.e);
+      const nx=ev.slice(i+1).find(y=>y.dep);
+      if(nx&&nx.t-x.t>1)seq.push(`wait:${(nx.t-x.t).toFixed(1)}초`);
+    });
+    return{seq};
+  }
+
   /* ---------- 변위단계선도 ---------- */
   // seq: "A+"·"B-" 같은 도착, "wait:3.0초"는 그 구간 그대로 머묾. 실린더마다 0(후진)·1(전진) 줄
   function dispRows(x,y,names,seq,o){
@@ -126,9 +162,14 @@ const MYD=(()=>{
   const fmt=s=>s.filter(m=>!m.startsWith('wait:')).map(m=>m.replace('-','−')).join(' ')||'움직임 없음';
   function disp(runs,names,live){
     if(!names.length)return svg(760,200,text(380,100,'이 미션에는 실린더가 없어요','t','middle'));
-    const o=[];let y=46;
-    if(!runs.length&&!live)o.push(text(380,90,'PB1을 눌러 동작시키면 실린더가 끝에 닿은 순서를 기록해 여기에 그려요','t','middle'),
-      text(380,114,'한 번 끝나고(1.5초 동안 멈춤) 다시 누르면 두 번째 기록과 나란히 비교해요','s','middle'));
+    // 맨 위 안내: 지금 무엇을 하면 되는지
+    const guide=live?'● 기록 중… 실린더가 모두 처음 자리로 돌아오고 1초가 지나면 이번 회차가 끝나요'
+      :!runs.length?'PB1을 눌러 동작시키면 실린더가 끝에 닿은 순서를 기록해요'
+      :runs.length===1?'1회차 기록 끝! 이제 PB1을 다시 눌러 2회차를 기록하세요'
+      :'2회차까지 기록했어요. 다시 누르면 오래된 기록이 빠지고 새 기록과 비교해요';
+    const o=[text(20,26,guide,live?'live':'n')];let y=86;
+    if(!runs.length&&!live)o.push(text(380,90,'한 회차는 실린더가 모두 처음 자리로 돌아오고 1초 지나면 끝나요','s','middle'),
+      text(380,112,'그 뒤에 다시 누르면 2회차로 나란히 그려서 같은지 비교해요 (시험은 2회 이상 똑같이 동작해야 인정)','s','middle'));
     const all=runs.map((r,i)=>({title:`${runs.length>1?(i+1)+'회차':'기록'}: ${fmt(r.seq)}`,seq:r.seq}));
     if(live)all.push({title:`기록 중… ${fmt(live.seq)}`,seq:live.seq});
     all.forEach(r=>{o.push(text(20,y-22,r.title,'n'));y+=dispRows(80,y,names,r.seq,o)+44;});
@@ -239,7 +280,9 @@ const MYD=(()=>{
           o.push(text(cx+14,cy-2,el.name,'t'),text(cx+14,cy+13,el.term,'s'));
         }else if(el.kind==='sensor'){
           o.push(rect(cx-12,cy-16,24,32,el.closed?'w lonbox':'w'),path(`M${cx},${cy-11}L${cx+7},${cy-4}L${cx},${cy+3}L${cx-7},${cy-4}Z`),
-            path(`M${cx},${cy-18}V${cy-16}M${cx},${cy+16}V${cy+18}`),text(cx+16,cy+4,el.name,'t'));
+            path(`M${cx},${cy-18}V${cy-16}M${cx},${cy+16}V${cy+18}`),text(cx+16,cy+4,el.name,'t'),
+            // 센서 선 색: 위 갈색(+24V)에서 들어와 아래 흑색(출력)으로 나감. 청색(0V)은 0V에 따로
+            text(cx-15,cy-10,'갈','s','end'),text(cx-15,cy+16,'흑','s','end'),text(cx+16,cy+18,'청→0V','s'));
         }else{
           const on=el.on?' lonbox':'';
           if(el.kind==='lamp')o.push(circ(cx,cy,11,'w'+on),path(`M${cx-8},${cy-8}L${cx+8},${cy+8}M${cx+8},${cy-8}L${cx-8},${cy+8}`));
@@ -282,5 +325,5 @@ const MYD=(()=>{
     return svg(W,y+10,o.join(''));
   }
   // _reduce: 테스트용 (정리 결과 + 확인할 곳 전체)
-  return{pneu,disp,elec,_reduce:(L,PARTS,w)=>{const G=elecGraph(L,PARTS,w,null),R=reduce(G);return{rungs:R.rungs,issues:G.issues.concat(R.issues)};}};
+  return{pneu,disp,elec,recNew,recTick,recSeq,_reduce:(L,PARTS,w)=>{const G=elecGraph(L,PARTS,w,null),R=reduce(G);return{rungs:R.rungs,issues:G.issues.concat(R.issues)};}};
 })();

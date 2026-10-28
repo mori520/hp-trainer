@@ -100,7 +100,7 @@
 ### 파일 구조
 
 `index.html`을 더블클릭해도 열리도록 ES 모듈 대신 `<script src>`를 순서대로 불러온다 (파일끼리 전역 변수 공유).
-순서: engine → parts → missions → lessonfigs → lessons → mydiagram → grader → tutorial → render → app → lesson → mydiagram-ui.
+순서: engine → parts → missions → lessonfigs → lessons → mydiagram → grader → demo → tutorial → render → app → lesson → mydiagram-ui → demo-ui.
 
 | 파일 | 내용 |
 | --- | --- |
@@ -119,10 +119,12 @@
 | `diagrams/*.svg` | 미션 도면 (가. 공기압회로도 / 나. 전기회로도 / 다. 변위단계선도). 손으로 고치지 말고 `node tools/make-diagrams.js`로 다시 만든다 |
 | `tools/make-diagrams.js` | 도면 생성 도구 (개발용). 세로 사다리 전기회로도, 실린더·5/2 밸브, 변위단계선도를 그리는 함수 + 미션별 도면 정의 |
 | `js/grader.js` | 데이터 기반 채점기 `gradeMission(미션, 회로)`. 미션의 `grading`(단계 검사 또는 변위단계선도) 형식은 파일 머리 주석 참고. 합선·배선 색·공기 누설은 항상 검사. 단계마다 그동안의 움직임(`moves` 정확히 / `movesRepeat` 되풀이)도 검사 가능 |
-| `tests/` | 자동 테스트 (Node 내장 `node --test`, 외부 패키지 없음). `load.js`가 index.html의 스크립트를 가짜 DOM과 함께 불러옴. engine(엔진), grader(채점 + 변위단계선도 + "튜토리얼대로 연결하면 통과"), data(미션·배치 데이터 오타, keep 단계 충돌 검사), lessons(강의 그림 이름·식이 버튼 상태와 맞는지) |
-| `js/tutorial.js` | 튜토리얼 단계 판정·강조 |
+| `tests/` | 자동 테스트 (Node 내장 `node --test`, 외부 패키지 없음). `load.js`가 index.html의 스크립트를 가짜 DOM과 함께 불러옴. engine(엔진), grader(채점 + 변위단계선도 + "튜토리얼대로 연결하면 통과"), data(미션·배치 데이터 오타, keep 단계 충돌 검사), lessons(강의 그림 이름·식이 버튼 상태와 맞는지), demo(모든 튜토리얼을 시연이 끝까지 해내고 채점 통과), build(배포 주소에 ?v=버전) |
+| `js/tutorial.js` | 튜토리얼 단계 강조·목록 (완료 판정은 demo.js `tutStepDone`을 같이 씀) |
+| `js/demo.js` | 시연(자동 재생) 계획·진행 `DEMO.plan`/`DEMO.tick`. DOM 안 씀. 단계 데이터만 읽어 할 일을 정함(묶음 잭은 가까운 빈 잭, state 단계는 expect·hl로 누르기/떼기/탭). 애매하면 단계에 `"demo":{"tap"|"hold"|"release":"PB1"}` |
+| `js/demo-ui.js` | 튜토리얼 "▶ 시연 보기" 버튼, 선 그어지는 모습, 조작 막대(일시정지·한 단계·빠르기·그만, 화면 아래 가운데). 시연 중 내 회로 도면을 작게 띄워 탭이 따라감. 끝나면 4초 뒤 빈 판 |
 | `js/render.js` | 배선·호스 그리기, 매 프레임 상태 표시 |
-| `js/app.js` | 저장(localStorage `ph-trainer-v1`), 마우스·키보드 조작, 미션 패널, 메인 루프, 시작 |
+| `js/app.js` | 저장(localStorage `ph-trainer-v1`), 마우스·키보드 조작, 미션 패널, 설정 ⚙(모든 기록 지우기), 메인 루프(모든 파일을 읽은 뒤 시작), 시작 |
 
 로컬 확인 시 주의: 앱 내장 브라우저의 파일 미리보기는 `js/`·`css/`를 못 불러오므로 정적 서버로 띄워 확인한다.
 
@@ -131,7 +133,7 @@
 - 실행: `npm test` (= `node --test "tests/*.test.js"`). Node.js LTS 설치됨 (2026-10-28)
 - 엔진·부품·미션 데이터를 고치면 반드시 돌릴 것. 새 미션은 data 테스트가 자동으로 검사함
 - `tests/fixtures.js`의 회로 예시는 채점기 검증용일 뿐, 앱 채점은 정답 비교를 하지 않는다
-- 새 부품 파일은 index.html에 `<script src>`만 추가하면 테스트도 자동으로 불러옴 (tutorial·render·app만 제외)
+- 새 부품 파일은 index.html에 `<script src>`만 추가하면 테스트도 자동으로 불러옴 (화면 파일 tutorial·render·app·lesson·mydiagram-ui·demo-ui만 제외)
 
 ### 배치 방식: 고정 자리 + 종류 선택
 
@@ -233,9 +235,9 @@
 11. 내 회로 도면 (떠 있는 창, 탭): 공기압회로도(호스) + 변위단계선도(움직임 기록) 먼저 → 전기회로도(배선, 직렬·병렬부터, 결과 보고 유지 여부 결정) → 미션 0~4 시연
    - 1차 완료 (2026-10-28): 공기압회로도 + 변위단계선도 탭. 모든 미션·실전 연습에서 "내 회로 도면" 버튼
    - 2차 완료 (2026-10-28): 전기회로도 탭. 테스트: 튜토리얼 배선 20개가 모두 "확인할 곳" 없이 정리되는지, 선 하나 빼면 끊긴 줄로 나오는지
-   - 다음: 미션 0~4 시연
+   - 3차 완료 (2026-10-28 자동 작업): 튜토리얼 시연 보기 (미션 0~4만이 아니라 튜토리얼이 있는 모든 미션)
 
-배포 (2026-10-28 결정): GitHub **공개** 저장소(mori520) + Cloudflare Pages, 접속 제한 없음. 빌드 명령 `npm run build`(tools/build.js가 앱 파일만 dist/로 복사), 출력 폴더 `dist`. 커밋 작성자는 GitHub noreply 이메일만 쓸 것(개인 이메일 금지). `docs/`는 저장소에 넣지 않음
+배포 (2026-10-28 결정): GitHub **공개** 저장소(mori520) + Cloudflare Pages, 접속 제한 없음. 빌드 명령 `npm run build`(tools/build.js가 앱 파일만 dist/로 복사하고 css·js 주소에 `?v=커밋 해시`, 오른쪽 아래 버전 표시), 출력 폴더 `dist`. 커밋 작성자는 GitHub noreply 이메일만 쓸 것(개인 이메일 금지). `docs/`는 저장소에 넣지 않음
 
 그 뒤 로드맵: 아래 "자동 작업"의 작업 순서를 따른다 (설정 초기화·캐시 → 시연 → 유압 확장).
 진행 상황은 `docs/plan.xlsx`(로컬 전용, 저장소 제외)에도 있다.

@@ -1,0 +1,8 @@
+// Cloudflare 배포 설정 — 앱 파일만 모은 dist/ 폴더를 정적 사이트로 올린다 (README "개발" 참고)
+{
+  "name": "hp-trainer",
+  "compatibility_date": "2025-06-01",
+  // 배포 전에 dist/를 만든다 (tools/build.js: index.html·css·js·diagrams만 복사)
+  "build": { "command": "npm run build" },
+  "assets": { "directory": "./dist" }
+}

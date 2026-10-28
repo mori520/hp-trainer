@@ -101,4 +101,13 @@ function autoWireColor(a,b){return [a,b].some(id=>JACKS[id]&&JACKS[id].color==='
 function isR24(id){return JACKS[id]&&JACKS[id].rail==='24';}
 function isR0(id){return JACKS[id]&&JACKS[id].rail==='0';}
 function isDist(id){return /^D\d$/.test(id);}
-const JACK_GROUPS={rail24:isR24,rail0:isR0,dist:isDist};
+// 유압 파워유닛: hp = 펌프 P 포트(HP1·HP2), ht = 탱크 T 포트(HT1~HT3)
+function isHP(id){return /^HP\d$/.test(id);}
+function isHT(id){return /^HT\d$/.test(id);}
+// 공압 판/유압 판에 따라 바뀌는 말 (화면 안내·채점 항목 이름)
+function fluidText(){
+  return LAYOUT.fluid==='hyd'
+    ?{name:'유압',supply:'펌프',stopFirst:'펌프를 먼저 끈 뒤',leak:'P→T 직결 없음 (압력이 오르는지)',leakDetail:'펌프에서 나온 기름이 일하지 않고 탱크로 바로 돌아가는 연결이 있습니다. 압력이 오르지 않아요.'}
+    :{name:'공기',supply:'공기',stopFirst:'공기 공급을 먼저 끈 뒤',leak:'공기 누설 없음',leakDetail:'공급 공기가 배기 쪽으로 바로 빠지는 연결이 있습니다.'};
+}
+const JACK_GROUPS={rail24:isR24,rail0:isR0,dist:isDist,hp:isHP,ht:isHT};

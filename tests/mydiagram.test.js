@@ -27,6 +27,23 @@ test('공기압회로도: 유량조절밸브·누설 표시',()=>{
   assert.match(s,/F1 4단/);
   assert.match(s,/공기 누설/);
 });
+test('유압회로도: 파워유닛·4/2·체크밸브·유량조절, 남는 P·T 포트는 빈 포트로 안 셈',()=>{
+  const hinfo={set:{RV:4,F1:3},leak:false,valve:{}};
+  const hoses=[{a:'HP1',b:'CV1_1'},{a:'CV1_2',b:'V1_P'},{a:'V1_T',b:'HT1'},{a:'V1_A',b:'F1_2'},{a:'F1_1',b:'A_cap'},{a:'V1_B',b:'A_rod'}];
+  const s=MYD.pneu(parts('h4'),hoses,hinfo);
+  assert.equal(count(s,/class="hose"/g),6);
+  assert.doesNotMatch(s,/빈 포트/);
+  assert.match(s,/릴리프 4\.0 MPa/);assert.match(s,/CV1/);assert.match(s,/F1 3단/);
+  assert.match(MYD.pneu(parts('h4'),hoses.slice(0,2),hinfo),/빈 포트\(○\) 7개/);   // 밸브 T·A·B, F1 두 개, 실린더 후방·전방
+  assert.match(MYD.pneu(parts('h4'),hoses,{...hinfo,leak:true}),/P→T 직결/);
+});
+test('유압회로도: 4/3 밸브는 칸 3개, 모터 포트 A·B',()=>{
+  const s=MYD.pneu(parts('h3'),[{a:'HP1',b:'V2_P'},{a:'V2_T',b:'HT1'},{a:'V2_A',b:'M_a'},{a:'V2_B',b:'M_b'}],{set:{RV:4},leak:false,valve:{V2:1}});
+  assert.equal(count(s,/class="hose"/g),4);
+  assert.doesNotMatch(s,/빈 포트/);
+  assert.match(s,/유압모터/);
+  assert.equal(count(s,/class="w act"/g),1,'지금 칸 하나만 진하게');
+});
 test('변위단계선도: 두 회차 비교, 머문 시간 칸',()=>{
   const same=MYD.disp([{seq:['A+','A-']},{seq:['A+','A-']}],['A']);
   assert.match(same,/두 번 모두 같은 순서/);
@@ -101,3 +118,33 @@ test('기록: 끝나자마자(1초 안에) 다시 누르면 한 회차로 붙는
   const runs=runRec('m5',{},[[2.6],[5]]);   // m5 한 사이클 ≈2.2초 → 0.4초 쉬고 다시 누름
   assert.equal(runs.length,1);assert.deepEqual(runs[0],['A+','A-','A+','A-']);
 });
+test('유압회로도: 하중 실린더·파일럿 체크 블록·카운터밸런스·압력스위치·블리드오프 기호와 포트',()=>{
+  const p=(board)=>{get('configure')({parts:get('makeParts')(get('LAYOUTS').hyd,board)});return get('LAYOUT').parts;};
+  const hinfo={set:{RV:4,CB1:2,PS1:3,F1:5},leak:false,valve:{}};
+  const lockHoses=[{a:'HP1',b:'V1_P'},{a:'V1_T',b:'HT1'},{a:'V1_A',b:'PC1_A1'},{a:'PC1_A2',b:'A_cap'},{a:'V1_B',b:'PC1_B1'},{a:'PC1_B2',b:'A_rod'}];
+  const a=MYD.pneu(p({cylA:'cylw',valveA:'valve43a',LA:'lock'}),lockHoses,hinfo);
+  assert.equal(count(a,/class="hose"/g),6);assert.doesNotMatch(a,/빈 포트/);assert.match(a,/파일럿 체크/);assert.match(a,/>W</);
+  const b=MYD.pneu(p({cylA:'cylw',valveA:'valve43a',MA1:'psw',MA2:'cbv',R1:'thr'}),
+    [{a:'HP1',b:'V1_P'},{a:'V1_T',b:'HT1'},{a:'V1_A',b:'PS1_a'},{a:'PS1_b',b:'A_cap'},{a:'V1_B',b:'CB1_1'},{a:'CB1_2',b:'A_rod'},{a:'HP2',b:'F1_1'},{a:'F1_2',b:'HT2'}],hinfo);
+  assert.equal(count(b,/class="hose"/g),8);assert.doesNotMatch(b,/빈 포트/);
+  assert.match(b,/압력스위치 3\.0/);assert.match(b,/카운터밸런스 2\.0/);assert.match(b,/F1 5단/);
+});
+
+/* 튜토리얼 순서대로 선을 하나씩 꽂으면 전기회로도가 한 칸씩 자란다 (그려진 부품 수가 줄지 않음) */
+for(const id of ['m4','m9','m12']){
+  test(`전기회로도 ${id}: 선을 하나씩 꽂을 때마다 도면이 자란다`,()=>{
+    const mis=get('MISSIONS').find(x=>x.id===id);
+    const all=mis.steps.filter(s=>s.wire).length;
+    const count=n=>n.t==='el'?1:n.k.reduce((s,x)=>s+count(x.n),0);
+    let prev=0,grew=0;
+    for(let k=1;k<=all;k++){
+      const drop=new Set([...Array(all).keys()].filter(i=>i>=k));
+      const w=tutorialWorld(mis);w.wires=w.wires.filter(x=>x.base||!drop.has(+x.id.slice(1)));
+      const r=reduce(w),shown=r.rungs.concat(r.partial).reduce((s,x)=>s+count(x.n),0);
+      assert.ok(shown>=prev,`${k}번째 선에서 그려진 부품이 ${prev} → ${shown}로 줄어듦`);
+      if(shown>prev)grew++;prev=shown;
+      if(k===all)assert.equal(r.partial.length,0,'다 꽂으면 끝이 열린 줄이 없어야 함');
+    }
+    assert.ok(grew>=4,`도면이 여러 번에 걸쳐 자라야 함 (${grew}번)`);
+  });
+}

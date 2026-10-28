@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 910" width="560" height="910">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#111"/></marker></defs>
+<style>
+.w{stroke:#111;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.thin{stroke:#bbb;stroke-width:1;fill:none}
+.thick{stroke:#111;stroke-width:4;fill:none}
+.dash{stroke:#111;stroke-width:1.4;fill:none;stroke-dasharray:4 3}
+.arw{stroke:#111;stroke-width:1.4;fill:none;marker-end:url(#ar)}
+.fill{fill:#111;stroke:#111}
+.dot{fill:#111}
+.t{font:13px "Malgun Gothic","Apple SD Gothic Neo",sans-serif;fill:#111}
+.s{font:11px "Malgun Gothic","Apple SD Gothic Neo",sans-serif;fill:#444}
+.h{font:bold 15px "Malgun Gothic","Apple SD Gothic Neo",sans-serif;fill:#111}
+.n{font:bold 13px "Malgun Gothic","Apple SD Gothic Neo",sans-serif;fill:#111}
+</style>
+<rect width="100%" height="100%" fill="#fff"/>
+<text x="16" y="26" text-anchor="start" class="h">가. 유압회로도</text>
+<text x="170" y="80" text-anchor="start" class="n">A</text>
+<rect x="170" y="90" width="160" height="30" class="w"/>
+<line x1="192" y1="90" x2="192" y2="120" class="thick"/>
+<line x1="192" y1="105" x2="370" y2="105" class="thick"/>
+<path d="M182,120V130M318,120V130" class="w"/>
+<rect x="190" y="240" width="48" height="36" class="w"/>
+<path d="M202,276L202,243" class="arw"/>
+<path d="M226,240L226,273" class="arw"/>
+<rect x="238" y="240" width="48" height="36" class="w"/>
+<path d="M250,276L274,243" class="arw"/>
+<path d="M250,240L274,273" class="arw"/>
+<rect x="166" y="248" width="24" height="20" class="w"/>
+<line x1="166" y1="268" x2="190" y2="248" class="w"/>
+<text x="160" y="263" text-anchor="end" class="t">Y1</text>
+<path d="M286,258l4,-6l6,12l6,-12l6,12l4,-6" class="w"/>
+<text x="244" y="234" text-anchor="end" class="s">A</text>
+<text x="280" y="234" text-anchor="start" class="s">B</text>
+<text x="244" y="290" text-anchor="end" class="s">P</text>
+<text x="280" y="290" text-anchor="start" class="s">T</text>
+<path d="M250,240V222H182V130" class="w"/>
+<path d="M274,240V206H318V130" class="w"/>
+<path d="M250,276V320H140V332" class="w"/>
+<circle cx="140" cy="346" r="13" class="w"/>
+<path d="M133,350L140,339L147,350Z" class="fill"/>
+<line x1="140" y1="359" x2="140" y2="370" class="w"/>
+<path d="M130,370V378H150V370" class="w"/>
+<path d="M180,320V332" class="w"/>
+<rect x="170" y="332" width="20" height="20" class="w"/>
+<line x1="174" y1="348" x2="186" y2="336" class="arw"/>
+<path d="M180,352V370" class="w"/>
+<path d="M170,370V378H190V370" class="w"/>
+<text x="194" y="348" text-anchor="start" class="s">릴리프 4.0 MPa</text>
+<path d="M140,320H100V332" class="w"/>
+<path d="M95,336Q100,342 95,348M105,336Q100,342 105,348" class="w"/>
+<line x1="92" y1="350" x2="108" y2="334" class="arw"/>
+<path d="M100,350V370" class="w"/>
+<path d="M90,370V378H110V370" class="w"/>
+<text x="100" y="392" text-anchor="middle" class="s">블리드오프</text>
+<path d="M274,276V370" class="w"/>
+<path d="M264,370V378H284V370" class="w"/>
+<text x="16" y="430" text-anchor="start" class="h">나. 전기회로도</text>
+<line x1="50" y1="460" x2="530" y2="460" class="w"/>
+<line x1="50" y1="760" x2="530" y2="760" class="w"/>
+<text x="44" y="465" text-anchor="end" class="n">24V</text>
+<text x="44" y="765" text-anchor="end" class="n">0V</text>
+<circle cx="170" cy="460" r="2.6" class="dot"/>
+<line x1="170" y1="460" x2="170" y2="495" class="w"/>
+<path d="M170,495V507M170,523V535M170,523L161,508" class="w"/>
+<line x1="166" y1="515" x2="150" y2="515" class="dash"/>
+<path d="M150,509V521M150,509H145M150,521H145" class="w"/>
+<text x="138" y="520" text-anchor="end" class="t">PB1</text>
+<line x1="170" y1="535" x2="170" y2="706" class="w"/>
+<rect x="158" y="706" width="24" height="18" class="w"/>
+<line x1="158" y1="724" x2="182" y2="706" class="w"/>
+<text x="188" y="720" text-anchor="start" class="t">Y1</text>
+<line x1="170" y1="724" x2="170" y2="760" class="w"/>
+<circle cx="170" cy="760" r="2.6" class="dot"/>
+<text x="16" y="810" text-anchor="start" class="h">다. 변위단계선도</text>
+<text x="90" y="836" text-anchor="middle" class="s">1</text>
+<text x="170" y="836" text-anchor="middle" class="s">2</text>
+<text x="250" y="836" text-anchor="middle" class="s">3</text>
+<line x1="90" y1="844" x2="90" y2="878" class="thin"/>
+<line x1="170" y1="844" x2="170" y2="878" class="thin"/>
+<line x1="250" y1="844" x2="250" y2="878" class="thin"/>
+<line x1="90" y1="844" x2="250" y2="844" class="thin"/>
+<line x1="90" y1="878" x2="250" y2="878" class="thin"/>
+<text x="50" y="866" text-anchor="start" class="n">A</text>
+<text x="80" y="848" text-anchor="end" class="s">1</text>
+<text x="80" y="882" text-anchor="end" class="s">0</text>
+<path d="M90,878L170,844L250,878" class="thick"/>
+<text x="290" y="850" text-anchor="start" class="t">전진·후진 모두 느리게 (블리드오프, F1 6단)</text>
+</svg>

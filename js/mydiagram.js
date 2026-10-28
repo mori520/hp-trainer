@@ -1,6 +1,6 @@
 /* ===================== 내 회로 도면: 그리기 =====================
    사용자가 만든 것을 시험 도면 모양으로 다시 그린다 (DOM을 쓰지 않음 → 테스트에서도 돈다). 화면 쪽은 mydiagram-ui.js
-   - pneu(parts, hoses, info) : 공기압회로도. 부품 기호는 자리마다 정해진 곳에 두고, 꽂힌 호스를 선으로 잇는다
+   - pneu(parts, hoses, info) : 공기압회로도(유압 판이면 유압회로도: 파워유닛·4/2·4/3 밸브·모터·체크밸브). 부품 기호는 자리마다 정해진 곳에 두고, 꽂힌 호스를 선으로 잇는다
        (도면대로 꽂았으면 시험 도면과 같은 모양이 되고, 잘못 꽂았으면 잘못된 모양 그대로 보인다). 비어 있는 포트는 빈 동그라미
    - disp(runs, names)       : 변위단계선도. runs = 기록한 동작 [{seq:["A+","wait:3.0초","B+",…]}]
    - elec(LAYOUT, PARTS, w, e): 전기회로도(사다리). 꽂은 선으로 직렬·병렬을 정리해 그리고, 정리 안 되는 곳은 "확인할 곳" 목록 */
@@ -69,6 +69,89 @@ const MYD=(()=>{
     o.push(path(`M${x},${y}H${x-8}M${x+60},${y}H${x+68}`));
     ports[t+'_1']=[x-8,y,'left'];ports[t+'_2']=[x+68,y,'right'];
   }
+  /* 유압 기호: 4/2·4/3 밸브(포트 A·B 위, P·T 아래), 유압모터, 파워유닛(펌프·릴리프·탱크), 체크밸브 */
+  // 칸: par = P→A·B→T, cross = P→B·A→T, mid = 가운데(블록 또는 ABT). 포트는 평상시 칸(4/2 오른쪽, 4/3 가운데)에 붙인다
+  function valve4(p,x,o,ports,st){
+    const three=p.type!=='valve42',abt=p.type==='valve43a',W=48,H=36,vy=VY,x0=x+40;
+    const boxes=three?['par','mid','cross']:['par','cross'], act=three?(st===1?0:st===2?2:1):(st?0:1), rest=1;
+    boxes.forEach((b,i)=>{
+      const bx=x0+i*W;o.push(rect(bx,vy,W,H,i===act?'w act':'w'));
+      if(b==='par')o.push(path(`M${bx+12},${vy+H}L${bx+12},${vy+3}`,'arw'),path(`M${bx+36},${vy}L${bx+36},${vy+H-3}`,'arw'));
+      if(b==='cross')o.push(path(`M${bx+12},${vy+H}L${bx+36},${vy+3}`,'arw'),path(`M${bx+12},${vy}L${bx+36},${vy+H-3}`,'arw'));
+      if(b==='mid'){
+        const tb=(cx,top)=>path(top?`M${cx},${vy}V${vy+8}M${cx-5},${vy+8}H${cx+5}`:`M${cx},${vy+H}V${vy+H-8}M${cx-5},${vy+H-8}H${cx+5}`);
+        if(abt)o.push(path(`M${bx+12},${vy}V${vy+14}H${bx+36}M${bx+36},${vy}V${vy+H}`),tb(bx+12,false));
+        else o.push(tb(bx+12,true),tb(bx+36,true),tb(bx+12,false),tb(bx+36,false));
+      }
+    });
+    const L=x0,R=x0+boxes.length*W,rb=x0+rest*W;
+    o.push(rect(L-24,vy+8,24,20),line(L-24,vy+28,L,vy+8),text(L-30,vy+23,p.sols[0]||'','t','end'));
+    if(three)o.push(rect(R,vy+8,24,20),line(R,vy+28,R+24,vy+8),text(R+30,vy+23,p.sols[1]||''));
+    else o.push(path(`M${R},${vy+18}l4,-6l6,12l6,-12l4,6`));
+    o.push(path(`M${rb+12},${vy}V${vy-8}M${rb+36},${vy}V${vy-8}M${rb+12},${vy+H}V${vy+H+8}M${rb+36},${vy+H}V${vy+H+8}`));
+    o.push(text(rb+6,vy-6,'A','s','end'),text(rb+42,vy-6,'B','s'),text(rb+6,vy+H+14,'P','s','end'),text(rb+42,vy+H+14,'T','s'));
+    ports[p.id+'_A']=[rb+12,vy-8,'up'];ports[p.id+'_B']=[rb+36,vy-8,'up'];ports[p.id+'_P']=[rb+12,vy+H+8,'down'];ports[p.id+'_T']=[rb+36,vy+H+8,'down'];
+  }
+  // 2/2 밸브: 왼쪽 칸(여자) P→A, 오른쪽 칸(평상시) 막힘. 포트 A 위, P 아래
+  function valve22(p,x,o,ports,st){
+    const W=48,H=36,vy=VY,x0=x+40,rb=x0+W;
+    o.push(rect(x0,vy,W,H,st?'w act':'w'),rect(rb,vy,W,H,st?'w':'w act'),path(`M${x0+24},${vy+H}L${x0+24},${vy+3}`,'arw'));
+    o.push(path(`M${rb+24},${vy}V${vy+8}M${rb+19},${vy+8}H${rb+29}M${rb+24},${vy+H}V${vy+H-8}M${rb+19},${vy+H-8}H${rb+29}`));
+    o.push(rect(x0-24,vy+8,24,20),line(x0-24,vy+28,x0,vy+8),text(x0-30,vy+23,p.sols[0]||'','t','end'),path(`M${rb+W},${vy+18}l4,-6l6,12l6,-12l4,6`));
+    o.push(path(`M${rb+24},${vy}V${vy-8}M${rb+24},${vy+H}V${vy+H+8}`),text(rb+18,vy-6,'A','s','end'),text(rb+18,vy+H+14,'P','s','end'));
+    ports[p.id+'_A']=[rb+24,vy-8,'up'];ports[p.id+'_P']=[rb+24,vy+H+8,'down'];
+  }
+  // 유압모터: 동그라미 + 안쪽 삼각형 2개(양방향). 포트 A·B는 실린더 후방·전방 자리
+  function motor(p,x,o,ports){
+    const cx=x+80,cy=CY+12;
+    o.push(text(x,CY-10,p.id+' (유압모터)','n'),circ(cx,cy,20));
+    o.push(path(`M${cx-6},${cy-18}L${cx},${cy-10}L${cx+6},${cy-18}Z`,'fill'),path(`M${cx-6},${cy+18}L${cx},${cy+10}L${cx+6},${cy+18}Z`,'fill'));
+    o.push(path(`M${x+12},${CY+40}V${cy}H${cx-20}M${x+148},${CY+40}V${cy}H${cx+20}`));
+    ports[p.id+'_a']=[x+12,CY+40,'down'];ports[p.id+'_b']=[x+148,CY+40,'down'];
+    o.push(text(x+12,CY+52,'A','s','middle'),text(x+148,CY+52,'B','s','middle'));
+  }
+  // 파워유닛: 펌프(검은 삼각형) → P 포트 HP1·HP2, 릴리프밸브 → 탱크, 돌아오는 T 포트 HT1~HT3 아래에 탱크
+  function hpu(o,ports,info){
+    const x=30,y=SUPY;
+    o.push(circ(x+14,y+40,12),path(`M${x+8},${y+36}L${x+14},${y+29}L${x+20},${y+36}Z`,'fill'));
+    o.push(path(`M${x+14},${y+28}V${y}H${x+120}`));
+    o.push(rect(x+40,y+14,22,22),line(x+44,y+32,x+58,y+18,'arw'),path(`M${x+51},${y}V${y+14}M${x+51},${y+36}V${y+46}`),path(`M${x+44},${y+46}H${x+58}V${y+52}H${x+44}Z`));
+    o.push(path(`M${x+8},${y+52}H${x+20}V${y+58}H${x+8}Z`));
+    o.push(text(x+68,y+30,`릴리프 ${info.set.RV.toFixed(1)} MPa`,'s'));
+    [['HP1',x+90],['HP2',x+120]].forEach(([d,dx])=>{ports[d]=[dx,y,'up'];});
+    o.push(text(x+105,y-6,'P','s','middle'));
+    const ty=y+22;
+    o.push(path(`M${x+160},${ty}H${x+250}`),path(`M${x+198},${ty}V${ty+16}M${x+188},${ty+16}H${x+208}V${ty+24}H${x+188}Z`));
+    [['HT1',x+170],['HT2',x+210],['HT3',x+250]].forEach(([d,dx])=>{ports[d]=[dx,ty,'up'];});
+    o.push(text(x+260,ty+4,'T (탱크)','s'));
+  }
+  // 체크밸브: 세로, 위 = 2(나감), 아래 = 1(들어옴). 공이 시트(V)에 앉는 모양
+  function check(p,x,y,o,ports){
+    const t=p.tags[0];
+    o.push(rect(x-13,y-14,26,28,'bgfill'),path(`M${x},${y-14}V${y-6}M${x},${y+5}V${y+14}M${x-7},${y-6}L${x},${y+1}L${x+7},${y-6}`),circ(x,y+2,4));
+    o.push(text(x+16,y+4,t,'s'));
+    ports[t+'_2']=[x,y-14,'up'];ports[t+'_1']=[x,y+14,'down'];
+  }
+  // 그 밖의 유압 줄 기기 (세로, 위 = 실린더 쪽, 아래 = 밸브 쪽): 양방향 조임·감압·카운터밸런스·압력스위치
+  function hdev(p,x,y,o,ports,info){
+    const t=p.tags[0],v=info.set[t];
+    o.push(rect(x-13,y-14,26,28,'bgfill'));
+    if(p.type==='thr'){o.push(path(`M${x},${y-14}V${y+14}`),path(`M${x-5},${y-6}Q${x},${y} ${x-5},${y+6}M${x+5},${y-6}Q${x},${y} ${x+5},${y+6}`),line(x-8,y+7,x+8,y-7,'arw'),text(x+16,y+4,`${t} ${v}단`,'s'));}
+    if(p.type==='hprv'){o.push(rect(x-8,y-9,16,18),path(`M${x},${y-14}V${y-9}M${x},${y+9}V${y+14}`),line(x-4,y+6,x+4,y-6,'arw'),text(x+16,y+4,`${t} 감압 ${(+v).toFixed(1)}`,'s'));}
+    if(p.type==='cbv'){o.push(path(`M${x},${y-14}V${y-10}H${x-7}V${y+10}H${x}V${y+14}M${x},${y-10}H${x+7}V${y+10}H${x}`),rect(x-11,y-4,8,9),circ(x+7,y-1,3),text(x+16,y+4,`${t} 카운터밸런스 ${(+v).toFixed(1)}`,'s'));}
+    if(p.type==='psw'){o.push(path(`M${x},${y-14}V${y+14}M${x},${y}H${x+6}`),rect(x+6,y-6,10,12),text(x+20,y+4,`${t} 압력스위치 ${(+v).toFixed(1)}`,'s'));
+      ports[t+'_b']=[x,y-14,'up'];ports[t+'_a']=[x,y+14,'down'];return;}
+    ports[t+'_2']=[x,y-14,'up'];ports[t+'_1']=[x,y+14,'down'];
+  }
+  // 파일럿 체크 블록: 실린더 두 포트 아래에 체크 두 개, 서로의 밸브 쪽 압력으로 열림(점선)
+  function lock(p,x0,o,ports){
+    const t=p.tags[0],xa=x0+12,xb=x0+148,y=DEVY;
+    [['A',xa],['B',xb]].forEach(([k,x])=>{
+      o.push(rect(x-13,y-14,26,28,'bgfill'),path(`M${x},${y-14}V${y-6}M${x},${y+5}V${y+14}M${x-7},${y-6}L${x},${y+1}L${x+7},${y-6}`),circ(x,y+2,4));
+      ports[`${t}_${k}2`]=[x,y-14,'up'];ports[`${t}_${k}1`]=[x,y+14,'down'];
+    });
+    o.push(path(`M${xa+8},${y+2}L${xb},${y+12}M${xb-8},${y+2}L${xa},${y+12}`,'thin'),text((xa+xb)/2,y-4,`${t} 파일럿 체크`,'s','middle'));
+  }
   // 호스: 가로·세로로만 꺾는다. 위를 보는 포트끼리는 위로, 그 밖은 두 포트 사이 높이에서 꺾음
   function route(a,b,k){
     const off=(k%3-1)*6;
@@ -82,27 +165,34 @@ const MYD=(()=>{
   }
   function pneu(parts,hoses,info){
     const o=[],ports={},has=t=>parts.some(p=>p.type===t);
-    const cyls=parts.filter(p=>p.type==='cylinder');
-    cyls.forEach(p=>cylinder(p,COL[p.id]??60,o,ports));
+    const col=p=>p.slot==='cylB'?COL.B:p.slot==='cylA'?COL.A:COL[p.id]??60;   // 자리로 칸을 정함 (모터 M도 B 칸)
+    const cyls=parts.filter(p=>p.type==='cylinder'||p.type==='cylw'||p.type==='motor');
+    cyls.forEach(p=>(p.type==='motor'?motor:cylinder)(p,col(p),o,ports));
+    parts.filter(p=>p.type==='cylw').forEach(p=>{const x=col(p);o.push(rect(x+204,CY+20,20,18),text(x+214,CY+33,'W','s','middle'));});   // 하중(추)
     parts.filter(p=>p.cyl).forEach(p=>sensor(p,COL[p.cyl]??60,o));
     parts.filter(p=>p.type==='valve52s'||p.type==='valve52d').forEach(p=>{
       const cylId=p.slot==='valveB'?'B':'A';
       valve(p,COL[cylId],o,ports,(info.valve||{})[p.id]);
     });
-    parts.filter(p=>p.type==='fcv'||p.type==='qev').forEach(p=>{
-      const m=/^M([AB])([12])$/.exec(p.slot)||[];const x0=COL[m[1]]??60;
-      inline(p,m[2]==='2'?x0+148:x0+12,o,ports,info);
+    parts.filter(p=>/^valve4/.test(p.type)).forEach(p=>valve4(p,p.slot==='valveB'?COL.B:COL.A,o,ports,(info.valve||{})[p.id]));
+    parts.filter(p=>p.type==='valve22').forEach(p=>valve22(p,p.slot==='valveB'?COL.B:COL.A,o,ports,(info.valve||{})[p.id]));
+    parts.filter(p=>['fcv','qev','chk','thr','hprv','cbv','psw'].includes(p.type)).forEach(p=>{
+      if(p.slot==='R1'){if(p.type==='chk')check(p,330,SUPY-30,o,ports);else hdev(p,330,SUPY-30,o,ports,info);return;}   // 펌프 토출구 체크밸브 / 블리드오프
+      const m=/^M([AB])([12])$/.exec(p.slot)||[];const x0=COL[m[1]]??60,x=m[2]==='2'?x0+148:x0+12;
+      if(p.type==='chk')check(p,x,DEVY,o,ports);else if(p.type==='fcv'||p.type==='qev')inline(p,x,o,ports,info);else hdev(p,x,DEVY,o,ports,info);
     });
+    parts.filter(p=>p.type==='lock').forEach(p=>lock(p,p.slot==='LB'?COL.B:COL.A,o,ports));
     if(has('service'))service(o,ports,info);
+    if(has('hpu'))hpu(o,ports,info);
     parts.filter(p=>p.type==='prv').forEach(p=>prv(p,o,ports,info));
     const used=new Set();
     const lines=hoses.filter(h=>ports[h.a]&&ports[h.b]).map((h,k)=>{used.add(h.a);used.add(h.b);return path(route(ports[h.a],ports[h.b],k),'hose');});
     const ends=Object.entries(ports).map(([id,[x,y]])=>used.has(id)?circ(x,y,2.6,'dot'):circ(x,y,3.2,'open'));
     const notes=[];
-    if(info.leak)notes.push(text(20,24,'⚠ 공기 누설: 공급이 배기로 바로 빠지는 연결이 있어요','bad'));
-    const empty=Object.keys(ports).filter(id=>!used.has(id)&&!/^D\d$/.test(id));
+    if(info.leak)notes.push(text(20,24,has('hpu')?'⚠ P→T 직결: 펌프 기름이 일하지 않고 탱크로 바로 돌아가요':'⚠ 공기 누설: 공급이 배기로 바로 빠지는 연결이 있어요','bad'));
+    const empty=Object.keys(ports).filter(id=>!used.has(id)&&!/^(D|HP|HT)\d$/.test(id));   // 남는 분배기·파워유닛 포트는 빈 포트로 안 셈
     if(empty.length)notes.push(text(740,24,`빈 포트(○) ${empty.length}개`,'s','end'));
-    if(!cyls.length)return svg(760,420,text(380,210,'이 미션에는 공압 기기가 없어요','t','middle'));
+    if(!cyls.length)return svg(760,420,text(380,210,'이 미션에는 공압·유압 기기가 없어요','t','middle'));
     return svg(760,420,o.join('')+lines.join('')+ends.join('')+notes.join(''));
   }
 
@@ -261,6 +351,29 @@ const MYD=(()=>{
     if(rest.length)issues.push(`사다리로 정리할 수 없는 연결: ${rest.flatMap(x=>labels(x.n)).join(', ')}`);
     return{rungs:rungs.flatMap(r=>r.n.t==='par'?r.n.k:[r]),issues};
   }
+  // 아직 0V까지 안 이어진 줄: 24V에서 시작해 이어진 부품을 차례로 따라가 "끝이 열린 줄"로 만든다
+  // (배선하는 동안 도면이 한 칸씩 자라 보이게. 갈래가 있으면 먼저 꽂은 쪽을 따라감)
+  function partialChains(G,rungs){
+    const T=G.f('+24'),B=G.f('0V'),used=new Set();
+    const mark=n=>n.t==='el'?used.add(n.el):n.k.forEach(x=>mark(x.n));
+    rungs.forEach(r=>mark(r.n));
+    const rest=G.els.filter(el=>!used.has(el)&&G.f(el.a)!==G.f(el.b)).sort((a,b)=>a.ord-b.ord);
+    const chains=[];
+    for(;;){
+      let cur=T;const k=[];
+      for(;;){
+        const el=rest.find(x=>!used.has(x)&&(G.f(x.a)===cur||G.f(x.b)===cur));
+        if(!el)break;
+        const fwd=G.f(el.a)===cur,next=fwd?G.f(el.b):G.f(el.a);
+        if(next===T)break;
+        used.add(el);k.push({n:{t:'el',el},rep:fwd?[el.a,el.b]:[el.b,el.a],ord:el.ord});
+        if(next===B)break;cur=next;
+      }
+      if(!k.length)break;
+      chains.push({n:{t:'ser',k},rep:[k[0].rep[0],k[k.length-1].rep[1]],ord:Math.min(...k.map(x=>x.ord)),open:true});
+    }
+    return chains;
+  }
   // 그리기: 블록마다 {w,h,cx,draw(x,y,o)}. 위 연결점 (x+cx,y), 아래 연결점 (x+cx,y+h)
   const EW=86,EH=58;
   function block(x,G){
@@ -310,13 +423,17 @@ const MYD=(()=>{
   function elec(L,PARTS,w,e){
     const G=elecGraph(L,PARTS,w,e),R=reduce(G),issues=G.issues.concat(R.issues);
     if(!G.els.length)return svg(760,200,text(380,90,'아직 배선된 부품이 없어요','t','middle')+text(380,114,'선을 꽂으면 그 회로를 사다리 모양으로 그려요','s','middle'));
-    const blocks=R.rungs.map(r=>block(r,G));
+    // 다 이어진 줄 + 아직 0V까지 안 이어진 줄(끝이 열림)을 먼저 꽂은 순서대로
+    const rows=R.rungs.concat(partialChains(G,R.rungs)).sort((a,b)=>a.ord-b.ord);
+    const blocks=rows.map(r=>block(r,G));
     const x0=70,y0=40,gap=26,h=Math.max(EH,...blocks.map(b=>b.h)),W=Math.max(760,x0+blocks.reduce((s,b)=>s+b.w+gap,0)+20);
-    const o=[],yb=y0+h+20;
+    const o=[],yb=y0+h+20+(rows.some(r=>r.open)?18:0);
     o.push(line(x0-20,y0,W-20,y0,'thick2'),line(x0-20,yb,W-20,yb,'thick2'),text(x0-26,y0+5,'24V','n','end'),text(x0-26,yb+5,'0V','n','end'));
     let x=x0;blocks.forEach((b,i)=>{
-      const cx=x+b.cx;o.push(circ(cx,y0,2.6,'dot'),circ(cx,yb,2.6,'dot'));b.draw(x,y0+10,o);
-      o.push(line(cx,y0,cx,y0+10,G.hot(R.rungs[i].rep[0])?'w lhot':'w'),line(cx,y0+10+b.h,cx,yb,G.hot(R.rungs[i].rep[1])?'w lhot':'w'));
+      const cx=x+b.cx,r=rows[i];o.push(circ(cx,y0,2.6,'dot'));b.draw(x,y0+10,o);
+      o.push(line(cx,y0,cx,y0+10,G.hot(r.rep[0])?'w lhot':'w'));
+      if(r.open)o.push(circ(cx,y0+10+b.h+5,4,'open'),text(cx+8,y0+10+b.h+9,'0V 미연결','s'));   // 끝이 열린 줄
+      else o.push(circ(cx,yb,2.6,'dot'),line(cx,y0+10+b.h,cx,yb,G.hot(r.rep[1])?'w lhot':'w'));
       x+=b.w+gap;
     });
     if(!blocks.length)o.push(text(W/2,y0+h/2+10,'24V에서 0V까지 이어진 줄이 아직 없어요','t','middle'));
@@ -325,5 +442,5 @@ const MYD=(()=>{
     return svg(W,y+10,o.join(''));
   }
   // _reduce: 테스트용 (정리 결과 + 확인할 곳 전체)
-  return{pneu,disp,elec,recNew,recTick,recSeq,_reduce:(L,PARTS,w)=>{const G=elecGraph(L,PARTS,w,null),R=reduce(G);return{rungs:R.rungs,issues:G.issues.concat(R.issues)};}};
+  return{pneu,disp,elec,recNew,recTick,recSeq,_reduce:(L,PARTS,w)=>{const G=elecGraph(L,PARTS,w,null),R=reduce(G);return{rungs:R.rungs,partial:partialChains(G,R.rungs),issues:G.issues.concat(R.issues)};}};
 })();

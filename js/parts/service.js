@@ -2,6 +2,7 @@
    시험: 공압 0.5±0.05 MPa로 설정. 0.1 MPa보다 낮으면 실린더가 움직이지 않는다 */
 PARTS.service={
   settings:()=>({SU:{def:0.5,min:0,max:0.8,step:0.05,unit:'MPa'}}),
+  source:(p,w)=>w.set.SU,   // 공급 압력 = 설정값
   pneu(p,w,u){
     ['D1','D2','D3'].forEach(d=>u.u(d,'DIST'));
     if(w.air)u.u('DIST','SUP');

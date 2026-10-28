@@ -46,7 +46,7 @@ for(const mis of MISSIONS.filter(m=>!m.soon)){
         const m=/^(\w+)([+-])$/.exec(type);
         assert.ok(m,`${slot}: 위치는 "A+"·"A-" 모양 (지금 ${type})`);
         const cs=L.slots.find(x=>x.id===m[1]);
-        assert.ok(cs&&mis.board[cs.slot]==='cylinder',`${slot}: 실린더 ${m[1]}가 배치되어 있지 않음`);
+        assert.ok(cs&&['cylinder','cylw'].includes(mis.board[cs.slot]),`${slot}: 실린더 ${m[1]}가 배치되어 있지 않음`);
         mounts[type]=(mounts[type]||0)+1;
         assert.ok(mounts[type]<=2,`${type}에 센서가 3개 이상 (최대 2개)`);
       }else assert.ok((s.accepts||[]).includes(type),`${slot}에 ${type}은 놓을 수 없음`);
@@ -62,12 +62,14 @@ for(const mis of MISSIONS.filter(m=>!m.soon)){
     // 상태 이름 검사 (채점 expect와 튜토리얼 state가 같이 쓴다)
     // pbs = 누름버튼(잠깐 누르기 가능), inputs = 누름버튼 + 유지형 스위치(상태로 쓸 수 있음)
     const pbs=new Set(LAYOUT.pbs), inputs=new Set([...LAYOUT.pbs,...LAYOUT.toggles]), loads=new Set(LAYOUT.loads.map(l=>l.name));
-    const cyls=new Set(LAYOUT.parts.filter(p=>p.type==='cylinder').map(p=>p.id));
-    const sensors=new Set(LAYOUT.parts.filter(p=>p.cyl).map(p=>p.id));
+    const cyls=new Set(LAYOUT.parts.filter(p=>p.type==='cylinder'||p.type==='cylw').map(p=>p.id));
+    const sensors=new Set([...LAYOUT.parts.filter(p=>p.cyl).map(p=>p.id),...LAYOUT.parts.filter(p=>p.type==='psw').flatMap(p=>p.tags)]);   // 센서·리밋·압력스위치
+    const motors=new Set(LAYOUT.parts.filter(p=>p.type==='motor').map(p=>p.id));
     const counters=new Set(LAYOUT.parts.filter(p=>p.type==='counter').flatMap(p=>p.tags));
     const checkExpect=(exp,at,allowInputs)=>{
       for(const [k,v] of Object.entries(exp||{})){
-        if(cyls.has(k))assert.ok(v==='+'||v==='-',`${at}: 실린더 ${k}는 "+" 또는 "-"`);
+        if(cyls.has(k))assert.ok(v==='+'||v==='-'||v==='',`${at}: 실린더 ${k}는 "+" 또는 "-" (중간에 멈춤은 "")`);
+        else if(motors.has(k))assert.ok(['+','-','0'].includes(v),`${at}: 모터 ${k}는 "+"(정회전) "-"(역회전) "0"(정지)`);
         else if(typeof v==='number')assert.ok(counters.has(k)&&Number.isInteger(v)&&v>=0,`${at}: 숫자는 카운터 값에만 (${k}=${v})`);
         else if(loads.has(k)||sensors.has(k)||(allowInputs&&(inputs.has(k)||k==='power'||k==='air')))assert.equal(typeof v,'boolean',`${at}: ${k}는 true/false`);
         else assert.fail(`${at}: 모르는 이름 ${k}`);
@@ -117,12 +119,18 @@ for(const mis of MISSIONS.filter(m=>!m.soon)){
 
     for(const k in mis.set||{})assert.ok(LAYOUT.settings[k],`처음 설정값 set: 없는 설정 ${k}`);
     // 실전 연습: 판 구성 선택지가 배치의 자리와 맞는지
-    if(mis.practice)for(const slot of Object.keys(mis.practice.choices||{}))assert.ok(L.slots.some(s=>s.slot===slot),`실전 연습: 없는 자리 ${slot}`);
+    if(mis.practice)for(const [slot,vals] of Object.entries(mis.practice.choices||{})){
+      const sd=L.slots.find(s=>s.slot===slot);
+      assert.ok(sd,`실전 연습: 없는 자리 ${slot}`);
+      for(const v of vals)assert.ok(v===''||(sd.sensor?/^\w+[+-]$/.test(v):(sd.accepts||[]).includes(v)),`실전 연습 ${slot}: ${v}는 놓을 수 없음`);
+    }
+    // 같은 곳을 쓰는 자리(excludes)를 함께 쓰지 않는다
+    for(const sd of L.slots)if((mis.board||{})[sd.slot])(sd.excludes||[]).forEach(e=>assert.ok(!(mis.board||{})[e],`${sd.slot}과 ${e}는 함께 쓸 수 없음`));
     for(const g of (mis.grading?[mis.grading]:[])){
     (g.settingsCheck||[]).forEach(s=>assert.ok(LAYOUT.settings[s.name]&&s.label,`settingsCheck: ${s.name}`));
     (g.steps||[]).forEach((s,i)=>{
       if(s.stroke)assert.ok(cyls.has(s.stroke.cyl)&&['+','-'].includes(s.stroke.dir)&&(s.stroke.min!=null||s.stroke.max!=null),`채점 ${i+1}: stroke`);
-      for(const k in s.meter||{})assert.ok(cyls.has(k)&&['out','in'].includes(s.meter[k]),`채점 ${i+1}: meter`);
+      for(const k in s.meter||{})assert.ok(cyls.has(k)&&['out','in','bleed'].includes(s.meter[k]),`채점 ${i+1}: meter`);
       for(const k in s.pressureAt||{})assert.ok(cyls.has(k)&&s.pressureAt[k].length===2,`채점 ${i+1}: pressureAt`);
     });
     const setOk=k=>k==='power'||k==='air'||inputs.has(k);
@@ -185,4 +193,13 @@ test('모든 부품이 화면 갱신(render) 중 오류 없이 돈다',()=>{
       for(const p of parts)if(PARTS[p.type].render)PARTS[p.type].render(p,w);
     }
   }
+});
+
+test('화면 코드가 찾는 요소 id가 index.html에 있다 (설정 버튼 등 오타 방지)',()=>{
+  const fs=require('fs'),path=require('path'),dir=path.join(__dirname,'..','js');
+  const files=fs.readdirSync(dir).filter(f=>f.endsWith('.js')).map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('\n');
+  const made=new Set([...files.matchAll(/id="([^"$]+)"/g)].map(m=>m[1]));   // 코드가 그때그때 만드는 요소
+  const miss=[...new Set([...files.matchAll(/\$\('([^']+)'\)/g)].map(m=>m[1]))].filter(id=>!IDS.has(id)&&!made.has(id));
+  assert.deepEqual(miss,[]);
+  for(const id of ['settingsBtn','wipeBtn','wipeYes','wipeNo'])assert.ok(IDS.has(id),id);
 });

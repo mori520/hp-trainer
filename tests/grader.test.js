@@ -316,3 +316,68 @@ test('14-4: 도면대로 LS2 NC로 K1을 끊으면 3초를 기다리지 않아 �
   const f=fails('m14d',rewire(tutorialCircuit('m14d',{T1:3}),{T1_11:'LS2_1',T1_12:'LS2_2'}));
   assert.ok(f.includes('A+ 도달 후 3초 머문 뒤 다음 동작'),f.join(','));
 });
+
+/* 유압 미션: 틀린 회로는 그 항목에서 실패한다 */
+const HL='P→T 직결 없음 (압력이 오르는지)';
+const hydOk={
+  h1:{wires:[w('R24_1_0','PB1_13','red'),w('PB1_14','V1_Ya_p','red'),w('V1_Ya_n','R0_1_0','blue')],
+      hoses:[h('HP1','V1_P'),h('V1_T','HT1'),h('V1_A','A_cap'),h('V1_B','A_rod')],set:{RV:4}},
+  h2:{wires:[w('R24_1_0','PB1_13','red'),w('PB1_14','V1_Ya_p','red'),w('V1_Ya_n','R0_1_0','blue'),w('R24_1_1','PB2_13','red'),w('PB2_14','V1_Yb_p','red'),w('V1_Yb_n','R0_1_1','blue')],
+      hoses:[h('HP1','V1_P'),h('V1_T','HT1'),h('V1_A','A_cap'),h('V1_B','A_rod')]},
+  h4:{wires:[w('R24_1_0','PB1_13','red'),w('PB1_14','V1_Ya_p','red'),w('V1_Ya_n','R0_1_0','blue')],
+      hoses:[h('HP1','CV1_1'),h('CV1_2','V1_P'),h('V1_T','HT1'),h('V1_A','F1_2'),h('F1_1','A_cap'),h('V1_B','A_rod')],set:{F1:3}}
+};
+const without=(c,a)=>({...c,hoses:c.hoses.filter(x=>x.a!==a&&x.b!==a)});
+const swapEnds=(c,from,to)=>({...c,hoses:c.hoses.map(x=>({...x,a:x.a===from?to:x.a===to?from:x.a,b:x.b===from?to:x.b===to?from:x.b}))});
+test('h1: 맞는 회로는 통과, 릴리프가 4±0.2가 아니면 그 항목만 실패, 탱크 호스가 없으면 전진 실패',()=>{
+  const fails=c=>grade('h1',c).filter(r=>!r.ok).map(r=>r.name);
+  assert.deepEqual(grade('h1',hydOk.h1).map(r=>r.name).includes(HL),true,'유압 판 누설 항목 이름');
+  assert.deepEqual(fails(hydOk.h1),[]);
+  assert.deepEqual(fails({...hydOk.h1,set:{RV:3}}),['릴리프 압력 4±0.2 MPa']);
+  assert.deepEqual(fails(without(hydOk.h1,'HT1')),['PB1을 누르면 실린더 전진',TWICE]);
+});
+test('h2: 4/2 밸브로 바꿔 끼우면 "그 자리에 멈춤"에서 실패',()=>{
+  assert.deepEqual(grade('h2',hydOk.h2).filter(r=>!r.ok).map(r=>r.name),[]);
+  const mis=get('MISSIONS').find(m=>m.id==='h2');
+  const m42={...mis,board:{...mis.board,valveA:'valve42'}};
+  get('configure')({parts:get('makeParts')(get('LAYOUTS').hyd,m42.board)});
+  const res=JSON.parse(JSON.stringify(get('gradeMission')(m42,J(m42,hydOk.h2))));
+  assert.ok(res.filter(r=>!r.ok).map(r=>r.name).includes('PB1을 떼면 그 자리에 멈춤 (중립)'));
+});
+test('h4: 유량조절밸브를 거꾸로 끼우면 미터인이 아니고, 체크밸브를 거꾸로 끼우면 움직이지 않는다',()=>{
+  const fails=c=>grade('h4',c).filter(r=>!r.ok).map(r=>r.name);
+  assert.deepEqual(fails(hydOk.h4),[]);
+  assert.ok(fails(swapEnds(hydOk.h4,'F1_1','F1_2')).includes('전진만 느리게 (1.5초 이상, 미터인)'));
+  assert.ok(fails(swapEnds(hydOk.h4,'CV1_1','CV1_2')).includes('펌프 토출구 체크밸브 방향'));
+});
+test('h9: 카운터밸런스를 건너뛰면(밸브 B → 전방 바로) 하중이 내려가 첫 항목부터 실패',()=>{
+  const ok={wires:hydOk.h2.wires,hoses:[h('HP1','V1_P'),h('V1_T','HT1'),h('V1_A','A_cap'),h('V1_B','CB1_1'),h('CB1_2','A_rod')]};
+  assert.deepEqual(grade('h9',ok).filter(r=>!r.ok).map(r=>r.name),[]);
+  const skip={...ok,hoses:[h('HP1','V1_P'),h('V1_T','HT1'),h('V1_A','A_cap'),h('V1_B','A_rod')]};
+  const f=grade('h9',skip).filter(r=>!r.ok).map(r=>r.name);
+  assert.ok(f.includes('버튼을 누르지 않으면 하중이 내려가지 않음'),f.join());
+});
+test('h10: 파일럿 체크를 거꾸로(2→1) 꽂으면 기름이 바깥으로만 빠져 하중이 내려간다',()=>{
+  const ok={wires:hydOk.h2.wires,hoses:[h('HP1','V1_P'),h('V1_T','HT1'),h('V1_A','PC1_A1'),h('PC1_A2','A_cap'),h('V1_B','PC1_B1'),h('PC1_B2','A_rod')]};
+  assert.deepEqual(grade('h10',ok).filter(r=>!r.ok).map(r=>r.name),[]);
+  const rev={...ok,hoses:[h('HP1','V1_P'),h('V1_T','HT1'),h('V1_A','PC1_A2'),h('PC1_A1','A_cap'),h('V1_B','PC1_B2'),h('PC1_B1','A_rod')]};
+  assert.ok(grade('h10',rev).filter(r=>!r.ok).map(r=>r.name).includes('버튼을 누르지 않으면 움직이지 않음'));
+});
+test('h8: 압력스위치 NO(1-4)로 끊으면 자동 후진이 안 된다',()=>{
+  const hs=[h('HP1','V1_P'),h('V1_T','HT1'),h('V1_A','PS1_a'),h('PS1_b','A_cap'),h('V1_B','A_rod')];
+  const wires=nc=>[w('R24_1_0','PS1_1','red'),w(nc,'PB1_13','red'),w('PB1_14','K1_A1','red'),w(nc,'K1_11','red'),w('K1_14','K1_A1','red'),
+    w('R24_5_0','K1_21','red'),w('K1_24','V1_Ya_p','red'),w('K1_A2','R0_5_0','blue'),w('V1_Ya_n','R0_5_1','blue')];
+  assert.deepEqual(grade('h8',{wires:wires('PS1_2'),hoses:hs}).filter(r=>!r.ok).map(r=>r.name),[]);
+  assert.ok(grade('h8',{wires:wires('PS1_4'),hoses:hs}).some(r=>!r.ok));
+});
+test('H16: 도면대로 압력스위치 a접점(1-4)으로 배선하면 실패',()=>{
+  const f=fails('h16',rewire(tutorialCircuit('h16',{}),{PS1_2:'PS1_4'}));
+  assert.ok(f.length>0,f.join(','));
+  assert.deepEqual(fails('h16',tutorialCircuit('h16',{})),[]);
+});
+test('H17: 도면대로 카운터밸런스를 후방 줄에 끼우면 하중이 내려가 실패',()=>{
+  const c=tutorialCircuit('h17',{});
+  c.hoses=[h('HP1','V1_P'),h('V1_T','HT1'),h('V1_A','CB1_1'),h('CB1_2','A_cap'),h('V1_B','A_rod')];
+  assert.ok(fails('h17',c).includes('버튼을 누르지 않으면 하중이 내려가지 않음'));
+  assert.deepEqual(fails('h17',tutorialCircuit('h17',{})),[]);
+});

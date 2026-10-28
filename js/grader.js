@@ -12,7 +12,7 @@
         "moves":["A+","A-"]  정확히 이 순서 ([]이면 움직이지 않아야 함)
         "movesRepeat":["A+","A-"], "minCycles":2  이 순서를 계속 되풀이 (연속동작), 기본 2회 이상
         "stroke":{"cyl":"A","dir":"-","min":1.5}   그 단계에서 A가 후진하는 데 걸린 시간(초) 1.5초 이상 (max도 가능)
-        "meter":{"A":"out"}   마지막 움직임이 미터아웃이었는지 ("in" = 미터인)
+        "meter":{"A":"out"}   마지막 움직임이 미터아웃이었는지 ("in" = 미터인, "bleed" = 블리드오프)
         "pressureAt":{"A":[0.25,0.35]}   A가 움직일 때 공급 압력(MPa) 범위
       "settingsCheck":[{"name":"SU","min":0.45,"max":0.55,"label":"…"}]   설정값 범위 검사 (서비스 유닛 압력 등)
    2) 변위단계선도 — 버튼을 한 번 눌렀다 떼고, 실린더가 끝에 닿는 순서를 기록해 비교한다
@@ -57,15 +57,16 @@ function chkColor(c){
   const bad=c.wires.filter(x=>{const h=e.hot(x.a),g=e.gnd(x.a);if(h&&g)return false;if(h)return x.color!=='red';if(g)return x.color==='red';return false;});
   return{name:'배선 색 규칙 (+ 적색, − 청색/흑색)',ok:bad.length===0,detail:bad.length?`${bad.length}개 선의 색이 규칙과 다릅니다. 깜박이는 선을 확인하세요.`:'',bad:bad.map(x=>x.id)};
 }
-function chkLeak(leak){return{name:'공기 누설 없음',ok:!leak,detail:leak?'공급 공기가 배기 쪽으로 바로 빠지는 연결이 있습니다.':''};}
+function chkLeak(leak){const f=fluidText();return{name:f.leak,ok:!leak,detail:leak?f.leakDetail:''};}
 
 const endOf=cylEnd;
 // 기대 상태 하나 확인 (채점과 튜토리얼이 같이 쓴다)
-// 실린더 → "+"/"-", 램프·솔레노이드·릴레이 코일 → 켜짐 여부, 센서·리밋스위치 → 감지 여부,
+// 실린더 → "+"/"-"(중간이면 ""), 유압모터 → "+"/"-"/"0", 램프·솔레노이드·릴레이 코일 → 켜짐 여부, 센서·리밋스위치 → 감지 여부,
 // 누름버튼 → 눌림 여부, power/air → 켜짐 여부
 function expectOk(w,key,val){
   if(typeof val==='number'&&key in w.counter)return w.counter[key].n===val;   // 카운터 이름 → 센 값 (예: "C1":0)
   if(key in w.cyl)return endOf(w.cyl[key])===val;
+  if(w.motor&&key in w.motor)return w.motor[key].dir===({'+':1,'-':-1,'0':0})[val];   // 유압모터 → "+"(정회전) "-"(역회전) "0"(정지)
   if(key in w.out)return w.out[key]===val;
   if(key in w.sensor)return w.sensor[key]===val;
   if(key in w.pb)return w.pb[key]===val;

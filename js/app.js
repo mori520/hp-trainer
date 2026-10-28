@@ -4,7 +4,7 @@
 /* ===================== 상태 / 저장 ===================== */
 const KEY='ph-trainer-v1';
 // 처음 온 사람: 기초 강의·미션 칸은 접고, 실전 연습 칸의 자유 실습을 연 상태로 시작
-let store={done:{},circuits:{},last:'free',mode:'tut',fold:{lessons:true,missions:true}};
+let store={done:{},circuits:{},last:'free',mode:'tut',fold:{lessons:true,missions:true,hyd:true}};
 try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s)store=Object.assign(store,s);}catch(e){}
 const BOOT_LAST=store.last;   // 시작 때 마지막으로 보던 것 (그리는 중 save()가 store.last를 덮기 전에 기억)
 // 예전 잭 이름으로 저장된 배선을 새 이름(부품 id_포트)으로 옮긴다
@@ -13,7 +13,12 @@ Object.values(store.circuits).forEach(c=>{if(c.board)return;[...(c.wires||[]),..
 // 스위치·릴레이 모듈 레일 잭을 6개로 늘리기 전에 저장된 기본 전원 선(3번째 잭에서 나감)을 맨 끝 잭으로 옮긴다
 const OLD_JUMP={R24_1_2:'R24_1_5',R0_1_2:'R0_1_5',R24_5_2:'R24_5_5',R0_5_2:'R0_5_5'};
 Object.values(store.circuits).forEach(c=>(c.wires||[]).forEach(x=>{if(!x.base)return;x.a=OLD_JUMP[x.a]||x.a;x.b=OLD_JUMP[x.b]||x.b;}));
-function save(){try{if(!inTutorial())store.circuits[UI.mission]={wires:S.wires,hoses:S.hoses,board:UI.board,set:S.set,pw:1};store.last=UI.lesson||UI.mission;store.mode=UI.mode;localStorage.setItem(KEY,JSON.stringify(store));}catch(e){}}
+// 전원 모듈에서 나가는 기본 전원 선: 스위치 쪽은 1번째→3번째 잭, 릴레이 쪽은 2번째→1번째 잭으로 옮김 (선 양 끝이 예전 짝 그대로일 때만)
+const OLD_PAIR={'R24_0_0|R24_1_0':'R24_0_2','R24_0_1|R24_5_0':'R24_0_0','R0_0_0|R0_1_0':'R0_0_2','R0_0_1|R0_5_0':'R0_0_0'};
+Object.values(store.circuits).forEach(c=>(c.wires||[]).forEach(x=>{if(!x.base)return;const k=OLD_PAIR[x.a+'|'+x.b];if(k)x.a=k;}));
+let DEMO_ON=false;   // 시연 중(demo-ui.js): 사용자 손이 버튼을 떼게 하지 않음
+let WIPED=false;   // 모든 기록을 지운 뒤 새로고침 전까지는 다시 저장하지 않는다
+function save(){if(WIPED)return;try{if(!inTutorial())store.circuits[UI.mission]={wires:S.wires,hoses:S.hoses,board:UI.board,set:S.set,pw:1};store.last=UI.lesson||UI.mission;store.mode=UI.mode;localStorage.setItem(KEY,JSON.stringify(store));}catch(e){}}
 const UI={color:'red',mission:'m0',mode:'tut',board:{},stepIdx:0,flash:[],quiz:{tried:[],ok:false},lesson:null};
 let S=null;
 let uid=1;
@@ -42,9 +47,10 @@ function connect(a,b){
 function swapPart(slot){
   const def=LAYOUTS[cur().layout].slots.find(s=>s.slot===slot), types=def.accepts;
   const next=types[(types.indexOf(UI.board[slot])+1)%types.length];
-  const label={valve52s:'편솔',valve52d:'양솔'}[next]||next;
-  if(S.air){toast('공기 공급을 먼저 끈 뒤 밸브를 교체하세요. (수험자 유의사항)');return;}
-  const mine=x=>[x.a,x.b].some(j=>j.startsWith(def.id+'_'));
+  const label=PARTS[next].name||next;
+  if(S.air){toast(fluidText().stopFirst+' 밸브를 교체하세요. (수험자 유의사항)');return;}
+  const ids=[def.id,...Object.values(def.ids||{})];   // 자리의 부품 이름 (종류마다 다를 수 있음)
+  const mine=x=>[x.a,x.b].some(j=>ids.some(id=>j.startsWith(id+'_')));
   const hoses=S.hoses.filter(mine), wires=S.wires.filter(mine);
   if(hoses.length||wires.length){
     UI.flash=hoses.concat(wires).map(x=>x.id);renderConn();
@@ -58,7 +64,7 @@ function swapPart(slot){
   for(const k in S.cyl)if(k in old.cyl)S.cyl[k]=old.cyl[k];
   for(const k in S.valve)if(k in old.valve&&k!==def.id)S.valve[k]=old.valve[k];
   clearResults();renderConn();
-  toast(`${def.id} 밸브를 5/2 ${label} 밸브로 교체했어요.`);
+  toast(`${def.id} 밸브를 ${label}로 교체했어요.`);
 }
 // 누름버튼은 누르는 동안만(놓으면 pointerup에서 풀림), 유지형(비상정지)은 누를 때마다 켜짐/꺼짐이 바뀐다
 // 타이머·카운터 설정 ▼▲: 정해진 간격으로 올리고 내린다 (최소·최대 안에서)
@@ -95,7 +101,7 @@ window.addEventListener('pointermove',e=>{
   prev.setAttribute('d',`M${A.x},${A.y} C${A.x},${A.y+40} ${p.x},${p.y+40} ${p.x},${p.y}`);
 });
 window.addEventListener('pointerup',e=>{
-  LAYOUT.pbs.forEach(pb=>S.pb[pb]=false);
+  if(!DEMO_ON)LAYOUT.pbs.forEach(pb=>S.pb[pb]=false);
   if(!drag||drag.pending)return;
   const t=jackAt(e);
   if(t===drag.from){drag.pending=true;return;}
@@ -129,7 +135,7 @@ sv.addEventListener('dblclick',e=>{
   const c=e.target.closest&&e.target.closest('.conn');if(!c)return;
   const id=c.dataset.id;
   if(c.dataset.type==='hose'){
-    if(S.air){toast('공기 공급을 먼저 끈 뒤 호스를 제거하세요. (수험자 유의사항)');return;}
+    if(S.air){toast(fluidText().stopFirst+' 호스를 제거하세요. (수험자 유의사항)');return;}
     S.hoses=S.hoses.filter(h=>h.id!==id);
   }else S.wires=S.wires.filter(w=>w.id!==id);
   clearResults();renderConn();
@@ -145,7 +151,7 @@ window.addEventListener('keydown',e=>{
   const sw=document.activeElement&&document.activeElement.closest&&document.activeElement.closest('.swap');
   if(sw&&(e.key===' '||e.key==='Enter')){swapPart(sw.dataset.slot);e.preventDefault();}
 });
-window.addEventListener('keyup',e=>{if(e.key===' '||e.key==='Enter')LAYOUT.pbs.forEach(pb=>S.pb[pb]=false);});
+window.addEventListener('keyup',e=>{if(!DEMO_ON&&(e.key===' '||e.key==='Enter'))LAYOUT.pbs.forEach(pb=>S.pb[pb]=false);});
 // 화면 크기: 1 = 화면에 맞춤(트레이너 전체가 보임). 그보다 크면 맞춤 크기의 배수로 키우고 스크롤
 const ZOOMS=[1,1.25,1.5,2,2.5,3];
 function applyZoom(){
@@ -178,10 +184,11 @@ $('autoColor').onclick=()=>setAutoColor(!store.autoColor);
 /* ===================== 미션 패널 ===================== */
 // 목록: 기초 강의(lessons.js, 없으면 생략) / 미션 / 실전 연습(실전 연습·자유 실습). 칸 제목을 누르면 접고 편다(store.fold)
 const ALL=MISSIONS;
-const sectOf=x=>x.practice||x.id==='free'?'practice':'missions';
+const sectOf=x=>x.practice||x.no==='∞'?'practice':x.layout==='hyd'?'hyd':'missions';   // 실전 연습·자유 실습(no ∞)은 맨 아래 칸, 유압 미션은 따로
 function cur(){return ALL.find(x=>x.id===UI.mission);}
 function renderMissionList(){
   const LS=typeof LESSONS==='undefined'?[]:LESSONS, fold=store.fold||{};
+  const card=$('missionCard');card.remove();   // 미션 정보 칸은 목록을 다시 그린 뒤 선택한 미션 바로 아래로 옮긴다
   const head=(k,t,n)=>`<li class="sect"><button data-sect="${k}" aria-expanded="${!fold[k]}"><span class="caret">▾</span>${t}<small>${n}</small></button></li>`;
   const body=(k,html)=>fold[k]?'':html;
   const lessonItem=x=>`<li><button data-l="${x.id}" aria-current="${x.id===UI.lesson}">
@@ -189,17 +196,28 @@ function renderMissionList(){
     <span class="chip ${(store.lessonDone||{})[x.id]?'done':''}">${(store.lessonDone||{})[x.id]?'읽음':'강의'}</span></button></li>`;
   const misItem=x=>`<li><button data-m="${x.id}" aria-current="${!UI.lesson&&x.id===UI.mission}">
     <span class="no">${x.no}</span><span class="t">${x.title}</span>
-    <span class="chip ${store.done[x.id]?'done':''}">${store.done[x.id]?'완료':x.id==='free'?'자유':x.practice?'실전':'도전'}</span></button></li>`;
-  const mis=ALL.filter(x=>sectOf(x)==='missions'), prac=ALL.filter(x=>sectOf(x)==='practice');
+    <span class="chip ${store.done[x.id]?'done':''}">${store.done[x.id]?'완료':x.no==='∞'?'자유':x.practice?'실전':'도전'}</span></button></li>`;
+  const mis=ALL.filter(x=>sectOf(x)==='missions'), hyd=ALL.filter(x=>sectOf(x)==='hyd'), prac=ALL.filter(x=>sectOf(x)==='practice');
   $('missionList').innerHTML=(LS.length?head('lessons','기초 강의',LS.length)+body('lessons',LS.map(lessonItem).join('')):'')
     +head('missions','미션',mis.length)+body('missions',mis.map(misItem).join(''))
+    +(hyd.length?head('hyd','유압 미션',hyd.length)+body('hyd',hyd.map(misItem).join('')):'')
     +head('practice','실전 연습',prac.length)+body('practice',prac.map(misItem).join(''));
+  // 선택한 미션 바로 아래(드롭다운처럼). 그 칸이 접혀 있으면 칸 제목 아래, 강의를 보는 중이면 목록 맨 끝(강의 중엔 숨김)
+  const slot=document.createElement('li');slot.className='card-slot';slot.appendChild(card);
+  const list=$('missionList'),sel=!UI.lesson&&list.querySelector('button[data-m][aria-current="true"]');
+  const head0=!UI.lesson&&list.querySelector('button[data-sect="'+sectOf(cur())+'"]');
+  if(sel)sel.closest('li').after(slot);else if(head0)head0.closest('li').after(slot);else list.appendChild(slot);
 }
 $('missionList').addEventListener('click',e=>{
   const s=e.target.closest('button[data-sect]');
   if(s){const k=s.dataset.sect;store.fold=Object.assign(store.fold||{},{[k]:!(store.fold||{})[k]});save();renderMissionList();return;}
   const l=e.target.closest('button[data-l]');if(l){openLesson(l.dataset.l,0);return;}   // lesson.js
-  const b=e.target.closest('button[data-m]');if(b){if(UI.lesson)closeLesson();loadMission(b.dataset.m);}
+  const b=e.target.closest('button[data-m]');
+  if(b&&!b.closest('#missionCard')){
+    if(UI.lesson)closeLesson();loadMission(b.dataset.m);
+    // 고른 미션이 목록 위쪽에 오게 → 바로 아래 펼쳐진 미션 정보가 보인다
+    const nb=$('missionList').querySelector('button[data-m="'+b.dataset.m+'"]');if(nb)nb.scrollIntoView({block:'start',behavior:'smooth'});
+  }
 });
 // 자리별 부품 선택(board)대로 부품 목록을 만들고 화면을 다시 그린다
 function applyBoard(board){
@@ -246,6 +264,7 @@ $('quiz').addEventListener('click',e=>{
   clearResults();
 });
 function loadMission(id){
+  if(DEMO_ON)demoStop();
   if(S)save();
   UI.mission=id;const mis=cur();
   $('mTitle').textContent=(mis.no!=='∞'&&!mis.practice?`미션 ${mis.no}. `:'')+mis.title;
@@ -257,8 +276,9 @@ function loadMission(id){
   setMode(hasSteps?UI.mode:'mis');
   renderMissionList();
 }
-function setMode(md){UI.mode=md;$('modeTut').setAttribute('aria-pressed',md==='tut');$('modeMis').setAttribute('aria-pressed',md==='mis');loadCircuit();}
-function switchMode(md){if(UI.mode===md)return;save();setMode(md);}
+function setMode(md){UI.mode=md;$('modeTut').setAttribute('aria-pressed',md==='tut');$('modeMis').setAttribute('aria-pressed',md==='mis');loadCircuit();
+  if(typeof tutorialWindows==='function')tutorialWindows();}   // 튜토리얼이면 도면 창 둘을 나란히 (mydiagram-ui.js)
+function switchMode(md){if(UI.mode===md)return;if(DEMO_ON)demoStop();save();setMode(md);}
 $('modeTut').onclick=()=>switchMode('tut');$('modeMis').onclick=()=>switchMode('mis');
 function clearResults(){$('results').innerHTML='';$('summary').hidden=true;if(UI.flash.length){UI.flash=[];}}
 $('gradeBtn').onclick=()=>{
@@ -282,9 +302,11 @@ function showResults(res,passText,head){
    공개과제 내용은 넣지 않는다(저작권). 가지고 있는 공개도면을 보며 판 구성(밸브 종류·센서 위치·공압 기기)을 직접 고르고,
    스톱워치로 시간을 재며 꾸민다. 채점 대신 "내 회로 도면"으로 비교한다. 선택지는 미션 데이터의 practice.choices */
 const fmtTime=s=>`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
-const PRAC_LABEL={valveA:'밸브 V1 (실린더 A)',valveB:'밸브 V2 (실린더 B)',S1:'센서 S1',S2:'센서 S2',LS1:'리밋 LS1',LS2:'리밋 LS2',
-  MA1:'A 후방 줄 기기',MA2:'A 전방 줄 기기',MB1:'B 후방 줄 기기',MB2:'B 전방 줄 기기',R1:'공급 줄 기기'};
-const PRAC_NAME={'':'없음',valve52s:'5/2 편솔',valve52d:'5/2 양솔',fcv:'유량조절',qev:'급속배기',prv:'감압'};
+const PRAC_LABEL={valveA:'밸브 V1 (실린더 A)',valveB:'밸브 V2 (B 자리)',cylA:'A 자리 실린더',cylB:'B 자리 액추에이터',LA:'A 파일럿 체크 블록',LB:'B 파일럿 체크 블록',S1:'센서 S1',S2:'센서 S2',LS1:'리밋 LS1',LS2:'리밋 LS2',
+  MA1:'A 후방 줄 기기',MA2:'A 전방 줄 기기',MB1:'B 후방(A포트) 줄 기기',MB2:'B 전방(B포트) 줄 기기',R1:'공급 줄 기기'};
+const PRAC_NAME={'':'없음',valve52s:'5/2 편솔',valve52d:'5/2 양솔',fcv:'유량조절',qev:'급속배기',prv:'감압',
+  valve42:'4/2 편솔',valve22:'2/2 편솔',valve43c:'4/3 양솔 (중립 블록)',valve43a:'4/3 양솔 (중립 ABT)',chk:'체크밸브',cylinder:'실린더',motor:'유압모터',
+  cylw:'하중 실린더',thr:'양방향 유량조절',hprv:'감압',cbv:'카운터밸런스',psw:'압력스위치',lock:'파일럿 체크'};
 const pracValName=v=>PRAC_NAME[v]||v.replace('+',' 전진 끝').replace('-',' 후진 끝');
 function pracState(){return store.practice=store.practice||{sec:0,run:false};}
 function renderPractice(){
@@ -303,8 +325,14 @@ function renderPractice(){
 function setPracticeSlot(slot,val){
   const old=Object.assign({},UI.board),next=Object.assign({},old);
   if(val)next[slot]=val;else delete next[slot];
-  if(S.air){toast('공기 공급을 먼저 끈 뒤 판 구성을 바꾸세요.');renderPractice();return;}
+  if(S.air){toast(fluidText().stopFirst+' 판 구성을 바꾸세요.');renderPractice();return;}
   if(/^[AB][+-]$/.test(val)&&Object.values(next).filter(v=>v===val).length>2){toast('한 실린더 끝에는 센서를 2개까지 달 수 있어요.');renderPractice();return;}
+  // 센서·리밋은 실린더에만 단다 (B 자리를 모터로 바꾸면 B에 단 센서를 먼저 떼야 함)
+  const slots=LAYOUTS[cur().layout].slots, noCyl=Object.entries(next).find(([k,v])=>{const m=/^(\w+)[+-]$/.exec(v);if(!m||!slots.find(x=>x.slot===k&&x.sensor))return false;const c=slots.find(x=>x.id===m[1]);return !c||!['cylinder','cylw'].includes(next[c.slot]);});
+  if(noCyl){toast(`${noCyl[0]}은(는) 실린더에만 달 수 있어요. 센서 위치를 먼저 바꾸세요.`);renderPractice();return;}
+  // 같은 곳을 쓰는 자리(파일럿 체크 블록 ↔ 줄 기기 두 칸)는 함께 쓰지 않는다
+  const clash=slots.find(x=>next[x.slot]&&(x.excludes||[]).some(e=>next[e]));
+  if(clash){toast(`${PRAC_LABEL[clash.slot]||clash.slot}과(와) ${clash.excludes.map(e=>PRAC_LABEL[e]||e).join('·')}는 같은 곳이라 함께 쓸 수 없어요.`);renderPractice();return;}
   const used=S.wires.concat(S.hoses),pos={},at=j=>JACKS[j]?JACKS[j].x+','+JACKS[j].y:'';
   used.forEach(x=>[x.a,x.b].forEach(j=>pos[j]=at(j)));
   applyBoard(next);
@@ -332,7 +360,9 @@ setInterval(()=>{
   if(st.sec%10===0)save();
 },1000);
 // 도면 창: 띄워 둔 채로 배선할 수 있다. 머리를 끌어 옮긴다
-function showDiagram(){const mis=cur();$('diagramImg').src=mis.diagram;$('diagramTitle').textContent='도면 — '+mis.title;$('diagram').hidden=false;}
+// 도면 그림 주소에도 버전을 붙여 예전 그림이 남지 않게 (빌드가 meta app-version을 채움)
+const APP_VER=(document.querySelector('meta[name="app-version"]')||{}).content||'dev';
+function showDiagram(){const mis=cur();$('diagramImg').src=mis.diagram+(APP_VER==='dev'?'':'?v='+APP_VER);$('diagramTitle').textContent='도면 — '+mis.title;$('diagram').hidden=false;}
 $('diagramBtn').onclick=()=>{if($('diagram').hidden)showDiagram();else $('diagram').hidden=true;};
 $('diagramClose').onclick=()=>{$('diagram').hidden=true;};
 $('diagramHead').addEventListener('pointerdown',e=>{
@@ -347,10 +377,17 @@ $('resetNo').onclick=()=>{$('resetConfirm').hidden=true;};
 // 배선 초기화: 직접 그은 선·호스는 지우고 기본 전원 선은 다시 꽂는다
 $('resetYes').onclick=()=>{$('resetConfirm').hidden=true;applyBoard(Object.assign({},cur().board));S=newWorld(withJumpers(LAYOUTS[cur().layout],{wires:[],hoses:[],set:Object.assign({},cur().set)}));UI.stepIdx=0;clearResults();renderConn();};
 
+// 설정 ⚙ → 모든 기록 지우기: 한 번 더 확인받고 저장을 지운 뒤 새로고침 (처음 온 사람과 같은 상태: 자유 실습, 강의·미션 칸 접힘)
+$('settingsBtn').onclick=()=>{const box=$('settings');box.hidden=!box.hidden;$('settingsBtn').setAttribute('aria-expanded',!box.hidden);$('wipeConfirm').hidden=true;};
+$('wipeBtn').onclick=()=>{$('wipeConfirm').hidden=false;};
+$('wipeNo').onclick=()=>{$('wipeConfirm').hidden=true;};
+$('wipeYes').onclick=()=>{WIPED=true;try{localStorage.removeItem(KEY);}catch(e){}location.reload();};
+
 /* ===================== 루프 ===================== */
 let last=performance.now();
 function loop(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;
+  if(typeof demoFrame==='function')demoFrame(dt);   // 시연 (demo-ui.js)
   stepWorld(S,dt);
   if(S.events.length){S.events=[];toast('합선이 감지되어 전원이 차단되었습니다. +24V와 0V가 곧바로 이어진 선을 찾아 지우세요.');}
   renderDyn();updateTutorial();recMotion();   // recMotion: 변위단계선도 기록 (mydiagram-ui.js)
@@ -365,4 +402,5 @@ if(typeof store.autoColor!=='boolean')store.autoColor=true;
 $('autoColor').setAttribute('aria-pressed',store.autoColor);setColor(UI.color);
 applyZoom();
 loadMission(ALL.some(x=>x.id===store.last)?store.last:'free');
-requestAnimationFrame(loop);
+// 루프는 뒤에 불러오는 파일(lesson·mydiagram-ui)까지 모두 읽은 뒤 시작한다 (먼저 돌면 recMotion이 없어 루프가 멈춤)
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(loop));else requestAnimationFrame(loop);

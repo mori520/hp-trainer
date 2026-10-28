@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="app-version" content="dev">
 <title>설비보전 공유압 트레이너</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
@@ -14,7 +15,17 @@
     <header class="brand">
       <div class="mark">PH</div>
       <div><h1>설비보전 공유압 트레이너</h1><p>설비보전기사 작업형 연습 · 최소 동작 버전 v0.1</p></div>
+      <button class="gear" id="settingsBtn" aria-expanded="false" aria-controls="settings" title="설정">⚙</button>
     </header>
+    <section class="card settings" id="settings" hidden>
+      <h3>설정</h3>
+      <button class="btn danger" id="wipeBtn">모든 기록 지우기</button>
+      <div class="confirm" id="wipeConfirm" hidden>
+        <span>완료 표시, 저장한 배선, 강의 읽은 기록, 화면 설정이 모두 지워지고 처음 상태로 돌아가요. 되돌릴 수 없어요.</span>
+        <button class="btn danger" id="wipeYes">정말 지우기</button>
+        <button class="btn" id="wipeNo">취소</button>
+      </div>
+    </section>
     <section>
       <h2 class="eyebrow">학습 목록</h2>
       <ol class="missions" id="missionList"></ol>
@@ -33,6 +44,7 @@
       <div class="done-box" id="tutDone" hidden>튜토리얼을 마쳤습니다. 채점하기를 눌러 확인해 보세요.</div>
       <div class="actions">
         <button class="btn primary" id="gradeBtn">채점하기</button>
+        <button class="btn" id="demoBtn" hidden title="빈 판에서 튜토리얼 단계를 자동으로 한 번 해 보여 줘요">▶ 시연 보기</button>
         <button class="btn" id="diagramBtn" hidden>도면 보기</button>
         <button class="btn" id="mydiagBtn" title="내가 꽂은 호스와 실제 움직임을 시험 도면 모양으로 그려요">내 회로 도면</button>
         <button class="btn" id="resetBtn">배선 초기화</button>
@@ -65,6 +77,13 @@
       <div class="status" id="status"></div>
       <div class="help">잭에서 드래그해 연결 · 선 클릭: 색 바꾸기 · 선 더블클릭: 삭제 · Esc 취소 · 숫자키 1/2/3 색 고르기</div>
     </div>
+    <div class="demo-bar" id="demoBar" hidden role="group" aria-label="시연 조작">
+      <span id="demoInfo" aria-live="polite"></span>
+      <button class="btn" id="demoPause">⏸ 일시정지</button>
+      <button class="btn" id="demoNext" title="지금 단계를 마치면 멈춰요">⏭ 한 단계</button>
+      <button class="btn" id="demoSpeed" title="빠르기 바꾸기">1배</button>
+      <button class="btn danger" id="demoStop">■ 그만</button>
+    </div>
     <section class="lesson" id="lesson" hidden aria-live="polite"></section>
     <div class="canvas-wrap">
       <svg id="sv" viewBox="0 0 1200 1196"aria-label="공유압 트레이너">
@@ -78,6 +97,8 @@
         <g id="gFocus"></g>
         <g id="gBadge"></g>
         <path id="preview" class="preview" d="" />
+        <path id="demoPath" class="demo-path" d="" />
+        <circle id="demoHand" class="demo-hand" r="0" />
         <g id="gHL"></g>
         <g id="gHits"></g>
       </svg>
@@ -96,6 +117,7 @@
   <div class="mydiag-foot"><span>내가 만든 것을 도면으로 그린 거예요. 가진 도면과 비교해 보세요.</span><button class="btn" id="mydiagClear">동작 기록 지우기</button></div>
 </div>
 <div id="toast" hidden></div>
+<span id="appVer" title="앱 버전 (배포할 때마다 바뀜)">dev</span>
 
 <!-- 불러오는 순서가 중요: 엔진 → 부품 → 데이터 → 채점 → 튜토리얼 → 렌더링 → 앱 -->
 <script src="js/engine.js"></script>
@@ -113,16 +135,19 @@
 <script src="js/parts/limitsw.js"></script>
 <script src="js/parts/capsensor.js"></script>
 <script src="js/parts/pneudev.js"></script>
+<script src="js/parts/hydraulic.js"></script>
 <script src="js/layouts.js"></script>
 <script src="js/missions.js"></script>
 <script src="js/lessonfigs.js"></script>
 <script src="js/lessons.js"></script>
 <script src="js/mydiagram.js"></script>
 <script src="js/grader.js"></script>
+<script src="js/demo.js"></script>
 <script src="js/tutorial.js"></script>
 <script src="js/render.js"></script>
 <script src="js/app.js"></script>
 <script src="js/lesson.js"></script>
 <script src="js/mydiagram-ui.js"></script>
+<script src="js/demo-ui.js"></script>
 </body>
 </html>

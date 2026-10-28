@@ -257,23 +257,30 @@ function hyd22(S,act,y,x,o){
 
 /* ---------- 다. 변위단계선도 ---------- */
 // seq 원소: "A+"·"B-" 같은 동작, 또는 "wait:3초"(그 구간은 그대로 머물고 위에 글자 표시)
-function displacement(S,x,y,names,seq){
+// motors에 든 이름(유압모터)은 정(+)·0·역(−) 세 칸 줄. "M+" 정회전 시작, "M0" 정지, "M-" 역회전 — 칸이 시작할 때 바로 바뀐다
+function displacement(S,x,y,names,seq,motors=[]){
   seq.forEach((m,k)=>{if(m.startsWith('wait:'))S.text(x+(k+0.5)*80,y+12,m.slice(5),{anchor:'middle',c:'s'});});
   const dx=80,rh=34,gap=24,n=seq.length+1;
   for(let k=0;k<n;k++){S.text(x+k*dx,y-8,String(k+1),{anchor:'middle',c:'s'});}
   names.forEach((a,r)=>{
-    const top=y+r*(rh+gap),bot=top+rh;
+    const top=y+r*(rh+gap),bot=top+rh,mid=(top+bot)/2,isM=motors.includes(a);
     for(let k=0;k<n;k++)S.line(x+k*dx,top,x+k*dx,bot,'thin');
     S.line(x,top,x+(n-1)*dx,top,'thin').line(x,bot,x+(n-1)*dx,bot,'thin');
-    S.text(x-40,top+rh/2+5,a,{c:'n'}).text(x-10,top+4,'1',{anchor:'end',c:'s'}).text(x-10,bot+4,'0',{anchor:'end',c:'s'});
-    let st=0;const pts=[[x,bot]];
-    seq.forEach((m,k)=>{if(m[0]===a)st=m[1]==='+'?1:0;pts.push([x+(k+1)*dx,st?top:bot]);});
+    S.text(x-40,top+rh/2+5,a,{c:'n'});
+    if(isM)S.line(x,mid,x+(n-1)*dx,mid,'thin').text(x-10,top+4,'정',{anchor:'end',c:'s'}).text(x-10,mid+4,'0',{anchor:'end',c:'s'}).text(x-10,bot+4,'역',{anchor:'end',c:'s'});
+    else S.text(x-10,top+4,'1',{anchor:'end',c:'s'}).text(x-10,bot+4,'0',{anchor:'end',c:'s'});
+    const yOf=st=>isM?(st==='+'?top:st==='-'?bot:mid):(st==='+'?top:bot);
+    let st=isM?'0':'-';const pts=[[x,yOf(st)]];
+    seq.forEach((m,k)=>{
+      if(!m.startsWith('wait:')&&m.slice(0,-1)===a){st=m.slice(-1);if(isM)pts.push([x+k*dx,yOf(st)]);}
+      pts.push([x+(k+1)*dx,yOf(st)]);
+    });
     S.path('M'+pts.map(p=>p.join(',')).join('L'),'thick');
   });
 }
 
 // hyd: 유압 미션(제목 "유압회로도", 회로도 칸이 조금 더 큼). seq가 비어 있으면 변위단계선도 대신 동작 설명(note)만
-function sheet(file,{w,h,pneu,elec,elecH=300,seq,names,note,hyd}){
+function sheet(file,{w,h,pneu,elec,elecH=300,seq,names,note,hyd,motors}){
   const S=new Svg(w,h);
   // 공압 기기가 없는 미션(0·2: 램프만)은 전기회로도만 그린다
   if(!pneu){
@@ -285,7 +292,7 @@ function sheet(file,{w,h,pneu,elec,elecH=300,seq,names,note,hyd}){
   const lt=hyd?450:300;S.text(16,lt-20,'나. 전기회로도',{c:'h'});
   elec(ladder(S,{top:lt+10,bot:lt+10+elecH,x0:50,x1:w-30}));
   const dy=lt+elecH+60;S.text(16,dy,seq.length?'다. 변위단계선도':'다. 동작',{c:'h'});
-  if(seq.length)displacement(S,90,dy+34,names,seq);
+  if(seq.length)displacement(S,90,dy+34,names,seq,motors);
   (note||[]).forEach((t,k)=>S.text(seq.length?90+seq.length*80+40:40,dy+40+k*20,t));
   fs.writeFileSync(path.join(OUT,file),S.toString());
   console.log('wrote diagrams/'+file);
@@ -421,6 +428,37 @@ sheet('m14d.svg',{w:580,h:760,names:['A'],seq:['A+','wait:3초','A-'],
     L.rung(470,[{t:'no',name:'K1'},{t:'sol',name:'Y1'}]);
   }});
 
+// 14-5: 미션 9 연속동작. 틀린 곳 = Y1을 K2(한 사이클) 대신 K1(연속 기억) 접점으로 켬
+sheet('m14e.svg',{w:580,h:760,names:['A'],seq:['A+','A-'],note:['PB2: 연속 반복','PB3: 사이클 끝에서 정지'],
+  pneu:S=>{const c=cylinder(S,90,90,'A',[{end:'-',name:'LS1',kind:'ls'},{end:'+',name:'LS2',kind:'ls'}]);valve(S,130,190,c,{sols:['Y1']});},
+  elec:L=>{
+    L.rung(130,[{t:'nc',name:'PB3',act:'pb'},{t:'no',name:'PB2',act:'pb',hold:'K1'},{t:'coil',name:'K1'}]);
+    L.rung(300,[{t:'nc',name:'LS2',act:'ls'},{t:'no',name:'K1',hold:'K2',span:2},{t:'no',name:'LS1',act:'ls'},{t:'coil',name:'K2'}]);
+    L.rung(470,[{t:'no',name:'K1'},{t:'sol',name:'Y1'}]);
+  }});
+// 14-6: 미션 12 비상정지. 틀린 곳 = 램프 H1이 비상정지 NC에
+sheet('m14f.svg',{w:660,h:820,elecH:360,names:['A'],seq:['A+','A-'],note:['PB2: 연속 반복','비상정지 ON: 후진 + H1 점등','비상정지 OFF: 초기화'],
+  pneu:S=>{const c=cylinder(S,90,90,'A',[{end:'-',name:'LS1',kind:'ls'},{end:'+',name:'LS2',kind:'ls'}]);valve(S,130,190,c,{sols:['Y1']});},
+  elec:L=>{
+    const busY=L.top+80, slots=[L.top+130,L.top+200,L.top+270];
+    L.drop(90,{t:'nc',name:'ES',act:'es'},busY);L.bus(90,480,busY);
+    L.rung(170,[{t:'no',name:'PB2',act:'pb',hold:'K1'},{t:'coil',name:'K1'}],{fromY:busY,slots,dot:true});
+    L.rung(320,[{t:'nc',name:'LS2',act:'ls'},{t:'no',name:'K1',hold:'K2',span:2},{t:'no',name:'LS1',act:'ls'},{t:'coil',name:'K2'}],{fromY:busY,slots,dot:true});
+    L.rung(480,[{t:'no',name:'K2'},{t:'sol',name:'Y1'}],{fromY:busY,slots,dot:true});
+    L.rung(590,[{t:'nc',name:'ES',act:'es'},{t:'lamp',name:'H1'}],{slots});
+  }});
+// 14-7: 미션 10 카운터. 틀린 곳 = 카운터 NC가 K1 줄이 아니라 K2 줄(사이클)에
+sheet('m14g.svg',{w:780,h:820,elecH:360,names:['A'],seq:['A+','A-','A+','A-','A+','A-'],note:['PB2: 3회 후 정지','PB3: 카운터 리셋'],
+  pneu:S=>{const c=cylinder(S,90,90,'A',[{end:'-',name:'LS1',kind:'ls'},{end:'+',name:'LS2',kind:'ls'}]);valve(S,130,190,c,{sols:['Y1']});},
+  elec:L=>{
+    const s4=[L.top+50,L.top+115,L.top+180,L.top+245];
+    L.rung(120,[{t:'no',name:'PB2',act:'pb',hold:'K1'},{t:'coil',name:'K1'}]);
+    L.rung(290,[{t:'nc',name:'LS2',act:'ls'},{t:'no',name:'K1',hold:'K2',span:2},{t:'no',name:'LS1',act:'ls'},{t:'nc',name:'C1'},{t:'coil',name:'K2'}],{slots:s4});
+    L.rung(440,[{t:'no',name:'K2'},{t:'sol',name:'Y1'}]);
+    L.rung(560,[{t:'no',name:'LS2',act:'ls'},{t:'coil',name:'C1 (3회)'}]);
+    L.rung(690,[{t:'no',name:'PB3',act:'pb'},{t:'coil',name:'C1 리셋'}]);
+  }});
+
 /* ---------- 유압 미션 H1~H10 (직접 만든 회로) ---------- */
 const pbY=L=>{L.rung(170,[{t:'no',name:'PB1',act:'pb'},{t:'sol',name:'Y1'}]);};
 const pbYY=L=>{L.rung(150,[{t:'no',name:'PB1',act:'pb'},{t:'sol',name:'Y1'}]);L.rung(330,[{t:'no',name:'PB2',act:'pb'},{t:'sol',name:'Y2'}]);};
@@ -447,7 +485,7 @@ sheet('h9.svg',{...HS,names:['A'],seq:[],note:['PB1을 누르는 동안 전진(�
   pneu:S=>hyd(S,110,90,{act:'cylw',name:'A',valve:'43a',sols:['Y1','Y2'],rodDev:'cbv:카운터밸런스'}),elec:pbYY});
 sheet('h10.svg',{...HS,names:['A'],seq:[],note:['PB1을 누르는 동안 전진, PB2를 누르는 동안 후진','떼면 그 자리에 고정, 펌프를 꺼도 그대로 (로킹 회로)'],
   pneu:S=>hyd(S,110,90,{act:'cylw',name:'A',valve:'43a',sols:['Y1','Y2'],lock:true}),elec:pbYY});
-sheet('h11.svg',{...HS,w:780,names:['A'],seq:['A+','wait:3초','A-'],note:['A+ 끝(LS2)에서 모터 M 정회전','3초 뒤 A− (모터 정지)'],
+sheet('h11.svg',{...HS,w:780,h:960,names:['A','M'],motors:['M'],seq:['A+','M+','wait:3초','M0','A-'],note:['A+ 끝(LS2)에서 모터 M 정회전','3초 뒤 A− (모터 정지)'],
   pneu:S=>{const a=hyd(S,110,90,{name:'A',valve:'42',sols:['Y1'],sensors:[{end:'+',name:'LS2',kind:'ls'}]});
     hyd(S,470,90,{act:'motor',name:'M',valve:'43c',sols:['Y2','Y3'],feed:{x:a.ax,y:a.py}});},
   elec:L=>{
@@ -493,6 +531,17 @@ sheet('h16.svg',{...HS,names:['A'],seq:['A+','A-'],note:['PS1 3.0 MPa'],
 // H17: H9 카운터밸런스. 틀린 곳 = 카운터밸런스가 후방 줄
 sheet('h17.svg',{...HS,names:['A'],seq:[],note:['PB1을 누르는 동안 전진(하중이 내려감), PB2를 누르는 동안 후진','떼면 그 자리에 정지 — 하중이 제 무게로 내려가지 않게'],
   pneu:S=>hyd(S,110,90,{act:'cylw',name:'A',valve:'43a',sols:['Y1','Y2'],capDev:'cbv:카운터밸런스'}),elec:pbYY});
+
+// H18: H11 실린더+모터. 틀린 곳 = 모터 Y2를 LS2 NO 대신 K1 접점으로 켬 (전진하는 동안 모터가 벌써 돎)
+sheet('h18.svg',{...HS,w:780,h:960,names:['A','M'],motors:['M'],seq:['A+','M+','wait:3초','M0','A-'],note:['A+ 끝(LS2)에서 모터 M 정회전','3초 뒤 A− (모터 정지)'],
+  pneu:S=>{const a=hyd(S,110,90,{name:'A',valve:'42',sols:['Y1'],sensors:[{end:'+',name:'LS2',kind:'ls'}]});
+    hyd(S,470,90,{act:'motor',name:'M',valve:'43c',sols:['Y2','Y3'],feed:{x:a.ax,y:a.py}});},
+  elec:L=>{
+    L.rung(130,[{t:'nc',name:'T1',timed:true},{t:'no',name:'PB1',act:'pb',hold:'K1'},{t:'coil',name:'K1'}]);
+    L.rung(300,[{t:'no',name:'K1'},{t:'sol',name:'Y1'}]);
+    L.rung(440,[{t:'no',name:'LS2',act:'ls'},{t:'coil',name:'T1 (3초)'}]);
+    L.rung(600,[{t:'no',name:'K1'},{t:'sol',name:'Y2'}]);
+  }});
 
 // 미션 0~4: 튜토리얼에서 완성 도면을 보며 배우도록 (2026-10-28 사용자 요청)
 sheet('m0.svg',{w:420,h:440,note:['PB1을 누르는 동안 H1 점등'],

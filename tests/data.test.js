@@ -134,7 +134,7 @@ for(const mis of MISSIONS.filter(m=>!m.soon)){
       for(const k in s.pressureAt||{})assert.ok(cyls.has(k)&&s.pressureAt[k].length===2,`채점 ${i+1}: pressureAt`);
     });
     const setOk=k=>k==='power'||k==='air'||inputs.has(k);
-    const moveOk=x=>{const m=/^(\w+)([+-])$/.exec(x);return m&&cyls.has(m[1]);};
+    const moveOk=x=>{const m=/^(\w+)([+-0])$/.exec(x);return m&&(cyls.has(m[1])&&m[2]!=='0'||motors.has(m[1]));};   // 모터는 M+ M- M0
     Object.keys(g.setup||{}).forEach(k=>assert.ok(setOk(k),`채점 setup: 모르는 이름 ${k}`));
     if(g.relayCount!=null){
       const max=LAYOUT.loads.filter(l=>l.coil).length;

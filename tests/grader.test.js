@@ -397,3 +397,33 @@ test('H3 단계 검사의 움직임 기록에 모터가 들어간다',()=>{
   const res=JSON.parse(JSON.stringify(get('gradeMission')({...mis,grading:g},J(mis,tutorialCircuit('h3',{})))));
   assert.deepEqual(res.filter(r=>!r.ok).map(r=>r.name+': '+r.detail),[]);
 });
+
+/* 오류 찾기 더 (14-5~7, H18): 틀린 도면 그대로 배선하면 실패, 고친 회로(튜토리얼)는 통과 */
+test('14-5: 도면대로 Y1을 K1 접점으로 켜면 연속동작에서 실패 (전진한 채 머묾)',()=>{
+  const f=fails('m14e',rewire(tutorialCircuit('m14e',{}),{K2_21:'K1_31',K2_24:'K1_34'}));
+  assert.ok(f.includes('PB2를 한 번 누르면 A+ A− 연속 반복'),f.join(','));
+});
+test('14-6: 도면대로 램프를 비상정지 NC에 달면 실패',()=>{
+  const f=fails('m14f',rewire(tutorialCircuit('m14f',{}),{ES_13:'ES_11',ES_14:'ES_12'}));
+  assert.ok(f.includes('비상정지 ON → 실린더 후진, 램프 점등'),f.join(','));
+});
+test('14-7: 도면대로 카운터 NC를 K2 줄에 두면 K1이 남아 리셋 때 저절로 움직여 실패',()=>{
+  const c=tutorialCircuit('m14g',{C1:3});
+  const r24=c.wires.find(x=>x.b==='C1_11').a;   // 카운터 11번에 꽂았던 +24V 잭
+  c.wires=c.wires.filter(x=>x.b!=='C1_11').map(x=>
+    x.a==='C1_12'?{...x,a:r24}:                       // K1 줄: 카운터 없이 24V에서 바로
+    x.a==='LS1_4'&&x.b==='K2_A1'?{...x,b:'C1_11'}:     // K2 줄: LS1 → 카운터 NC → K2 코일
+    x.a==='K2_14'&&x.b==='K2_A1'?{...x,b:'C1_11'}:x);
+  c.wires.push(w('C1_12','K2_A1','red'));
+  const f=fails('m14g',c);
+  assert.ok(f.includes('PB3를 누르면 카운터만 리셋 (움직이지 않음)'),f.join(','));
+  assert.ok(f.includes('PB2를 한 번 누르면 A+ A−를 3번 하고 정지'),f.join(','));
+});
+test('H18: 도면대로 모터 Y2를 K1 접점으로 켜면 변위단계선도(A+ M+ M0 A−)에서 실패',()=>{
+  const c=tutorialCircuit('h18',{T1:3});
+  const r24=c.wires.find(x=>x.b==='LS2_1').a;
+  c.wires=c.wires.map(x=>x.a==='LS2_4'&&x.b==='V2_Ya_p'?{...x,a:'K1_34'}:x);c.wires.push(w(r24,'K1_31','red'));
+  const res=grade('h18',c),seq=res.find(r=>r.name==='PB1 → 변위단계선도(A+ M+ M0 A−)대로 동작');
+  assert.equal(seq.ok,false);assert.match(seq.detail,/실제: M\+ A\+/);
+  assert.deepEqual(fails('h18',tutorialCircuit('h18',{T1:3})),[]);
+});

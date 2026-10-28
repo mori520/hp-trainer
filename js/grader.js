@@ -14,6 +14,7 @@
         "stroke":{"cyl":"A","dir":"-","min":1.5}   그 단계에서 A가 후진하는 데 걸린 시간(초) 1.5초 이상 (max도 가능). 여러 개면 배열로
         "meter":{"A":"out"}   마지막 움직임이 미터아웃이었는지 ("in" = 미터인, "bleed" = 블리드오프)
         "meterOn":{"A+":"out"}   그 단계에서 A가 전진 끝에 닿은 움직임이 미터아웃이었는지 (한 사이클을 다 돌리는 단계용)
+        "pressureOn":{"A+":[1.9,2.1]}   그 단계에서 A가 전진 끝에 닿은 움직임의 작동압력(MPa) 범위
         "pressureAt":{"A":[0.25,0.35]}   A가 움직일 때 공급 압력(MPa) 범위
       "settingsCheck":[{"name":"SU","min":0.45,"max":0.55,"label":"…"}]   설정값 범위 검사 (서비스 유닛 압력 등)
       "partCheck":[{"slot":"valveB","type":"valve52d","label":"…"}]   판의 그 자리에 그 종류가 놓였는지 (밸브 교체 유지보수)
@@ -116,6 +117,10 @@ function stepExtraProblem(s,w,tl){
     const x=[...tl].reverse().find(y=>y.ev===k);if(!x)return `${fmtSeq([k])}에 닿지 않았어요`;
     if(x.meter!==s.meterOn[k])return `${fmtSeq([k])} 움직임이 ${({out:'미터아웃',in:'미터인',bleed:'블리드오프'})[x.meter]||'속도 조절 없음'}이에요 — 기대: ${({out:'미터아웃',in:'미터인',bleed:'블리드오프'})[s.meterOn[k]]}`;
   }
+  for(const k in s.pressureOn||{}){
+    const x=[...tl].reverse().find(y=>y.ev===k),[lo,hi]=s.pressureOn[k];if(!x)return `${fmtSeq([k])}에 닿지 않았어요`;
+    if(x.p<lo-1e-9||x.p>hi+1e-9)return `${fmtSeq([k])} 작동압력 ${x.p.toFixed(2)} MPa — 기대 ${lo}~${hi} MPa`;
+  }
   for(const k in s.pressureAt||{}){
     const [lo,hi]=s.pressureAt[k],v=w.cylP[k]||0;
     if(v<lo-1e-9||v>hi+1e-9)return `${k} 작동압력 ${v.toFixed(2)} MPa — 기대 ${lo}~${hi} MPa`;
@@ -150,7 +155,7 @@ function recordMoves(w,dur,log,at,tl){
     stepWorld(w,0.02);
     for(const k in w.cyl){
       const e=endOf(w.cyl[k]);
-      if(e&&e!==at[k]){log.push(k+e);at[k]=e;if(tl)tl.push({ev:k+e,t:w.t,meter:w.meter[k]||''});}
+      if(e&&e!==at[k]){log.push(k+e);at[k]=e;if(tl)tl.push({ev:k+e,t:w.t,meter:w.meter[k]||'',p:w.cylP[k]||0});}
       if(tl){if(tl.pos[k]&&!e)tl.push({ev:k+'~',t:w.t});tl.pos[k]=e;}
     }
     for(const k in w.motor){

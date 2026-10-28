@@ -252,3 +252,47 @@ test('모의 유1 유지보수 3) 비상정지 + 램프: 정답 통과 (B는 중
   assert.deepEqual(failed(gradeStage(y1,3,y1m3())),[]);
   assert.ok(failed(gradeStage(y1,3,y1m2())).length>0);
 });
+
+/* ---------- 모의 유2: M+ (2초) A+ A− M0 (4/2 + 2/2 모터) ---------- */
+const Y2={
+  hoses:()=>[h('HP1','V1_P'),h('V1_T','HT1'),h('V1_A','A_cap'),h('V1_B','A_rod'),h('HP2','V2_P'),h('V2_A','M_a'),h('M_b','HT2')],
+  // K1 = 기동·유지(K3 NC로 해제), Y2(모터) = K1, T1 = K1, Y1(A) = T1·K2NC, K2 = (LS2 ∥ K2)·K1, K3 = K2·LS1
+  wires:(ls='LS1')=>[
+    w('R24_6_0','K3_11','red'),w('K3_12','PB1_13','red'),w('PB1_14','K1_A1','red'),w('K3_12','K1_11','red'),w('K1_14','K1_A1','red'),w('K1_A2','R0_5_0','blue'),
+    w('R24_5_0','K1_21','red'),w('K1_24','V2_Ya_p','red'),w('V2_Ya_n','R0_5_1','blue'),
+    w('R24_5_1','K1_31','red'),w('K1_34','T1_A1','red'),w('T1_A2','R0_3_0','blue'),
+    w('R24_3_1','T1_11','red'),w('T1_14','K2_11','red'),w('K2_12','V1_Ya_p','red'),w('V1_Ya_n','R0_5_2','blue'),
+    w('R24_1_0','LS2_1','red'),w('LS2_4','K1_41','red'),w('R24_5_2','K2_21','red'),w('K2_24','K1_41','red'),w('K1_44','K2_A1','red'),w('K2_A2','R0_5_3','blue'),
+    w('R24_5_3','K2_31','red'),w('K2_34',ls+'_1','red'),w(ls+'_4','K3_A1','red'),w('K3_A2','R0_5_4','blue')]
+};
+// 유지보수 1): V1 A → 감압 PR1 1번, PR1 2번 → A 후방, 2.0 MPa
+const y2m1=()=>({wires:Y2.wires(),hoses:Y2.hoses().filter(x=>x.a!=='V1_A').concat([h('V1_A','PR1_1'),h('PR1_2','A_cap')]),set:{RV:4,T1:2,PR1:2}});
+// 유지보수 2): A 전방 줄 미터인 (V1 B → F1 2번, F1 1번 → A 전방)
+const y2m2=()=>{const c=y2m1();c.set.F1=5;c.hoses=c.hoses.filter(x=>x.a!=='V1_B').concat([h('V1_B','F1_2'),h('F1_1','A_rod')]);return c;};
+// 유지보수 3): K1은 K3 대신 카운터 NC로, K2 줄의 K1 접점은 K3 NC로. K2 NO → 카운터 계수, PB3 → 리셋
+const y2m3=()=>{const c=y2m2();c.set.C1=3;
+  const J={K3_11:'C1_11',K3_12:'C1_12',K1_41:'K3_21',K1_44:'K3_22'};
+  c.wires=c.wires.map(x=>({...x,a:J[x.a]||x.a,b:J[x.b]||x.b})).concat([
+    w('R24_6_1','K2_41','red'),w('K2_44','C1_A1','red'),w('C1_A2','R0_6_0','blue'),w('R24_1_1','PB3_13','red'),w('PB3_14','C1_R1','red'),w('C1_R2','R0_1_0','blue')]);
+  return c;};
+
+const y2=EXAMS.find(x=>x.id==='y2');
+test('모의 유2 기본 동작: 고친 회로 통과, 타이머를 안 맞추면 실패, 도면대로 LS2로 쓰면 실패',()=>{
+  assert.deepEqual(failed(gradeStage(y2,0,{wires:Y2.wires(),hoses:Y2.hoses(),set:{RV:4,T1:2}})),[]);
+  assert.ok(failed(gradeStage(y2,0,{wires:Y2.wires(),hoses:Y2.hoses(),set:{RV:4}})).length>0);
+  const f=failed(gradeStage(y2,0,{wires:Y2.wires('LS2'),hoses:Y2.hoses(),set:{RV:4,T1:2}}));
+  assert.ok(f.some(s=>s.startsWith('PB1 → 변위단계선도')),f.join(' / '));
+});
+test('모의 유2 유지보수 1) 감압 2.0: 정답 통과, 2차 압력을 안 맞추면(4.0) 실패',()=>{
+  assert.deepEqual(failed(gradeStage(y2,1,y2m1())),[]);
+  const f=failed(gradeStage(y2,1,{...y2m1(),set:{RV:4,T1:2,PR1:4}}));
+  assert.ok(f.some(s=>/작동압력 4\.00 MPa/.test(s)),f.join(' / '));
+});
+test('모의 유2 유지보수 2) 후진 미터인: 정답 통과, 없으면 실패',()=>{
+  assert.deepEqual(failed(gradeStage(y2,2,y2m2())),[]);
+  assert.ok(failed(gradeStage(y2,2,y2m1())).length>0);
+});
+test('모의 유2 유지보수 3) 모터를 돌린 채 A 3회: 정답 통과, 그대로면 실패',()=>{
+  assert.deepEqual(failed(gradeStage(y2,3,y2m3())),[]);
+  assert.ok(failed(gradeStage(y2,3,{...y2m2(),set:{RV:4,T1:2,PR1:2,F1:5,C1:3}})).length>0);
+});

@@ -247,6 +247,7 @@ function hyd22(S,act,y,x,o){
   S.path(`M${ax},${vy}V${vy-18}H${act.cap[0]}V${act.cap[1]}`);
   S.path(`M${act.rod[0]},${act.rod[1]}V${vy+H+94}`);tank(S,act.rod[0],vy+H+94);
   const py=vy+H+44,pumpX=vx-50;
+  if(o.feed){S.path(`M${ax},${vy+H}V${o.feed.y}H${o.feed.x}`);S.dot(o.feed.x,o.feed.y);return{py,ax};}   // 첫 밸브의 P 줄에서 받음
   S.path(`M${ax},${vy+H}V${py}H${pumpX}V${py+12}`);
   S.add(`<circle cx="${pumpX}" cy="${py+26}" r="13" class="w"/>`);S.path(`M${pumpX-7},${py+30}L${pumpX},${py+19}L${pumpX+7},${py+30}Z`,'fill');
   S.line(pumpX,py+39,pumpX,py+50);tank(S,pumpX,py+50);
@@ -620,6 +621,19 @@ sheet('y1.svg',{...HS,w:900,h:980,names:['A','B'],seq:['A+','B+','B-','A-'],note
     L.rung(540,[{t:'sensor',name:'S2',hold:'K3'},{t:'no',name:'K1'},{t:'coil',name:'K3'}]);
     L.rung(660,[{t:'no',name:'K3'},{t:'nc',name:'K2'},{t:'sol',name:'Y3'}]);
     L.rung(780,[{t:'no',name:'K3'},{t:'no',name:'K2'},{t:'coil',name:'K4'}]);
+  }});
+
+// 모의 유2: M+ (2초) A+ A− M0. A 4/2 편솔(Y1), 모터 M 2/2 편솔(Y2). 틀린 곳 = K3 줄의 리밋이 LS1 대신 LS2
+sheet('y2.svg',{...HS,w:860,h:1000,names:['A','M'],motors:['M'],seq:['M+','wait:2초','A+','A-','M0'],note:['PB1: 한 사이클','릴레이 3개, 타이머 2초','릴리프 4.0 MPa'],
+  pneu:S=>{const a=hyd(S,110,90,{name:'A',valve:'42',sols:['Y1'],sensors:[{end:'+',name:'LS2',kind:'ls'},{end:'-',name:'LS1',kind:'ls'}]});
+    hyd(S,500,90,{act:'motor',name:'M',valve:'22',sols:['Y2'],feed:{x:a.ax,y:a.py}});},
+  elec:L=>{
+    L.rung(90,[{t:'nc',name:'K3'},{t:'no',name:'PB1',act:'pb',hold:'K1'},{t:'coil',name:'K1'}]);
+    L.rung(200,[{t:'no',name:'K1'},{t:'sol',name:'Y2'}]);
+    L.rung(300,[{t:'no',name:'K1'},{t:'coil',name:'T1 (2초)'}]);
+    L.rung(430,[{t:'no',name:'T1',timed:true},{t:'nc',name:'K2'},{t:'sol',name:'Y1'}]);
+    L.rung(560,[{t:'no',name:'LS2',act:'ls',hold:'K2'},{t:'no',name:'K1'},{t:'coil',name:'K2'}]);
+    L.rung(700,[{t:'no',name:'K2'},{t:'no',name:'LS2',act:'ls'},{t:'coil',name:'K3'}]);
   }});
 
 // 미션 0~4: 튜토리얼에서 완성 도면을 보며 배우도록 (2026-10-28 사용자 요청)

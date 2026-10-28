@@ -139,6 +139,7 @@ for(const mis of MISSIONS.filter(m=>!m.soon).concat(EXAMS)){
     (g.steps||[]).forEach((s,i)=>{
       [].concat(s.stroke||[]).forEach(st=>assert.ok(cyls.has(st.cyl)&&['+','-'].includes(st.dir)&&(st.min!=null||st.max!=null),`채점 ${i+1}: stroke`));
       for(const k in s.meter||{})assert.ok(cyls.has(k)&&['out','in','bleed'].includes(s.meter[k]),`채점 ${i+1}: meter`);
+      for(const k in s.pressureOn||{})assert.ok(/^(\w+)[+-]$/.test(k)&&cyls.has(k.slice(0,-1))&&s.pressureOn[k].length===2,`채점 ${i+1}: pressureOn`);
       for(const k in s.meterOn||{})assert.ok(/^(\w+)[+-]$/.test(k)&&cyls.has(k.slice(0,-1))&&['out','in','bleed'].includes(s.meterOn[k]),`채점 ${i+1}: meterOn`);
       for(const k in s.pressureAt||{})assert.ok(cyls.has(k)&&s.pressureAt[k].length===2,`채점 ${i+1}: pressureAt`);
     });

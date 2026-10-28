@@ -333,7 +333,9 @@ setInterval(()=>{
   if(st.sec%10===0)save();
 },1000);
 // 도면 창: 띄워 둔 채로 배선할 수 있다. 머리를 끌어 옮긴다
-function showDiagram(){const mis=cur();$('diagramImg').src=mis.diagram;$('diagramTitle').textContent='도면 — '+mis.title;$('diagram').hidden=false;}
+// 도면 그림 주소에도 버전을 붙여 예전 그림이 남지 않게 (빌드가 meta app-version을 채움)
+const APP_VER=(document.querySelector('meta[name="app-version"]')||{}).content||'dev';
+function showDiagram(){const mis=cur();$('diagramImg').src=mis.diagram+(APP_VER==='dev'?'':'?v='+APP_VER);$('diagramTitle').textContent='도면 — '+mis.title;$('diagram').hidden=false;}
 $('diagramBtn').onclick=()=>{if($('diagram').hidden)showDiagram();else $('diagram').hidden=true;};
 $('diagramClose').onclick=()=>{$('diagram').hidden=true;};
 $('diagramHead').addEventListener('pointerdown',e=>{

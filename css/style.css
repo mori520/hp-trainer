@@ -234,6 +234,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
 .swap:hover rect{stroke:var(--accent);stroke-width:1.6}
 .arrowhead{fill:var(--panel-ink)}
 
+#appVer{position:fixed;right:6px;bottom:4px;font:500 10px var(--mono);color:var(--muted);opacity:.7;pointer-events:none;z-index:1}
 #toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;font-size:13px;max-width:min(560px,calc(100vw - 32px));box-shadow:0 6px 24px rgb(0 0 0/.25);z-index:20}
 @media (prefers-reduced-motion:reduce){.hl,.pulse-btn,.conn.flash .wire,.conn.flash .hose{animation:none}.needle,.spool{transition:none}}
 @media (max-width:900px){.app{grid-template-columns:1fr;height:auto}.stage{min-height:80vh}.help{margin-left:0}}

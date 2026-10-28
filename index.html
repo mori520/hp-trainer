@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="app-version" content="dev">
 <title>설비보전 공유압 트레이너</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
@@ -106,6 +107,7 @@
   <div class="mydiag-foot"><span>내가 만든 것을 도면으로 그린 거예요. 가진 도면과 비교해 보세요.</span><button class="btn" id="mydiagClear">동작 기록 지우기</button></div>
 </div>
 <div id="toast" hidden></div>
+<span id="appVer" title="앱 버전 (배포할 때마다 바뀜)">dev</span>
 
 <!-- 불러오는 순서가 중요: 엔진 → 부품 → 데이터 → 채점 → 튜토리얼 → 렌더링 → 앱 -->
 <script src="js/engine.js"></script>

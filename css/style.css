@@ -294,7 +294,6 @@ body.in-lesson .stage>.toolbar,body.in-lesson .stage>.canvas-wrap,body.in-lesson
 .mytabs .btn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .mydiag-foot{display:flex;align-items:center;gap:8px;justify-content:space-between;padding:6px 10px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
 .mydiag-foot .btn{padding:4px 9px;font-size:12px}
-.mydiag-soon{color:#444;padding:24px;margin:0}
 body.in-lesson .mydiag{display:none}
 .mdsvg{display:block;width:100%;height:auto}
 .mdsvg .bg{fill:#fff;stroke:none} .mdsvg .bgfill{fill:#fff;stroke:none}
@@ -305,6 +304,8 @@ body.in-lesson .mydiag{display:none}
 .mdsvg .arw{stroke:#111;stroke-width:1.4;fill:none}
 .mdsvg .fill{fill:#111;stroke:#111}
 .mdsvg .hose{stroke:#111;stroke-width:1.6;fill:none}
+.mdsvg .lhot{stroke:#ff8a00;stroke-width:2.6} .mdsvg .lon{stroke:#1d7f46;stroke-width:2.4} .mdsvg .lonbox{fill:#bff0cf}
+.mdsvg .dash{stroke:#111;stroke-width:1.3;stroke-dasharray:3 3;fill:none} .mdsvg .thick2{stroke:#111;stroke-width:2.4}
 .mdsvg .dot{fill:#111} .mdsvg .open{fill:#fff;stroke:#c0302b;stroke-width:1.4}
 .mdsvg .t{font:13px var(--sans);fill:#111} .mdsvg .s{font:11px var(--sans);fill:#444} .mdsvg .n{font:bold 13px var(--sans);fill:#111}
 .mdsvg .bad{font:bold 13px var(--sans);fill:#c0302b} .mdsvg .good{font:bold 13px var(--sans);fill:#1d7f46}

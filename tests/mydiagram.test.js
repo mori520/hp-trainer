@@ -34,3 +34,44 @@ test('변위단계선도: 두 회차 비교, 머문 시간 칸',()=>{
   assert.match(diff,/두 번의 순서가 달라요/);
   assert.match(MYD.disp([{seq:['A+','wait:3.0초','A-']}],['A']),/3\.0초/);
 });
+
+/* 전기회로도: 튜토리얼대로 배선한 회로는 모두 "확인할 곳" 없이 사다리로 정리돼야 한다 */
+function tutorialWorld(mis,drop){
+  const L=get('LAYOUTS')[mis.layout];parts(mis.id);get('buildScene')(get('LAYOUT').parts,L.board);
+  const J=get('JACKS'),G=get('JACK_GROUPS'),pick=s=>s.startsWith('group:')?Object.keys(J).find(G[s.slice(6)]):s;
+  const wires=mis.steps.filter(s=>s.wire).map((s,i)=>({id:'t'+i,a:pick(s.wire[0]),b:pick(s.wire[1]),color:s.wire[2]})).filter((_,i)=>i!==drop);
+  return get('newWorld')(get('withJumpers')(L,{wires,hoses:[]}));
+}
+const reduce=w=>JSON.parse(JSON.stringify(MYD._reduce(get('LAYOUT'),get('PARTS'),w)));
+for(const mis of get('MISSIONS').filter(m=>(m.steps||[]).some(s=>s.wire))){
+  test(`전기회로도 ${mis.id}: 튜토리얼 배선이 확인할 곳 없이 정리된다`,()=>{
+    const r=reduce(tutorialWorld(mis));
+    assert.deepEqual(r.issues,[]);
+    assert.ok(r.rungs.length>0);
+  });
+}
+test('전기회로도: 미션 8은 6줄, 미션 12는 비상정지 아래 공통 줄 + 램프 줄',()=>{
+  const m=id=>get('MISSIONS').find(x=>x.id===id);
+  assert.equal(reduce(tutorialWorld(m('m8'))).rungs.length,6);
+  const r12=reduce(tutorialWorld(m('m12')));
+  assert.equal(r12.rungs.length,2);
+  assert.equal(r12.rungs[0].n.k[0].n.el.label,'ES 11-12');
+});
+test('전기회로도: 선을 하나 빼면 "끊긴 줄"로 알려 준다',()=>{
+  const m3=get('MISSIONS').find(x=>x.id==='m3');
+  const drop=m3.steps.filter(s=>s.wire).findIndex(s=>s.wire[0]==='K1_A2');   // K1 코일 → 0V 선
+  const r=reduce(tutorialWorld(m3,drop));
+  // 코일 A2가 비었다는 것과, 그 때문에 PB1 줄이 0V까지 안 이어진다는 것을 함께 알려 준다
+  assert.ok(r.issues.includes('K1 코일: A2번이 비어 있어요'),r.issues.join(' / '));
+  assert.ok(r.issues.some(s=>s.startsWith('끊긴 줄')&&s.includes('PB1 13-14')),r.issues.join(' / '));
+});
+test('전기회로도: 24V와 0V를 바로 이으면 합선',()=>{
+  const m0=get('MISSIONS').find(x=>x.id==='m0');
+  const w=tutorialWorld(m0);w.wires.push({id:'x',a:'R24_0_2',b:'R0_0_2',color:'red'});
+  assert.match(reduce(w).issues[0],/합선/);
+});
+test('전기회로도: 그림이 만들어진다 (접점 이름·번호)',()=>{
+  const w=tutorialWorld(get('MISSIONS').find(x=>x.id==='m4'));
+  const s=MYD.elec(get('LAYOUT'),get('PARTS'),w,null);
+  assert.match(s,/^<svg /);assert.match(s,/PB2/);assert.match(s,/11-12/);assert.doesNotMatch(s,/확인할 곳/);
+});

@@ -1,5 +1,5 @@
 /* ===================== 내 회로 도면: 창 =====================
-   "내 회로 도면" 버튼 → 떠 있는 창(탭: 공기압회로도 / 변위단계선도 / 전기회로도). 띄운 채로 배선하면 바로바로 다시 그린다.
+   "내 회로 도면" 버튼 → 떠 있는 창(탭: 공기압회로도 / 변위단계선도 / 전기회로도). 띄운 채로 배선하거나 버튼을 누르면 바로바로 다시 그린다.
    변위단계선도는 실린더가 끝에 닿을 때마다 기록한다: 움직이기 시작하면 기록 시작, 모두 끝에 멈춘 채 1.5초 지나면 한 번(회차) 끝.
    app.js 다음에 불러온다 (S·UI·cur·LAYOUT을 쓴다). 그림은 mydiagram.js */
 const MYUI={tab:'pneu',key:''};
@@ -41,11 +41,11 @@ function recSeq(run){
 function myDiagramSvg(){
   if(MYUI.tab==='pneu')return MYD.pneu(LAYOUT.parts,S.hoses,{set:S.set,leak:S.out.leak,valve:S.valve});
   if(MYUI.tab==='disp')return MYD.disp(REC.runs.map(recSeq),Object.keys(S.cyl),REC.cur&&recSeq(REC.cur));
-  return `<p class="mydiag-soon">전기회로도는 다음 단계에서 추가돼요. 지금은 공기압회로도와 변위단계선도를 볼 수 있어요.</p>`;
+  return MYD.elec(LAYOUT,PARTS,S,solveElec(S,false));
 }
 function renderMyDiagram(force){
   const box=$('mydiag');if(box.hidden)return;
-  const key=MYUI.tab+'|'+(MYUI.tab==='pneu'?JSON.stringify([S.hoses,UI.board,S.set,S.out.leak,S.valve]):MYUI.tab==='disp'?REC.ver:'');
+  const key=MYUI.tab+'|'+(MYUI.tab==='pneu'?JSON.stringify([S.hoses,UI.board,S.set,S.out.leak,S.valve]):MYUI.tab==='disp'?REC.ver:JSON.stringify([S.wires,S.pb,S.relay,S.out,S.sensor,S.power,S.timer,S.counter]));
   if(!force&&key===MYUI.key)return;
   MYUI.key=key;$('mydiagBody').innerHTML=myDiagramSvg();
   box.querySelectorAll('[data-mytab]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.mytab===MYUI.tab));

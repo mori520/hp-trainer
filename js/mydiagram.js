@@ -2,7 +2,8 @@
    사용자가 만든 것을 시험 도면 모양으로 다시 그린다 (DOM을 쓰지 않음 → 테스트에서도 돈다). 화면 쪽은 mydiagram-ui.js
    - pneu(parts, hoses, info) : 공기압회로도. 부품 기호는 자리마다 정해진 곳에 두고, 꽂힌 호스를 선으로 잇는다
        (도면대로 꽂았으면 시험 도면과 같은 모양이 되고, 잘못 꽂았으면 잘못된 모양 그대로 보인다). 비어 있는 포트는 빈 동그라미
-   - disp(runs, names)       : 변위단계선도. runs = 기록한 동작 [{seq:["A+","wait:3.0초","B+",…]}] */
+   - disp(runs, names)       : 변위단계선도. runs = 기록한 동작 [{seq:["A+","wait:3.0초","B+",…]}]
+   - elec(LAYOUT, PARTS, w, e): 전기회로도(사다리). 꽂은 선으로 직렬·병렬을 정리해 그리고, 정리 안 되는 곳은 "확인할 곳" 목록 */
 const MYD=(()=>{
   const at=o=>Object.entries(o).filter(([,v])=>v!=null&&v!=='').map(([k,v])=>` ${k}="${v}"`).join('');
   const line=(x1,y1,x2,y2,c='w')=>`<line${at({x1,y1,x2,y2,class:c})}/>`;
@@ -137,5 +138,149 @@ const MYD=(()=>{
     }
     return svg(760,Math.max(200,y),o.join(''));
   }
-  return{pneu,disp};
+  /* ---------- 전기회로도 (사다리) ----------
+     1) 선·모듈 레일로 이어진 잭끼리 한 점(net)으로 묶는다
+     2) 양쪽 잭이 모두 배선된 부품만 고른다: 접점(부품 elec 규칙을 all=true로 불러 두 잭 쌍을 얻음), 부하(LAYOUT.loads), 센서
+     3) 24V·0V가 아닌 점에 부품이 하나만 걸려 있으면 끊긴 줄 → "확인할 곳"으로 빼고, 남은 것을 직렬(점에 둘)·병렬(같은 두 점)로 묶어 나간다
+     4) 하나로 묶이면 위(24V)→아래(0V) 사다리로 그린다. 줄 순서는 먼저 꽂은 선이 들어간 줄이 왼쪽
+     닫힌 접점은 초록, 24V가 와 있는 선은 주황, 켜진 코일·솔레노이드·램프는 색칠 */
+  function elecGraph(L,PARTS,w,e){
+    const par=new Map(),f=x=>{if(!par.has(x))par.set(x,x);let r=x;while(par.get(r)!==r)r=par.get(r);return r;},u=(a,b)=>{const A=f(a),B=f(b);if(A!==B)par.set(A,B);};
+    L.rail24.forEach(j=>u(j,'+24'));L.rail0.forEach(j=>u(j,'0V'));L.buses.forEach(g=>g.forEach(j=>u(j,g[0])));
+    w.wires.forEach(x=>u(x.a,x.b));
+    const wired=new Set();w.wires.forEach(x=>{wired.add(x.a);wired.add(x.b);});
+    const order={};w.wires.filter(x=>!x.base).forEach((x,i)=>[x.a,x.b].forEach(j=>{if(!(j in order))order[j]=i;}));
+    const els=[],issues=[],half=[];
+    const add=(el)=>{
+      const wa=wired.has(el.a),wb=wired.has(el.b);
+      if(!wa&&!wb)return;
+      if(!(wa&&wb)){half.push({el,j:wa?el.a:el.b,miss:wa?el.b:el.a});return;}
+      el.ord=Math.min(order[el.a]??1e9,order[el.b]??1e9);els.push(el);
+    };
+    // 접점: all=true로 모든 쌍, all=false로 지금 닫힌 쌍
+    L.parts.forEach(p=>{
+      const d=PARTS[p.type];if(!d.elec)return;
+      const all=[],now=new Set(),rec=arr=>({u:(a,b)=>arr.push(a+'|'+b),f:x=>x,same:()=>false});
+      d.elec(p,w,rec(all),true);const nowArr=[];d.elec(p,w,rec(nowArr),false);nowArr.forEach(k=>now.add(k));
+      all.forEach(k=>{
+        const [a,b]=k.split('|'),owner=a.split('_')[0],ta=a.slice(owner.length+1),tb=b.slice(owner.length+1);
+        if(p.type==='capsensor'){add({kind:'sensor',a:b.endsWith('_p')?b:a,b:b.endsWith('_p')?a:b,name:owner,label:`센서 ${owner}`,closed:now.has(k)});return;}
+        const nc=/2$/.test(tb);
+        add({kind:nc?'nc':'no',a,b,name:owner,term:`${ta}-${tb}`,label:`${owner} ${ta}-${tb}`,closed:now.has(k),pb:p.type==='switch',ls:p.type==='limitsw',timed:p.type==='timer'});
+      });
+      if(p.type==='capsensor'&&wired.has(p.id+'_p')&&wired.has(p.id+'_out')&&!(wired.has(p.id+'_n')&&f(p.id+'_n')===f('0V')))issues.push(`센서 ${p.id}: 청색(0V) 선이 0V에 이어져 있지 않아요`);
+    });
+    L.loads.forEach(l=>{
+      const kind=l.sol?'sol':l.coil?'coil':l.timer?'timer':l.counter?(l.name.endsWith('R')?'reset':'counter'):'lamp';
+      const label={sol:`솔레노이드 ${l.name}`,coil:`${l.name} 코일`,timer:`타이머 ${l.name}`,counter:`카운터 ${l.name}`,reset:`카운터 ${l.name.slice(0,-1)} 리셋`,lamp:`램프 ${l.name}`}[kind];
+      add({kind,a:l.a,b:l.b,name:l.name,label,on:!!(w.out||{})[l.name]});
+    });
+    // 한쪽만 꽂힌 부품: c접점의 공통(11 등)을 다른 쪽(NO/NC)으로 쓰는 중이면 정상이라 알리지 않는다
+    half.forEach(({el,j,miss})=>{if(!els.some(x=>x.a===j||x.b===j))issues.push(`${el.label}: ${miss.split('_').pop()}번이 비어 있어요`);});
+    return{f,els,issues,hot:j=>e?e.hot(j):false};
+  }
+  // 직렬·병렬로 묶기. 간선 {u,v,n(트리)}: n = {t:'el',el} | {t:'ser',k:[간선…]} | {t:'par',k:[간선…]}
+  function reduce(G){
+    const T=G.f('+24'),B=G.f('0V'),issues=[];
+    if(T===B)return{issues:['24V와 0V가 곧바로 이어져 있어요 (합선)'],rungs:[]};
+    let E=G.els.map(el=>({u:G.f(el.a),v:G.f(el.b),n:{t:'el',el},ord:el.ord,rep:[el.a,el.b]})).filter(x=>{
+      if(x.u===x.v){issues.push(`${x.n.el.label}: 양쪽 잭이 같은 점에 이어져 있어요`);return false;}return true;});
+    const flip=x=>({u:x.v,v:x.u,ord:x.ord,rep:[x.rep[1],x.rep[0]],n:x.n.t==='el'?x.n:x.n.t==='par'?{t:'par',k:x.n.k.map(flip)}:{t:'ser',k:x.n.k.slice().reverse().map(flip)}});
+    const labels=n=>n.t==='el'?[n.el.label]:n.k.flatMap(x=>labels(x.n));
+    for(let changed=true;changed;){
+      changed=false;
+      const deg=new Map();E.forEach(x=>{deg.set(x.u,(deg.get(x.u)||0)+1);deg.set(x.v,(deg.get(x.v)||0)+1);});
+      // 끊긴 끝: 24V·0V가 아닌 점에 하나만 걸린 부품
+      const dead=E.filter(x=>(x.u!==T&&x.u!==B&&deg.get(x.u)===1)||(x.v!==T&&x.v!==B&&deg.get(x.v)===1));
+      if(dead.length){
+        dead.forEach(x=>issues.push(`끊긴 줄: ${labels(x.n).join(' → ')} (0V 또는 24V까지 이어지지 않음)`));
+        E=E.filter(x=>!dead.includes(x));changed=true;continue;
+      }
+      // 병렬: 같은 두 점 사이 간선들
+      const key=x=>x.u<x.v?x.u+'\u0000'+x.v:x.v+'\u0000'+x.u,groups=new Map();
+      E.forEach(x=>{const k=key(x);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(x);});
+      for(const g of groups.values())if(g.length>1){
+        // 이미 병렬인 것은 가지를 펴서 한 겹으로 (가지 순서 = 먼저 꽂은 선)
+        const base=g[0],kids=g.map(x=>x.u===base.u?x:flip(x)).flatMap(x=>x.n.t==='par'?x.n.k:[x]).sort((a,b)=>a.ord-b.ord);
+        E=E.filter(x=>!g.includes(x)).concat([{u:base.u,v:base.v,ord:kids[0].ord,rep:base.rep,n:{t:'par',k:kids}}]);changed=true;break;
+      }
+      if(changed)continue;
+      // 직렬: 24V·0V가 아닌 점에 딱 둘
+      for(const [node,d] of deg)if(d===2&&node!==T&&node!==B){
+        const [oa,ob]=E.filter(x=>x.u===node||x.v===node);
+        const a=oa.v===node?oa:flip(oa),b=ob.u===node?ob:flip(ob);
+        const k=[...(a.n.t==='ser'?a.n.k:[a]),...(b.n.t==='ser'?b.n.k:[b])];
+        E=E.filter(x=>x!==oa&&x!==ob).concat([{u:a.u,v:b.v,ord:Math.min(a.ord,b.ord),rep:[a.rep[0],b.rep[1]],n:{t:'ser',k}}]);
+        changed=true;break;
+      }
+    }
+    // 24V-0V 사이에 남은 것 = 줄들. 그 밖에 남은 것은 사다리로 못 그리는 연결
+    const rungs=E.filter(x=>(x.u===T&&x.v===B)||(x.u===B&&x.v===T)).map(x=>x.u===T?x:flip(x)).sort((a,b)=>a.ord-b.ord);
+    const rest=E.filter(x=>!rungs.some(r=>r.n===x.n));
+    if(rest.length)issues.push(`사다리로 정리할 수 없는 연결: ${rest.flatMap(x=>labels(x.n)).join(', ')}`);
+    return{rungs:rungs.flatMap(r=>r.n.t==='par'?r.n.k:[r]),issues};
+  }
+  // 그리기: 블록마다 {w,h,cx,draw(x,y,o)}. 위 연결점 (x+cx,y), 아래 연결점 (x+cx,y+h)
+  const EW=86,EH=58;
+  function block(x,G){
+    const lead=(o,X,y1,y2,net)=>o.push(line(X,y1,X,y2,G.hot(net)?'w lhot':'w'));
+    if(x.n.t==='el'){
+      const el=x.n.el;
+      return{w:EW,h:EH,cx:24,draw(X,Y,o){
+        const cx=X+24,cy=Y+EH/2;lead(o,cx,Y,cy-18,x.rep[0]);lead(o,cx,cy+18,Y+EH,x.rep[1]);
+        if(el.kind==='no'||el.kind==='nc'){
+          const c=el.closed;
+          o.push(path(`M${cx},${cy-18}V${cy-8}M${cx},${cy+8}V${cy+18}`));
+          if(el.kind==='no')o.push(c?path(`M${cx},${cy+8}V${cy-8}`,'w lon'):path(`M${cx},${cy+8}L${cx-10},${cy-7}`));
+          else o.push(path(`M${cx},${cy-8}H${cx+9}`),c?path(`M${cx},${cy+8}L${cx+10},${cy-9}`,'w lon'):path(`M${cx},${cy+8}L${cx+15},${cy+1}`));
+          if(el.pb)o.push(line(cx-4,cy,cx-14,cy,'dash'));
+          if(el.ls)o.push(line(cx-4,cy,cx-12,cy),circ(cx-15,cy,3));
+          if(el.timed)o.push(path(`M${cx-4},${cy}H${cx-10}M${cx-10},${cy-5}A5,5 0 0,0 ${cx-10},${cy+5}`));
+          o.push(text(cx+14,cy-2,el.name,'t'),text(cx+14,cy+13,el.term,'s'));
+        }else if(el.kind==='sensor'){
+          o.push(rect(cx-12,cy-16,24,32,el.closed?'w lonbox':'w'),path(`M${cx},${cy-11}L${cx+7},${cy-4}L${cx},${cy+3}L${cx-7},${cy-4}Z`),
+            path(`M${cx},${cy-18}V${cy-16}M${cx},${cy+16}V${cy+18}`),text(cx+16,cy+4,el.name,'t'));
+        }else{
+          const on=el.on?' lonbox':'';
+          if(el.kind==='lamp')o.push(circ(cx,cy,11,'w'+on),path(`M${cx-8},${cy-8}L${cx+8},${cy+8}M${cx+8},${cy-8}L${cx-8},${cy+8}`));
+          else o.push(rect(cx-14,cy-10,28,20,'w'+on));
+          if(el.kind==='sol')o.push(line(cx-14,cy+10,cx+14,cy-10));
+          const r=el.kind==='lamp'?11:10;o.push(path(`M${cx},${cy-18}V${cy-r}M${cx},${cy+r}V${cy+18}`));
+          o.push(text(cx+20,cy+5,{reset:`${el.name.slice(0,-1)} 리셋`}[el.kind]||el.name,'t'));
+        }
+      }};
+    }
+    const kids=x.n.k.map(k=>block(k,G));
+    if(x.n.t==='ser'){
+      const left=Math.max(...kids.map(b=>b.cx)),w=left+Math.max(...kids.map(b=>b.w-b.cx));
+      return{w,h:kids.reduce((s,b)=>s+b.h,0),cx:left,draw(X,Y,o){let y=Y;kids.forEach(b=>{b.draw(X+left-b.cx,y,o);y+=b.h;});}};
+    }
+    // 병렬: 가지를 옆으로. 위·아래 가로대로 잇고, 짧은 가지는 아래로 선을 늘인다
+    const gap=10,h=Math.max(...kids.map(b=>b.h))+24;let w=0;const xs=kids.map(b=>{const x0=w;w+=b.w+gap;return x0;});w-=gap;
+    return{w,h,cx:kids[0].cx,draw(X,Y,o){
+      const top=Y+12,bot=Y+h-12,xa=X+kids[0].cx,xb=X+xs[kids.length-1]+kids[kids.length-1].cx;
+      lead(o,xa,Y,top,x.rep[0]);lead(o,xa,bot,Y+h,x.rep[1]);
+      o.push(line(xa,top,xb,top,G.hot(x.rep[0])?'w lhot':'w'),line(xa,bot,xb,bot,G.hot(x.rep[1])?'w lhot':'w'),circ(xa,top,2.6,'dot'),circ(xa,bot,2.6,'dot'));
+      kids.forEach((b,i)=>{const bx=X+xs[i];b.draw(bx,top,o);if(top+b.h<bot)lead(o,bx+b.cx,top+b.h,bot,x.n.k[i].rep[1]);});
+    }};
+  }
+  function elec(L,PARTS,w,e){
+    const G=elecGraph(L,PARTS,w,e),R=reduce(G),issues=G.issues.concat(R.issues);
+    if(!G.els.length)return svg(760,200,text(380,90,'아직 배선된 부품이 없어요','t','middle')+text(380,114,'선을 꽂으면 그 회로를 사다리 모양으로 그려요','s','middle'));
+    const blocks=R.rungs.map(r=>block(r,G));
+    const x0=70,y0=40,gap=26,h=Math.max(EH,...blocks.map(b=>b.h)),W=Math.max(760,x0+blocks.reduce((s,b)=>s+b.w+gap,0)+20);
+    const o=[],yb=y0+h+20;
+    o.push(line(x0-20,y0,W-20,y0,'thick2'),line(x0-20,yb,W-20,yb,'thick2'),text(x0-26,y0+5,'24V','n','end'),text(x0-26,yb+5,'0V','n','end'));
+    let x=x0;blocks.forEach((b,i)=>{
+      const cx=x+b.cx;o.push(circ(cx,y0,2.6,'dot'),circ(cx,yb,2.6,'dot'));b.draw(x,y0+10,o);
+      o.push(line(cx,y0,cx,y0+10,G.hot(R.rungs[i].rep[0])?'w lhot':'w'),line(cx,y0+10+b.h,cx,yb,G.hot(R.rungs[i].rep[1])?'w lhot':'w'));
+      x+=b.w+gap;
+    });
+    if(!blocks.length)o.push(text(W/2,y0+h/2+10,'24V에서 0V까지 이어진 줄이 아직 없어요','t','middle'));
+    let y=yb+36;
+    if(issues.length){o.push(text(20,y,'확인할 곳','bad'));y+=20;issues.forEach(s=>{o.push(text(28,y,'• '+s,'t'));y+=19;});}
+    return svg(W,y+10,o.join(''));
+  }
+  // _reduce: 테스트용 (정리 결과 + 확인할 곳 전체)
+  return{pneu,disp,elec,_reduce:(L,PARTS,w)=>{const G=elecGraph(L,PARTS,w,null),R=reduce(G);return{rungs:R.rungs,issues:G.issues.concat(R.issues)};}};
 })();

@@ -370,3 +370,14 @@ test('h8: 압력스위치 NO(1-4)로 끊으면 자동 후진이 안 된다',()=>
   assert.deepEqual(grade('h8',{wires:wires('PS1_2'),hoses:hs}).filter(r=>!r.ok).map(r=>r.name),[]);
   assert.ok(grade('h8',{wires:wires('PS1_4'),hoses:hs}).some(r=>!r.ok));
 });
+test('H16: 도면대로 압력스위치 a접점(1-4)으로 배선하면 실패',()=>{
+  const f=fails('h16',rewire(tutorialCircuit('h16',{}),{PS1_2:'PS1_4'}));
+  assert.ok(f.length>0,f.join(','));
+  assert.deepEqual(fails('h16',tutorialCircuit('h16',{})),[]);
+});
+test('H17: 도면대로 카운터밸런스를 후방 줄에 끼우면 하중이 내려가 실패',()=>{
+  const c=tutorialCircuit('h17',{});
+  c.hoses=[h('HP1','V1_P'),h('V1_T','HT1'),h('V1_A','CB1_1'),h('CB1_2','A_cap'),h('V1_B','A_rod')];
+  assert.ok(fails('h17',c).includes('버튼을 누르지 않으면 하중이 내려가지 않음'));
+  assert.deepEqual(fails('h17',tutorialCircuit('h17',{})),[]);
+});

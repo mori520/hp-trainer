@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 910" width="560" height="910">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#111"/></marker></defs>
+<style>
+.w{stroke:#111;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.thin{stroke:#bbb;stroke-width:1;fill:none}
+.thick{stroke:#111;stroke-width:4;fill:none}
+.dash{stroke:#111;stroke-width:1.4;fill:none;stroke-dasharray:4 3}
+.arw{stroke:#111;stroke-width:1.4;fill:none;marker-end:url(#ar)}
+.fill{fill:#111;stroke:#111}
+.dot{fill:#111}
+.t{font:13px "Malgun Gothic","Apple SD Gothic Neo",sans-serif;fill:#111}
+.s{font:11px "Malgun Gothic","Apple SD Gothic Neo",sans-serif;fill:#444}
+.h{font:bold 15px "Malgun Gothic","Apple SD Gothic Neo",sans-serif;fill:#111}
+.n{font:bold 13px "Malgun Gothic","Apple SD Gothic Neo",sans-serif;fill:#111}
+</style>
+<rect width="100%" height="100%" fill="#fff"/>
+<text x="16" y="26" text-anchor="start" class="h">가. 유압회로도</text>
+<text x="110" y="80" text-anchor="start" class="n">A</text>
+<rect x="110" y="90" width="160" height="30" class="w"/>
+<line x1="132" y1="90" x2="132" y2="120" class="thick"/>
+<line x1="132" y1="105" x2="310" y2="105" class="thick"/>
+<path d="M122,120V130M258,120V130" class="w"/>
+<rect x="314" y="110" width="20" height="18" class="w"/>
+<text x="324" y="123" text-anchor="middle" class="s">W</text>
+<text x="342" y="123" text-anchor="start" class="s">하중</text>
+<rect x="130" y="240" width="48" height="36" class="w"/>
+<path d="M142,276L142,243" class="arw"/>
+<path d="M166,240L166,273" class="arw"/>
+<rect x="178" y="240" width="48" height="36" class="w"/>
+<path d="M190,240V254H214M214,240V276" class="w"/>
+<path d="M190,276V268M185,268H195" class="w"/>
+<rect x="226" y="240" width="48" height="36" class="w"/>
+<path d="M238,276L262,243" class="arw"/>
+<path d="M238,240L262,273" class="arw"/>
+<rect x="106" y="248" width="24" height="20" class="w"/>
+<line x1="106" y1="268" x2="130" y2="248" class="w"/>
+<text x="100" y="263" text-anchor="end" class="t">Y1</text>
+<rect x="274" y="248" width="24" height="20" class="w"/>
+<line x1="274" y1="268" x2="298" y2="248" class="w"/>
+<text x="304" y="263" text-anchor="start" class="t">Y2</text>
+<text x="184" y="234" text-anchor="end" class="s">A</text>
+<text x="220" y="234" text-anchor="start" class="s">B</text>
+<text x="184" y="290" text-anchor="end" class="s">P</text>
+<text x="220" y="290" text-anchor="start" class="s">T</text>
+<path d="M190,240V222H122V130" class="w"/>
+<path d="M214,240V206H258V130" class="w"/>
+<rect x="109" y="162" width="26" height="28" fill="#fff" stroke="none"/>
+<path d="M122,162V166H115V186H122V190M122,166H129V186H122" class="w"/>
+<rect x="111" y="172" width="8" height="9" class="w"/>
+<circle cx="129" cy="175" r="3" class="w"/>
+<text x="138" y="180" text-anchor="start" class="s">카운터밸런스</text>
+<path d="M190,276V320H80V332" class="w"/>
+<circle cx="80" cy="346" r="13" class="w"/>
+<path d="M73,350L80,339L87,350Z" class="fill"/>
+<line x1="80" y1="359" x2="80" y2="370" class="w"/>
+<path d="M70,370V378H90V370" class="w"/>
+<path d="M120,320V332" class="w"/>
+<rect x="110" y="332" width="20" height="20" class="w"/>
+<line x1="114" y1="348" x2="126" y2="336" class="arw"/>
+<path d="M120,352V370" class="w"/>
+<path d="M110,370V378H130V370" class="w"/>
+<text x="134" y="348" text-anchor="start" class="s">릴리프 4.0 MPa</text>
+<path d="M214,276V370" class="w"/>
+<path d="M204,370V378H224V370" class="w"/>
+<text x="16" y="430" text-anchor="start" class="h">나. 전기회로도</text>
+<line x1="50" y1="460" x2="530" y2="460" class="w"/>
+<line x1="50" y1="760" x2="530" y2="760" class="w"/>
+<text x="44" y="465" text-anchor="end" class="n">24V</text>
+<text x="44" y="765" text-anchor="end" class="n">0V</text>
+<circle cx="150" cy="460" r="2.6" class="dot"/>
+<line x1="150" y1="460" x2="150" y2="495" class="w"/>
+<path d="M150,495V507M150,523V535M150,523L141,508" class="w"/>
+<line x1="146" y1="515" x2="130" y2="515" class="dash"/>
+<path d="M130,509V521M130,509H125M130,521H125" class="w"/>
+<text x="118" y="520" text-anchor="end" class="t">PB1</text>
+<line x1="150" y1="535" x2="150" y2="706" class="w"/>
+<rect x="138" y="706" width="24" height="18" class="w"/>
+<line x1="138" y1="724" x2="162" y2="706" class="w"/>
+<text x="168" y="720" text-anchor="start" class="t">Y1</text>
+<line x1="150" y1="724" x2="150" y2="760" class="w"/>
+<circle cx="150" cy="760" r="2.6" class="dot"/>
+<circle cx="330" cy="460" r="2.6" class="dot"/>
+<line x1="330" y1="460" x2="330" y2="495" class="w"/>
+<path d="M330,495V507M330,523V535M330,523L321,508" class="w"/>
+<line x1="326" y1="515" x2="310" y2="515" class="dash"/>
+<path d="M310,509V521M310,509H305M310,521H305" class="w"/>
+<text x="298" y="520" text-anchor="end" class="t">PB2</text>
+<line x1="330" y1="535" x2="330" y2="706" class="w"/>
+<rect x="318" y="706" width="24" height="18" class="w"/>
+<line x1="318" y1="724" x2="342" y2="706" class="w"/>
+<text x="348" y="720" text-anchor="start" class="t">Y2</text>
+<line x1="330" y1="724" x2="330" y2="760" class="w"/>
+<circle cx="330" cy="760" r="2.6" class="dot"/>
+<text x="16" y="810" text-anchor="start" class="h">다. 동작</text>
+<text x="40" y="850" text-anchor="start" class="t">PB1을 누르는 동안 전진(하중이 내려감), PB2를 누르는 동안 후진</text>
+<text x="40" y="870" text-anchor="start" class="t">떼면 그 자리에 정지 — 하중이 제 무게로 내려가지 않게</text>
+</svg>

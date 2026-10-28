@@ -157,7 +157,11 @@ function solvePneu(w){
     if(bleed.length&&u.same(sup,'SUP')){bleed.forEach(d=>k*=Math.max(.1,1-.9*d.k));meter='bleed';}   // 많이 열수록 탱크로 새는 기름이 많아 느려짐
     return{k,meter};
   };
-  return{leak,P,E,press,flow,main,same:(a,b)=>u.same(a,b)};
+  // 채움: 하중이 내려갈 때 반대쪽 방은 탱크에서 기름을 빨아들인다. 한방향 기기도 정방향(a→b)이면 탱크(a)에서 채울 수 있음
+  const uf=base();pass.concat(prvOn,prvRev).forEach(d=>uf.u(d.a,d.b));
+  devs.filter(d=>DEV_DIR.has(d.kind)&&!dirOn.includes(d)&&side(d.a)==='E').forEach(d=>uf.u(d.a,d.b));
+  const fill=id=>P(id)||uf.same(id,'EX');
+  return{leak,P,E,press,flow,main,fill,same:(a,b)=>u.same(a,b)};
 }
 function newWorld(c){
   const w={wires:c.wires,hoses:c.hoses,set:{},power:false,air:false,t:0,pb:{},relay:{},timer:{},counter:{},modPow:{},meter:{},cylP:{},cylSup:{},cyl:{},motor:{},valve:{},sensor:{},sensorPow:{},out:{leak:false},events:[]};

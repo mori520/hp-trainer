@@ -30,7 +30,7 @@ PARTS.cylinder={
     let dir=0,sup,exh,k=1;
     if(P(cap)&&E(rod)){dir=1;sup=cap;exh=rod;} else if(P(rod)&&E(cap)){dir=-1;sup=rod;exh=cap;}
     // 하중 실린더(cylw): 전방 쪽 기름이 빠질 수 있고 후방 쪽이 막혀 있지 않으면 무게로 천천히 내려감(전진 방향)
-    else if(p.type==='cylw'&&E(rod)&&(E(cap)||P(cap))){dir=1;sup=cap;exh=rod;k=.35;}
+    else if(p.type==='cylw'&&E(rod)&&(pn?pn.fill(cap):E(cap)||P(cap))){dir=1;sup=cap;exh=rod;k=.35;}
     w.cylSup[p.id]=null;
     if(!dir)return;
     const f=pn?pn.flow(sup,exh):{k:1,meter:''};

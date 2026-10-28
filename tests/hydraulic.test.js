@@ -211,3 +211,9 @@ test('2/2 밸브: 평상시 막힘, Y 여자면 P→A. 한 방향 모터를 켜�
   run(s,{PB1:true},.3);assert.equal(s.motor.M.dir,1);
   run(s,{PB1:false},.3);assert.equal(s.motor.M.dir,0);
 });
+
+test('카운터밸런스를 후방 줄에 끼우면 소용없다: 전방 기름은 탱크로 빠지고 후방은 체크 쪽으로 채워져 내려감',()=>{
+  const s=world({cylA:'cylw',valveA:'valve43a',MA1:'cbv'},lift([h('HP1','V1_P'),h('V1_T','HT1'),h('V1_A','CB1_1'),h('CB1_2','A_cap'),h('V1_B','A_rod')]));
+  run(s,{power:true,air:true},2);
+  assert.ok(s.cyl.A>.3,'내려감 '+s.cyl.A);
+});

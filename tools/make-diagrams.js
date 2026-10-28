@@ -478,3 +478,12 @@ sheet('h14.svg',{...HS,w:580,names:['A'],seq:['A+','A-'],note:['PB2: 연속 반�
   }});
 sheet('h15.svg',{...HS,names:['M'],seq:[],note:['PB1을 누르는 동안 모터 정회전','떼면 정지'],
   pneu:S=>hyd(S,110,90,{act:'motor',name:'M',valve:'22',sols:['Y1']}),elec:pbY});
+
+// H16·H17: 유압 오류 찾기. 일부러 틀린 곳이 하나씩 (정답은 missions.js의 quiz)
+// H16: H8 압력스위치 회로. 틀린 곳 = PS1이 a접점(NO)
+sheet('h16.svg',{...HS,names:['A'],seq:['A+','A-'],note:['PS1 3.0 MPa'],
+  pneu:S=>hyd(S,110,90,{name:'A',valve:'42',sols:['Y1'],capDev:'psw:PS1'}),
+  elec:L=>{L.rung(140,[{t:'no',name:'PS1',act:'ps'},{t:'no',name:'PB1',act:'pb',hold:'K1'},{t:'coil',name:'K1'}]);L.rung(300,[{t:'no',name:'K1'},{t:'sol',name:'Y1'}]);}});
+// H17: H9 카운터밸런스. 틀린 곳 = 카운터밸런스가 후방 줄
+sheet('h17.svg',{...HS,names:['A'],seq:[],note:['PB1을 누르는 동안 전진(하중이 내려감), PB2를 누르는 동안 후진','떼면 그 자리에 정지 — 하중이 제 무게로 내려가지 않게'],
+  pneu:S=>hyd(S,110,90,{act:'cylw',name:'A',valve:'43a',sols:['Y1','Y2'],capDev:'cbv:카운터밸런스'}),elec:pbYY});

@@ -155,3 +155,53 @@ test('모의 공3 유지보수 3) 연속/연속정지: 정답 통과, K5 없이�
   assert.deepEqual(failed(gradeStage(two,3,x3m3())),[]);
   assert.ok(failed(gradeStage(two,3,x3m2())).length>0);
 });
+
+/* ---------- 모의 공4: B+ A+ B− A− (양솔 + 양솔) ---------- */
+const X4={
+  hoses:()=>[h('D1','V1_1'),h('V1_4','A_cap'),h('V1_2','A_rod'),h('D2','V2_1'),h('V2_4','B_cap'),h('V2_2','B_rod')],
+  // K1 = 기동·유지(K4 NC로 해제), Y3(B+) = K1·K2NC, K2 = (S2 ∥ K2)·K1, Y1(A+) = K2·K3NC, K3 = (LS2 ∥ K3)·K2,
+  // Y4(B−) = K3, Y2(A−) = S1·K3, K4 = S1·K3·LS1 (Y2 줄에서 갈라짐)
+  wires:(y1='K3_11',y1b='K3_12')=>[
+    w('R24_6_0','K4_11','red'),w('K4_12','PB1_13','red'),w('PB1_14','K1_A1','red'),w('K4_12','K1_11','red'),w('K1_14','K1_A1','red'),w('K1_A2','R0_5_0','blue'),
+    w('R24_5_0','K1_21','red'),w('K1_24','K2_11','red'),w('K2_12','V2_Ya_p','red'),w('V2_Ya_n','R0_5_1','blue'),
+    w('R24_1_0','S2_p','red'),w('S2_n','R0_1_0','blue'),w('S2_out','K1_31','red'),w('R24_5_1','K2_21','red'),w('K2_24','K1_31','red'),w('K1_34','K2_A1','red'),w('K2_A2','R0_5_2','blue'),
+    w('R24_5_2','K2_31','red'),w('K2_34',y1,'red'),w(y1b,'V1_Ya_p','red'),w('V1_Ya_n','R0_5_3','blue'),
+    w('R24_1_1','LS2_1','red'),w('LS2_4','K2_41','red'),w('R24_5_3','K3_21','red'),w('K3_24','K2_41','red'),w('K2_44','K3_A1','red'),w('K3_A2','R0_5_4','blue'),
+    w('R24_6_1','K3_31','red'),w('K3_34','V2_Yb_p','red'),w('V2_Yb_n','R0_6_0','blue'),
+    w('R24_1_2','S1_p','red'),w('S1_n','R0_1_1','blue'),w('S1_out','K3_41','red'),w('K3_44','V1_Yb_p','red'),w('V1_Yb_n','R0_6_1','blue'),
+    w('K3_44','LS1_1','red'),w('LS1_4','K4_A1','red'),w('K4_A2','R0_6_2','blue')]
+};
+// 유지보수 1): Y4는 타이머 NO(11-14)로, 타이머 코일은 K3 NO(31-34)로
+const x4m1=()=>({wires:X4.wires().filter(x=>x.a!=='K3_34').concat([w('K3_34','T1_A1','red'),w('T1_A2','R0_6_3','blue'),
+  w('R24_3_0','T1_11','red'),w('T1_14','V2_Yb_p','red')]),hoses:X4.hoses(),set:{SU:0.5,T1:3}});
+// 유지보수 2): V1 2번 → F1 1번, F1 2번 → A 전방 / V1 4번 → Q1 P, Q1 A → A 후방
+const x4m2=()=>{const c=x4m1();c.set.F1=5;
+  c.hoses=c.hoses.filter(x=>x.a!=='V1_2'&&x.a!=='V1_4').concat([h('V1_2','F1_1'),h('F1_2','A_rod'),h('V1_4','Q1_P'),h('Q1_A','A_cap')]);return c;};
+// 유지보수 3): K1은 카운터 NC로 끊고, K2 줄의 K1 접점은 K4 NC로. S2 출력 → 카운터 계수, 카운터 NO → H2, PB3 → 리셋
+const x4m3=()=>{const c=x4m2();c.set.C1=2;
+  const J={K4_11:'C1_11',K4_12:'C1_12',K1_31:'K4_21',K1_34:'K4_22'};
+  c.wires=c.wires.map(x=>({...x,a:J[x.a]||x.a,b:J[x.b]||x.b})).concat([
+    w('S2_out','C1_A1','red'),w('C1_A2','R0_4_0','blue'),w('R24_4_0','C1_21','red'),w('C1_24','H2_p','red'),w('H2_n','R0_2_0','blue'),
+    w('R24_1_3','PB3_13','red'),w('PB3_14','C1_R1','red'),w('C1_R2','R0_1_2','blue')]);
+  return c;};
+
+const x4=EXAMS.find(x=>x.id==='x4');
+test('모의 공4 기본 동작: 고친 회로 통과, 도면대로 Y1 줄 b접점을 K4로 쓰면 실패',()=>{
+  assert.deepEqual(failed(gradeStage(x4,0,{wires:X4.wires(),hoses:X4.hoses(),set:{SU:0.5}})),[]);
+  const f=failed(gradeStage(x4,0,{wires:X4.wires('K4_21','K4_22'),hoses:X4.hoses(),set:{SU:0.5}}));
+  assert.ok(f.some(s=>s.startsWith('PB1 → 변위단계선도')),f.join(' / '));
+});
+test('모의 공4 유지보수 1) 타이머 3초: 정답 통과, K3 그대로면 머무는 시간에서 실패',()=>{
+  assert.deepEqual(failed(gradeStage(x4,1,x4m1())),[]);
+  const f=failed(gradeStage(x4,1,{wires:X4.wires(),hoses:X4.hoses(),set:{SU:0.5,T1:3}}));
+  assert.ok(f.some(s=>s.startsWith('A+ 도달 후 3초')),f.join(' / '));
+});
+test('모의 공4 유지보수 2) 미터아웃 + 급속배기: 정답 통과, 급속배기가 없으면 실패',()=>{
+  assert.deepEqual(failed(gradeStage(x4,2,x4m2())),[]);
+  const c=x4m2();c.hoses=c.hoses.filter(x=>x.a!=='V1_4'&&x.a!=='Q1_A').concat([h('V1_4','A_cap')]);
+  assert.ok(failed(gradeStage(x4,2,c)).length>0);
+});
+test('모의 공4 유지보수 3) 카운터 2회 + 램프: 정답 통과, 기본 회로 그대로면 실패',()=>{
+  assert.deepEqual(failed(gradeStage(x4,3,x4m3())),[]);
+  assert.ok(failed(gradeStage(x4,3,{...x4m2(),set:{SU:0.5,T1:3,F1:5,C1:2}})).length>0);
+});

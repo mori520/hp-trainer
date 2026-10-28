@@ -1,0 +1,253 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 840" width="920" height="840">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#111"/></marker></defs>
+<style>
+.w{stroke:#111;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.thin{stroke:#bbb;stroke-width:1;fill:none}
+.thick{stroke:#111;stroke-width:4;fill:none}
+.dash{stroke:#111;stroke-width:1.4;fill:none;stroke-dasharray:4 3}
+.arw{stroke:#111;stroke-width:1.4;fill:none;marker-end:url(#ar)}
+.fill{fill:#111;stroke:#111}
+.dot{fill:#111}
+.t{font:13px "Malgun Gothic","Apple SD Gothic Neo",sans-serif;fill:#111}
+.s{font:11px "Malgun Gothic","Apple SD Gothic Neo",sans-serif;fill:#444}
+.h{font:bold 15px "Malgun Gothic","Apple SD Gothic Neo",sans-serif;fill:#111}
+.n{font:bold 13px "Malgun Gothic","Apple SD Gothic Neo",sans-serif;fill:#111}
+</style>
+<rect width="100%" height="100%" fill="#fff"/>
+<text x="16" y="26" text-anchor="start" class="h">가. 공기압회로도</text>
+<text x="60" y="80" text-anchor="start" class="n">A</text>
+<rect x="60" y="90" width="160" height="30" class="w"/>
+<line x1="82" y1="90" x2="82" y2="120" class="thick"/>
+<line x1="82" y1="105" x2="260" y2="105" class="thick"/>
+<path d="M72,120V130M208,120V130" class="w"/>
+<rect x="313" y="64" width="14" height="12" class="w"/>
+<line x1="320" y1="76" x2="320" y2="94" class="w"/>
+<circle cx="320" cy="98" r="4" class="w"/>
+<text x="320" y="58" text-anchor="middle" class="t">LS2</text>
+<rect x="253" y="64" width="14" height="12" class="w"/>
+<line x1="260" y1="76" x2="260" y2="94" class="w"/>
+<circle cx="260" cy="98" r="4" class="w"/>
+<text x="260" y="58" text-anchor="middle" class="t">LS1</text>
+<rect x="100" y="190" width="60" height="36" class="w"/>
+<rect x="160" y="190" width="60" height="36" class="w"/>
+<path d="M130,226L115,193" class="arw"/>
+<path d="M145,190L152,223" class="arw"/>
+<path d="M190,226L205,193" class="arw"/>
+<path d="M175,190L168,223" class="arw"/>
+<path d="M168,226V234M163,234H173L168,241Z" class="w"/>
+<path d="M212,226V234M207,234H217L212,241Z" class="w"/>
+<path d="M190,226V248" class="w"/>
+<path d="M190,248l-6,10h12z" class="fill"/>
+<text x="180" y="184" text-anchor="start" class="s">4</text>
+<text x="208" y="184" text-anchor="start" class="s">2</text>
+<text x="196" y="240" text-anchor="start" class="s">1</text>
+<rect x="76" y="198" width="24" height="20" class="w"/>
+<line x1="76" y1="218" x2="100" y2="198" class="w"/>
+<text x="70" y="213" text-anchor="end" class="t">Y1</text>
+<rect x="220" y="198" width="24" height="20" class="w"/>
+<line x1="220" y1="218" x2="244" y2="198" class="w"/>
+<text x="250" y="213" text-anchor="start" class="t">Y2</text>
+<path d="M175,190V172H72V130" class="w"/>
+<path d="M205,190V158H208V130" class="w"/>
+<text x="480" y="80" text-anchor="start" class="n">B</text>
+<rect x="480" y="90" width="160" height="30" class="w"/>
+<line x1="502" y1="90" x2="502" y2="120" class="thick"/>
+<line x1="502" y1="105" x2="680" y2="105" class="thick"/>
+<path d="M492,120V130M628,120V130" class="w"/>
+<path d="M740,66L749,75L740,84L731,75Z" class="w"/>
+<line x1="736" y1="75" x2="744" y2="75" class="w"/>
+<text x="740" y="58" text-anchor="middle" class="t">S2</text>
+<path d="M680,66L689,75L680,84L671,75Z" class="w"/>
+<line x1="676" y1="75" x2="684" y2="75" class="w"/>
+<text x="680" y="58" text-anchor="middle" class="t">S1</text>
+<rect x="520" y="190" width="60" height="36" class="w"/>
+<rect x="580" y="190" width="60" height="36" class="w"/>
+<path d="M550,226L535,193" class="arw"/>
+<path d="M565,190L572,223" class="arw"/>
+<path d="M610,226L625,193" class="arw"/>
+<path d="M595,190L588,223" class="arw"/>
+<path d="M588,226V234M583,234H593L588,241Z" class="w"/>
+<path d="M632,226V234M627,234H637L632,241Z" class="w"/>
+<path d="M610,226V248" class="w"/>
+<path d="M610,248l-6,10h12z" class="fill"/>
+<text x="600" y="184" text-anchor="start" class="s">4</text>
+<text x="628" y="184" text-anchor="start" class="s">2</text>
+<text x="616" y="240" text-anchor="start" class="s">1</text>
+<rect x="496" y="198" width="24" height="20" class="w"/>
+<line x1="496" y1="218" x2="520" y2="198" class="w"/>
+<text x="490" y="213" text-anchor="end" class="t">Y3</text>
+<rect x="640" y="198" width="24" height="20" class="w"/>
+<line x1="640" y1="218" x2="664" y2="198" class="w"/>
+<text x="670" y="213" text-anchor="start" class="t">Y4</text>
+<path d="M595,190V172H492V130" class="w"/>
+<path d="M625,190V158H628V130" class="w"/>
+<text x="16" y="280" text-anchor="start" class="h">나. 전기회로도</text>
+<line x1="50" y1="310" x2="890" y2="310" class="w"/>
+<line x1="50" y1="610" x2="890" y2="610" class="w"/>
+<text x="44" y="315" text-anchor="end" class="n">24V</text>
+<text x="44" y="615" text-anchor="end" class="n">0V</text>
+<circle cx="80" cy="310" r="2.6" class="dot"/>
+<line x1="80" y1="310" x2="80" y2="345" class="w"/>
+<path d="M80,345V357H89M80,373V385M80,373L91,354" class="w"/>
+<text x="96" y="370" text-anchor="start" class="t">K4</text>
+<line x1="80" y1="385" x2="80" y2="415" class="w"/>
+<path d="M80,415V427M80,443V455M80,443L71,428" class="w"/>
+<line x1="76" y1="435" x2="60" y2="435" class="dash"/>
+<path d="M60,429V441M60,429H55M60,441H55" class="w"/>
+<text x="48" y="440" text-anchor="end" class="t">PB1</text>
+<path d="M80,403H132V415" class="w"/>
+<path d="M132,415V427M132,443V455M132,443L123,428" class="w"/>
+<text x="144" y="440" text-anchor="start" class="t">K1</text>
+<path d="M132,455V467H80" class="w"/>
+<circle cx="80" cy="403" r="2.6" class="dot"/>
+<circle cx="80" cy="467" r="2.6" class="dot"/>
+<line x1="80" y1="455" x2="80" y2="556" class="w"/>
+<rect x="68" y="556" width="24" height="18" class="w"/>
+<text x="98" y="570" text-anchor="start" class="t">K1</text>
+<line x1="80" y1="574" x2="80" y2="610" class="w"/>
+<circle cx="80" cy="610" r="2.6" class="dot"/>
+<circle cx="190" cy="310" r="2.6" class="dot"/>
+<line x1="190" y1="310" x2="190" y2="345" class="w"/>
+<path d="M190,345V357M190,373V385M190,373L181,358" class="w"/>
+<text x="202" y="370" text-anchor="start" class="t">K1</text>
+<line x1="190" y1="385" x2="190" y2="415" class="w"/>
+<path d="M190,415V427H199M190,443V455M190,443L201,424" class="w"/>
+<text x="206" y="440" text-anchor="start" class="t">K2</text>
+<line x1="190" y1="455" x2="190" y2="556" class="w"/>
+<rect x="178" y="556" width="24" height="18" class="w"/>
+<line x1="178" y1="574" x2="202" y2="556" class="w"/>
+<text x="208" y="570" text-anchor="start" class="t">Y3</text>
+<line x1="190" y1="574" x2="190" y2="610" class="w"/>
+<circle cx="190" cy="610" r="2.6" class="dot"/>
+<circle cx="300" cy="310" r="2.6" class="dot"/>
+<line x1="300" y1="310" x2="300" y2="345" class="w"/>
+<line x1="300" y1="345" x2="300" y2="349" class="w"/>
+<rect x="286" y="349" width="28" height="32" class="w"/>
+<path d="M300,353L308,361L300,369L292,361Z" class="w"/>
+<line x1="296" y1="361" x2="304" y2="361" class="w"/>
+<line x1="295" y1="375" x2="305" y2="375" class="w"/>
+<line x1="300" y1="381" x2="300" y2="385" class="w"/>
+<path d="M286,373H276V610" class="w"/>
+<circle cx="276" cy="610" r="2.6" class="dot"/>
+<text x="270" y="361" text-anchor="end" class="t">S2</text>
+<path d="M300,333H352V345" class="w"/>
+<path d="M352,345V357M352,373V385M352,373L343,358" class="w"/>
+<text x="364" y="370" text-anchor="start" class="t">K2</text>
+<path d="M352,385V397H300" class="w"/>
+<circle cx="300" cy="333" r="2.6" class="dot"/>
+<circle cx="300" cy="397" r="2.6" class="dot"/>
+<line x1="300" y1="385" x2="300" y2="415" class="w"/>
+<path d="M300,415V427M300,443V455M300,443L291,428" class="w"/>
+<text x="312" y="440" text-anchor="start" class="t">K1</text>
+<line x1="300" y1="455" x2="300" y2="556" class="w"/>
+<rect x="288" y="556" width="24" height="18" class="w"/>
+<text x="318" y="570" text-anchor="start" class="t">K2</text>
+<line x1="300" y1="574" x2="300" y2="610" class="w"/>
+<circle cx="300" cy="610" r="2.6" class="dot"/>
+<circle cx="420" cy="310" r="2.6" class="dot"/>
+<line x1="420" y1="310" x2="420" y2="345" class="w"/>
+<path d="M420,345V357M420,373V385M420,373L411,358" class="w"/>
+<text x="432" y="370" text-anchor="start" class="t">K2</text>
+<line x1="420" y1="385" x2="420" y2="415" class="w"/>
+<path d="M420,415V427H429M420,443V455M420,443L431,424" class="w"/>
+<text x="436" y="440" text-anchor="start" class="t">K4</text>
+<line x1="420" y1="455" x2="420" y2="556" class="w"/>
+<rect x="408" y="556" width="24" height="18" class="w"/>
+<line x1="408" y1="574" x2="432" y2="556" class="w"/>
+<text x="438" y="570" text-anchor="start" class="t">Y1</text>
+<line x1="420" y1="574" x2="420" y2="610" class="w"/>
+<circle cx="420" cy="610" r="2.6" class="dot"/>
+<circle cx="520" cy="310" r="2.6" class="dot"/>
+<line x1="520" y1="310" x2="520" y2="345" class="w"/>
+<path d="M520,345V357M520,373V385M520,373L511,358" class="w"/>
+<line x1="516" y1="365" x2="502" y2="365" class="w"/>
+<circle cx="498" cy="365" r="4" class="w"/>
+<text x="488" y="370" text-anchor="end" class="t">LS2</text>
+<path d="M520,333H572V345" class="w"/>
+<path d="M572,345V357M572,373V385M572,373L563,358" class="w"/>
+<text x="584" y="370" text-anchor="start" class="t">K3</text>
+<path d="M572,385V397H520" class="w"/>
+<circle cx="520" cy="333" r="2.6" class="dot"/>
+<circle cx="520" cy="397" r="2.6" class="dot"/>
+<line x1="520" y1="385" x2="520" y2="415" class="w"/>
+<path d="M520,415V427M520,443V455M520,443L511,428" class="w"/>
+<text x="532" y="440" text-anchor="start" class="t">K2</text>
+<line x1="520" y1="455" x2="520" y2="556" class="w"/>
+<rect x="508" y="556" width="24" height="18" class="w"/>
+<text x="538" y="570" text-anchor="start" class="t">K3</text>
+<line x1="520" y1="574" x2="520" y2="610" class="w"/>
+<circle cx="520" cy="610" r="2.6" class="dot"/>
+<circle cx="630" cy="310" r="2.6" class="dot"/>
+<line x1="630" y1="310" x2="630" y2="345" class="w"/>
+<path d="M630,345V357M630,373V385M630,373L621,358" class="w"/>
+<text x="642" y="370" text-anchor="start" class="t">K3</text>
+<line x1="630" y1="385" x2="630" y2="556" class="w"/>
+<rect x="618" y="556" width="24" height="18" class="w"/>
+<line x1="618" y1="574" x2="642" y2="556" class="w"/>
+<text x="648" y="570" text-anchor="start" class="t">Y4</text>
+<line x1="630" y1="574" x2="630" y2="610" class="w"/>
+<circle cx="630" cy="610" r="2.6" class="dot"/>
+<circle cx="740" cy="310" r="2.6" class="dot"/>
+<line x1="740" y1="310" x2="740" y2="345" class="w"/>
+<line x1="740" y1="345" x2="740" y2="349" class="w"/>
+<rect x="726" y="349" width="28" height="32" class="w"/>
+<path d="M740,353L748,361L740,369L732,361Z" class="w"/>
+<line x1="736" y1="361" x2="744" y2="361" class="w"/>
+<line x1="735" y1="375" x2="745" y2="375" class="w"/>
+<line x1="740" y1="381" x2="740" y2="385" class="w"/>
+<path d="M726,373H716V610" class="w"/>
+<circle cx="716" cy="610" r="2.6" class="dot"/>
+<text x="710" y="361" text-anchor="end" class="t">S1</text>
+<line x1="740" y1="385" x2="740" y2="415" class="w"/>
+<path d="M740,415V427M740,443V455M740,443L731,428" class="w"/>
+<text x="752" y="440" text-anchor="start" class="t">K3</text>
+<line x1="740" y1="455" x2="740" y2="556" class="w"/>
+<rect x="728" y="556" width="24" height="18" class="w"/>
+<line x1="728" y1="574" x2="752" y2="556" class="w"/>
+<text x="758" y="570" text-anchor="start" class="t">Y2</text>
+<line x1="740" y1="574" x2="740" y2="610" class="w"/>
+<circle cx="740" cy="610" r="2.6" class="dot"/>
+<line x1="740" y1="475" x2="860" y2="475" class="w"/>
+<circle cx="860" cy="475" r="2.6" class="dot"/>
+<line x1="860" y1="475" x2="860" y2="485" class="w"/>
+<path d="M860,485V497M860,513V525M860,513L851,498" class="w"/>
+<line x1="856" y1="505" x2="842" y2="505" class="w"/>
+<circle cx="838" cy="505" r="4" class="w"/>
+<path d="M838,521V511M835,515L838,510L841,515" class="w"/>
+<text x="828" y="510" text-anchor="end" class="t">LS1</text>
+<line x1="860" y1="525" x2="860" y2="556" class="w"/>
+<rect x="848" y="556" width="24" height="18" class="w"/>
+<text x="878" y="570" text-anchor="start" class="t">K4</text>
+<line x1="860" y1="574" x2="860" y2="610" class="w"/>
+<circle cx="860" cy="610" r="2.6" class="dot"/>
+<text x="16" y="660" text-anchor="start" class="h">다. 변위단계선도</text>
+<text x="90" y="686" text-anchor="middle" class="s">1</text>
+<text x="170" y="686" text-anchor="middle" class="s">2</text>
+<text x="250" y="686" text-anchor="middle" class="s">3</text>
+<text x="330" y="686" text-anchor="middle" class="s">4</text>
+<text x="410" y="686" text-anchor="middle" class="s">5</text>
+<line x1="90" y1="694" x2="90" y2="728" class="thin"/>
+<line x1="170" y1="694" x2="170" y2="728" class="thin"/>
+<line x1="250" y1="694" x2="250" y2="728" class="thin"/>
+<line x1="330" y1="694" x2="330" y2="728" class="thin"/>
+<line x1="410" y1="694" x2="410" y2="728" class="thin"/>
+<line x1="90" y1="694" x2="410" y2="694" class="thin"/>
+<line x1="90" y1="728" x2="410" y2="728" class="thin"/>
+<text x="50" y="716" text-anchor="start" class="n">A</text>
+<text x="80" y="698" text-anchor="end" class="s">1</text>
+<text x="80" y="732" text-anchor="end" class="s">0</text>
+<path d="M90,728L170,728L250,694L330,694L410,728" class="thick"/>
+<line x1="90" y1="752" x2="90" y2="786" class="thin"/>
+<line x1="170" y1="752" x2="170" y2="786" class="thin"/>
+<line x1="250" y1="752" x2="250" y2="786" class="thin"/>
+<line x1="330" y1="752" x2="330" y2="786" class="thin"/>
+<line x1="410" y1="752" x2="410" y2="786" class="thin"/>
+<line x1="90" y1="752" x2="410" y2="752" class="thin"/>
+<line x1="90" y1="786" x2="410" y2="786" class="thin"/>
+<text x="50" y="774" text-anchor="start" class="n">B</text>
+<text x="80" y="756" text-anchor="end" class="s">1</text>
+<text x="80" y="790" text-anchor="end" class="s">0</text>
+<path d="M90,786L170,752L250,752L330,786L410,786" class="thick"/>
+<text x="450" y="700" text-anchor="start" class="t">PB1: 한 사이클</text>
+<text x="450" y="720" text-anchor="start" class="t">릴레이 4개</text>
+</svg>

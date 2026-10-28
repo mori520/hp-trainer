@@ -591,6 +591,23 @@ sheet('x3.svg',{w:800,h:840,names:['A','B'],seq:['B+','A+','A-','B-'],note:['PB1
     L.rung(690,[{t:'sensor',name:'S2'},{t:'no',name:'K3'},{t:'coil',name:'K4'}]);
   }});
 
+// 모의 공4: B+ A+ B− A−. A 양솔(Y1·Y2), B 양솔(Y3·Y4). 틀린 곳 = Y1 줄의 b접점이 K3 대신 K4
+sheet('x4.svg',{w:920,h:840,names:['A','B'],seq:['B+','A+','B-','A-'],note:['PB1: 한 사이클','릴레이 4개'],
+  pneu:S=>{
+    const a=cylinder(S,60,90,'A',[{end:'+',name:'LS2',kind:'ls'},{end:'-',name:'LS1',kind:'ls'}]);valve(S,100,190,a,{double:true,sols:['Y1','Y2']});
+    const b=cylinder(S,480,90,'B',[{end:'+',name:'S2',kind:'cap'},{end:'-',name:'S1',kind:'cap'}]);valve(S,520,190,b,{double:true,sols:['Y3','Y4']});
+  },
+  elec:L=>{
+    L.rung(80,[{t:'nc',name:'K4'},{t:'no',name:'PB1',act:'pb',hold:'K1'},{t:'coil',name:'K1'}]);
+    L.rung(190,[{t:'no',name:'K1'},{t:'nc',name:'K2'},{t:'sol',name:'Y3'}]);
+    L.rung(300,[{t:'sensor',name:'S2',hold:'K2'},{t:'no',name:'K1'},{t:'coil',name:'K2'}]);
+    L.rung(420,[{t:'no',name:'K2'},{t:'nc',name:'K4'},{t:'sol',name:'Y1'}]);
+    L.rung(520,[{t:'no',name:'LS2',act:'ls',hold:'K3'},{t:'no',name:'K2'},{t:'coil',name:'K3'}]);
+    L.rung(630,[{t:'no',name:'K3'},{t:'sol',name:'Y4'}]);
+    L.rung(740,[{t:'sensor',name:'S1'},{t:'no',name:'K3'},{t:'sol',name:'Y2'}]);
+    const jy=L.Y[1]+40;L.bus(740,860,jy);L.rung(860,[{t:'no',name:'LS1',act:'ls',pressed:true},{t:'coil',name:'K4'}],{fromY:jy,dot:true,slots:[L.Y[2]]});
+  }});
+
 // 미션 0~4: 튜토리얼에서 완성 도면을 보며 배우도록 (2026-10-28 사용자 요청)
 sheet('m0.svg',{w:420,h:440,note:['PB1을 누르는 동안 H1 점등'],
   elec:L=>{L.rung(170,[{t:'no',name:'PB1',act:'pb'},{t:'lamp',name:'H1'}]);}});

@@ -13,7 +13,8 @@ Object.values(store.circuits).forEach(c=>{if(c.board)return;[...(c.wires||[]),..
 // 스위치·릴레이 모듈 레일 잭을 6개로 늘리기 전에 저장된 기본 전원 선(3번째 잭에서 나감)을 맨 끝 잭으로 옮긴다
 const OLD_JUMP={R24_1_2:'R24_1_5',R0_1_2:'R0_1_5',R24_5_2:'R24_5_5',R0_5_2:'R0_5_5'};
 Object.values(store.circuits).forEach(c=>(c.wires||[]).forEach(x=>{if(!x.base)return;x.a=OLD_JUMP[x.a]||x.a;x.b=OLD_JUMP[x.b]||x.b;}));
-function save(){try{if(!inTutorial())store.circuits[UI.mission]={wires:S.wires,hoses:S.hoses,board:UI.board,set:S.set,pw:1};store.last=UI.lesson||UI.mission;store.mode=UI.mode;localStorage.setItem(KEY,JSON.stringify(store));}catch(e){}}
+let WIPED=false;   // 모든 기록을 지운 뒤 새로고침 전까지는 다시 저장하지 않는다
+function save(){if(WIPED)return;try{if(!inTutorial())store.circuits[UI.mission]={wires:S.wires,hoses:S.hoses,board:UI.board,set:S.set,pw:1};store.last=UI.lesson||UI.mission;store.mode=UI.mode;localStorage.setItem(KEY,JSON.stringify(store));}catch(e){}}
 const UI={color:'red',mission:'m0',mode:'tut',board:{},stepIdx:0,flash:[],quiz:{tried:[],ok:false},lesson:null};
 let S=null;
 let uid=1;
@@ -347,6 +348,12 @@ $('resetNo').onclick=()=>{$('resetConfirm').hidden=true;};
 // 배선 초기화: 직접 그은 선·호스는 지우고 기본 전원 선은 다시 꽂는다
 $('resetYes').onclick=()=>{$('resetConfirm').hidden=true;applyBoard(Object.assign({},cur().board));S=newWorld(withJumpers(LAYOUTS[cur().layout],{wires:[],hoses:[],set:Object.assign({},cur().set)}));UI.stepIdx=0;clearResults();renderConn();};
 
+// 설정 ⚙ → 모든 기록 지우기: 한 번 더 확인받고 저장을 지운 뒤 새로고침 (처음 온 사람과 같은 상태: 자유 실습, 강의·미션 칸 접힘)
+$('settingsBtn').onclick=()=>{const box=$('settings');box.hidden=!box.hidden;$('settingsBtn').setAttribute('aria-expanded',!box.hidden);$('wipeConfirm').hidden=true;};
+$('wipeBtn').onclick=()=>{$('wipeConfirm').hidden=false;};
+$('wipeNo').onclick=()=>{$('wipeConfirm').hidden=true;};
+$('wipeYes').onclick=()=>{WIPED=true;try{localStorage.removeItem(KEY);}catch(e){}location.reload();};
+
 /* ===================== 루프 ===================== */
 let last=performance.now();
 function loop(now){
@@ -365,4 +372,5 @@ if(typeof store.autoColor!=='boolean')store.autoColor=true;
 $('autoColor').setAttribute('aria-pressed',store.autoColor);setColor(UI.color);
 applyZoom();
 loadMission(ALL.some(x=>x.id===store.last)?store.last:'free');
-requestAnimationFrame(loop);
+// 루프는 뒤에 불러오는 파일(lesson·mydiagram-ui)까지 모두 읽은 뒤 시작한다 (먼저 돌면 recMotion이 없어 루프가 멈춤)
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(loop));else requestAnimationFrame(loop);

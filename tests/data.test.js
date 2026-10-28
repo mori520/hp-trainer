@@ -186,3 +186,12 @@ test('모든 부품이 화면 갱신(render) 중 오류 없이 돈다',()=>{
     }
   }
 });
+
+test('화면 코드가 찾는 요소 id가 index.html에 있다 (설정 버튼 등 오타 방지)',()=>{
+  const fs=require('fs'),path=require('path'),dir=path.join(__dirname,'..','js');
+  const files=fs.readdirSync(dir).filter(f=>f.endsWith('.js')).map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('\n');
+  const made=new Set([...files.matchAll(/id="([^"$]+)"/g)].map(m=>m[1]));   // 코드가 그때그때 만드는 요소
+  const miss=[...new Set([...files.matchAll(/\$\('([^']+)'\)/g)].map(m=>m[1]))].filter(id=>!IDS.has(id)&&!made.has(id));
+  assert.deepEqual(miss,[]);
+  for(const id of ['settingsBtn','wipeBtn','wipeYes','wipeNo'])assert.ok(IDS.has(id),id);
+});

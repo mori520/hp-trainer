@@ -296,3 +296,47 @@ test('모의 유2 유지보수 3) 모터를 돌린 채 A 3회: 정답 통과, �
   assert.deepEqual(failed(gradeStage(y2,3,y2m3())),[]);
   assert.ok(failed(gradeStage(y2,3,{...y2m2(),set:{RV:4,T1:2,PR1:2,F1:5,C1:3}})).length>0);
 });
+
+/* ---------- 모의 유3: 하중 A+ B+ A− B− (4/3 중립 블록 + 4/2) ---------- */
+const Y3={
+  hoses:()=>[h('HP1','V1_P'),h('V1_T','HT1'),h('V1_A','A_cap'),h('V1_B','A_rod'),h('HP2','V2_P'),h('V2_T','HT2'),h('V2_A','B_cap'),h('V2_B','B_rod')],
+  // K1 = 기동·유지(K4 NC로 해제), Y1(A+) = K1·K2NC, K2 = (LS2 ∥ K2)·K1, Y3(B) = K2, K3 = (S2 ∥ K3)·K1, Y2(A−) = K3, K4 = K3·LS1
+  wires:(y1='K2_12')=>[
+    w('R24_6_0','K4_11','red'),w('K4_12','PB1_13','red'),w('PB1_14','K1_A1','red'),w('K4_12','K1_11','red'),w('K1_14','K1_A1','red'),w('K1_A2','R0_5_0','blue'),
+    w('R24_5_0','K1_21','red'),w('K1_24','K2_11','red'),w(y1,'V1_Ya_p','red'),w('V1_Ya_n','R0_5_1','blue'),
+    w('R24_1_0','LS2_1','red'),w('LS2_4','K1_31','red'),w('R24_5_1','K2_21','red'),w('K2_24','K1_31','red'),w('K1_34','K2_A1','red'),w('K2_A2','R0_5_2','blue'),
+    w('R24_5_2','K2_31','red'),w('K2_34','V2_Ya_p','red'),w('V2_Ya_n','R0_5_3','blue'),
+    w('R24_1_1','S2_p','red'),w('S2_n','R0_1_0','blue'),w('S2_out','K1_41','red'),w('R24_5_3','K3_11','red'),w('K3_14','K1_41','red'),w('K1_44','K3_A1','red'),w('K3_A2','R0_5_4','blue'),
+    w('R24_6_1','K3_21','red'),w('K3_24','V1_Yb_p','red'),w('V1_Yb_n','R0_6_0','blue'),
+    w('R24_6_2','K3_31','red'),w('K3_34','LS1_1','red'),w('LS1_4','K4_A1','red'),w('K4_A2','R0_6_1','blue')]
+};
+const y3abt={...EXAMS.find(x=>x.id==='y3')};y3abt.board={...y3abt.board,valveA:'valve43a'};   // 사용자가 ⇄로 바꾼 판
+// 유지보수 1): ABT 교체 + 전방 줄 카운터밸런스 (V1 B → CB1 1번, CB1 2번 → A 전방)
+const y3m1=()=>({wires:Y3.wires(),hoses:Y3.hoses().filter(x=>x.a!=='V1_B').concat([h('V1_B','CB1_1'),h('CB1_2','A_rod')]),set:{RV:4,CB1:2}});
+// 유지보수 2): B 후방 줄 미터인 (V2 A → F1 2번, F1 1번 → B 후방)
+const y3m2=()=>{const c=y3m1();c.set.F1=5;c.hoses=c.hoses.filter(x=>x.a!=='V2_A').concat([h('V2_A','F1_2'),h('F1_1','B_cap')]);return c;};
+// 유지보수 3): K3 a접점(41-44) → 타이머 코일, Y2는 타이머 a접점(11-14)으로
+const y3m3=()=>{const c=y3m2();c.set.T1=2;
+  c.wires=c.wires.filter(x=>x.a!=='K3_24').concat([w('R24_6_3','K3_41','red'),w('K3_44','T1_A1','red'),w('T1_A2','R0_3_0','blue'),
+    w('K3_24','T1_11','red'),w('T1_14','V1_Yb_p','red')]);return c;};
+
+const y3=EXAMS.find(x=>x.id==='y3');
+test('모의 유3 기본 동작: 고친 회로 통과, 도면대로 Y1 줄 K2를 a접점으로 쓰면 실패',()=>{
+  assert.deepEqual(failed(gradeStage(y3,0,{wires:Y3.wires(),hoses:Y3.hoses(),set:{RV:4}})),[]);
+  const f=failed(gradeStage(y3,0,{wires:Y3.wires('K2_14'),hoses:Y3.hoses(),set:{RV:4}}));
+  assert.ok(f.some(s=>s.startsWith('PB1 → 변위단계선도')),f.join(' / '));
+});
+test('모의 유3 유지보수 1) ABT + 카운터밸런스: 정답 통과, 카운터밸런스가 없으면 하중이 내려가 실패, 교체 안 하면 실패',()=>{
+  assert.deepEqual(failed(gradeStage(y3abt,1,y3m1())),[]);
+  const f=failed(gradeStage(y3abt,1,{wires:Y3.wires(),hoses:Y3.hoses(),set:{RV:4}}));
+  assert.ok(f.some(s=>s.startsWith('멈춘 뒤 하중이 내려가지 않음')),f.join(' / '));
+  assert.ok(failed(gradeStage(y3,1,y3m1())).some(s=>s.startsWith('A 밸브를 4/3 중립 ABT로 교체')));
+});
+test('모의 유3 유지보수 2) B 전진 미터인: 정답 통과, 없으면 실패',()=>{
+  assert.deepEqual(failed(gradeStage(y3abt,2,y3m2())),[]);
+  assert.ok(failed(gradeStage(y3abt,2,y3m1())).length>0);
+});
+test('모의 유3 유지보수 3) 타이머 2초: 정답 통과, 타이머를 안 쓰면 실패',()=>{
+  assert.deepEqual(failed(gradeStage(y3abt,3,y3m3())),[]);
+  assert.ok(failed(gradeStage(y3abt,3,{...y3m2(),set:{RV:4,CB1:2,F1:5,T1:2}})).length>0);
+});

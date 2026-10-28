@@ -381,3 +381,19 @@ test('H17: 도면대로 카운터밸런스를 후방 줄에 끼우면 하중이 
   assert.ok(fails('h17',c).includes('버튼을 누르지 않으면 하중이 내려가지 않음'));
   assert.deepEqual(fails('h17',tutorialCircuit('h17',{})),[]);
 });
+
+/* 유압모터를 변위단계선도 채점에: "M+"(정회전) "M0"(정지) "M-"(역회전) */
+test('H11 회로를 변위단계선도(A+ M+ M0 A−) + 모터 3초 머묾으로 채점하면 통과, 타이머 1초면 실패',()=>{
+  const mis=setup('h11');
+  const g={press:'PB1',sequence:['A+','M+','M0','A-'],repeat:2,dwell:{after:'M+',sec:3,tol:0.5}};
+  const res=set=>JSON.parse(JSON.stringify(get('gradeMission')({...mis,grading:g},J(mis,tutorialCircuit('h11',set)))));
+  assert.deepEqual(res({T1:3}).filter(r=>!r.ok).map(r=>r.name),[]);
+  const bad=res({T1:1}).filter(r=>!r.ok);
+  assert.ok(bad.some(r=>/3초 머문 뒤/.test(r.name)),JSON.stringify(bad));
+});
+test('H3 단계 검사의 움직임 기록에 모터가 들어간다',()=>{
+  const mis=setup('h3');
+  const g={setup:{power:true,air:true},steps:[{name:'PB1 누르고 떼기',tap:'PB1',wait:0.5,moves:['M+','M0']},{name:'PB2',set:{PB2:true},wait:0.5,moves:['M-']}]};
+  const res=JSON.parse(JSON.stringify(get('gradeMission')({...mis,grading:g},J(mis,tutorialCircuit('h3',{})))));
+  assert.deepEqual(res.filter(r=>!r.ok).map(r=>r.name+': '+r.detail),[]);
+});

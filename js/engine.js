@@ -200,8 +200,10 @@ function stepWorld(w,dt){
 function modulePowered(p,w,e){const r=rackRails(p.rack);return w.modPow[p.id]=!!(w.power&&e.hot(r.r24[0])&&e.gnd(r.r0[0]));}
 // 실린더 위치 → 끝 표시: "+"(전진 끝) "-"(후진 끝) ""(중간)
 function cylEnd(v){return v>.95?'+':v<.05?'-':'';}
+// 유압모터 상태 → "+"(정회전) "-"(역회전) "0"(정지)
+function motorState(m){return m.dir>0?'+':m.dir<0?'-':'0';}
 // 버튼·전원 등을 sets대로 맞춘 뒤 dur초 동안 진행
 function run(w,sets,dur){Object.keys(sets).forEach(k=>{if(k in w.pb)w.pb[k]=sets[k];else w[k]=sets[k];});for(let t=0;t<dur;t+=0.02)stepWorld(w,0.02);return w;}
 function clone(c){return{wires:c.wires.map(x=>({...x})),hoses:c.hoses.map(x=>({...x})),set:Object.assign({},c.set)};}
 
-if(typeof module!=='undefined')module.exports={STROKE_T,PARTS,cContacts,defaultJumpers,withJumpers,configure,makeParts,rackRails,UF,solveElec,solvePneu,newWorld,stepWorld,run,clone,cylEnd};
+if(typeof module!=='undefined')module.exports={STROKE_T,PARTS,cContacts,defaultJumpers,withJumpers,configure,makeParts,rackRails,UF,solveElec,solvePneu,newWorld,stepWorld,run,clone,cylEnd,motorState};

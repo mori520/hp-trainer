@@ -2,7 +2,7 @@
    사용자가 만든 것을 시험 도면 모양으로 다시 그린다 (DOM을 쓰지 않음 → 테스트에서도 돈다). 화면 쪽은 mydiagram-ui.js
    - pneu(parts, hoses, info) : 공기압회로도(유압 판이면 유압회로도: 파워유닛·4/2·4/3 밸브·모터·체크밸브). 부품 기호는 자리마다 정해진 곳에 두고, 꽂힌 호스를 선으로 잇는다
        (도면대로 꽂았으면 시험 도면과 같은 모양이 되고, 잘못 꽂았으면 잘못된 모양 그대로 보인다). 비어 있는 포트는 빈 동그라미
-   - disp(runs, names)       : 변위단계선도. runs = 기록한 동작 [{seq:["A+","wait:3.0초","B+",…]}]
+   - disp(runs, names, live, motors) : 변위단계선도. runs = 기록한 동작 [{seq:["A+","wait:3.0초","B+",…]}]. 모터는 "M+"(정회전)·"M0"(정지)·"M-"(역회전)
    - elec(LAYOUT, PARTS, w, e): 전기회로도(사다리). 꽂은 선으로 직렬·병렬을 정리해 그리고, 정리 안 되는 곳은 "확인할 곳" 목록 */
 const MYD=(()=>{
   const at=o=>Object.entries(o).filter(([,v])=>v!=null&&v!=='').map(([k,v])=>` ${k}="${v}"`).join('');
@@ -202,31 +202,34 @@ const MYD=(()=>{
      타이머로 중간에 머무는 동안은 처음 자리가 아니라서 회차가 끊기지 않는다 */
   const REST=1;
   const recNew=()=>({at:{},cur:null,runs:[],last:0,ver:0});
+  // 유압모터: 돌기 시작·멈춤이 곧 한 칸 ("M+" 정회전 / "M-" 역회전 / "M0" 정지). 도는 동안은 움직이는 중
   function recTick(rec,w){
     let moving=false;
-    for(const k in w.cyl){
-      const e=cylEnd(w.cyl[k]),prev=rec.at[k];
-      if(prev===undefined){rec.at[k]=e;continue;}
-      if(!e)moving=true;
-      if(e===prev)continue;
-      if(!e&&!rec.cur)rec.cur={ev:[],start:Object.assign({},rec.at)};   // 회차 시작: 지금 자리 기억
+    const mark=(k,e,isMot)=>{
+      const prev=rec.at[k];
+      if(prev===undefined){rec.at[k]=e;return;}
+      if(isMot?e!=='0':!e)moving=true;
+      if(e===prev)return;
+      if(!rec.cur&&(isMot?e!=='0':!e))rec.cur={ev:[],start:Object.assign({},rec.at)};   // 회차 시작: 지금 자리 기억
       rec.at[k]=e;
-      if(rec.cur)rec.cur.ev.push(e?{k,e,t:w.t}:{k,t:w.t,dep:true});
+      if(rec.cur)rec.cur.ev.push(isMot?{k,e,t:w.t,mot:true}:e?{k,e,t:w.t}:{k,t:w.t,dep:true});
       rec.last=w.t;rec.ver++;
-    }
+    };
+    for(const k in w.cyl)mark(k,cylEnd(w.cyl[k]),false);
+    for(const k in w.motor||{})mark(k,motorState(w.motor[k]),true);
     const home=rec.cur&&Object.keys(rec.cur.start).every(k=>rec.at[k]===rec.cur.start[k]);
     if(rec.cur&&!moving&&home&&w.t-rec.last>REST){
       rec.runs.push(rec.cur);if(rec.runs.length>2)rec.runs.shift();
       rec.cur=null;rec.ver++;
     }
   }
-  // 기록 → 변위단계선도 칸: 도착마다 한 칸, 도착 뒤 다음 출발까지 1초 넘게 머물면 "wait:n초" 칸을 끼운다
+  // 기록 → 변위단계선도 칸: 도착(모터는 상태 바뀜)마다 한 칸, 그 뒤 다음 움직임까지 1초 넘게 머물면 "wait:n초" 칸을 끼운다
   function recSeq(run){
     const seq=[],ev=run.ev;
     ev.forEach((x,i)=>{
       if(x.dep)return;
       seq.push(x.k+x.e);
-      const nx=ev.slice(i+1).find(y=>y.dep);
+      const nx=ev.slice(i+1).find(y=>y.dep||y.mot);
       if(nx&&nx.t-x.t>1)seq.push(`wait:${(nx.t-x.t).toFixed(1)}초`);
     });
     return{seq};
@@ -234,7 +237,8 @@ const MYD=(()=>{
 
   /* ---------- 변위단계선도 ---------- */
   // seq: "A+"·"B-" 같은 도착, "wait:3.0초"는 그 구간 그대로 머묾. 실린더마다 0(후진)·1(전진) 줄
-  function dispRows(x,y,names,seq,o){
+  // 유압모터(mot에 든 이름)는 세 칸 줄: 위 정회전(+) · 가운데 정지(0) · 아래 역회전(−)
+  function dispRows(x,y,names,seq,o,mot){
     const dx=Math.min(70,Math.max(34,560/Math.max(1,seq.length))),rh=30,gap=18,n=seq.length+1;
     seq.forEach((m,k)=>{if(m.startsWith('wait:'))o.push(text(x+(k+0.5)*dx,y+12,m.slice(5),'s','middle'));});
     for(let k=0;k<n;k++)o.push(text(x+k*dx,y-6,String(k+1),'s','middle'));
@@ -242,16 +246,24 @@ const MYD=(()=>{
       const top=y+r*(rh+gap),bot=top+rh;
       for(let k=0;k<n;k++)o.push(line(x+k*dx,top,x+k*dx,bot,'thin'));
       o.push(line(x,top,x+(n-1)*dx,top,'thin'),line(x,bot,x+(n-1)*dx,bot,'thin'));
-      o.push(text(x-34,top+rh/2+5,a,'n'),text(x-8,top+4,'1','s','end'),text(x-8,bot+4,'0','s','end'));
-      let st=0;const pts=[[x,bot]];
-      seq.forEach((m,k)=>{if(m[0]===a&&!m.startsWith('wait:'))st=m[1]==='+'?1:0;pts.push([x+(k+1)*dx,st?top:bot]);});
+      const isM=mot.includes(a),mid=(top+bot)/2;
+      if(isM)o.push(line(x,mid,x+(n-1)*dx,mid,'thin'),text(x-34,top+rh/2+5,a,'n'),text(x-8,top+4,'정','s','end'),text(x-8,mid+4,'0','s','end'),text(x-8,bot+4,'역','s','end'));
+      else o.push(text(x-34,top+rh/2+5,a,'n'),text(x-8,top+4,'1','s','end'),text(x-8,bot+4,'0','s','end'));
+      const yOf=st=>isM?(st==='+'?top:st==='-'?bot:mid):(st==='+'?top:bot);
+      let st=isM?'0':'-';const pts=[[x,yOf(st)]];
+      // 실린더는 그 칸 동안 비스듬히 움직이고, 모터는 칸이 시작할 때 바로 바뀐다(세로선)
+      seq.forEach((m,k)=>{
+        if(!m.startsWith('wait:')&&m.slice(0,-1)===a){st=m.slice(-1);if(isM)pts.push([x+k*dx,yOf(st)]);}
+        pts.push([x+(k+1)*dx,yOf(st)]);
+      });
       o.push(path('M'+pts.map(p=>p.join(',')).join('L'),'thick'));
     });
     return names.length*(rh+gap);
   }
   const fmt=s=>s.filter(m=>!m.startsWith('wait:')).map(m=>m.replace('-','−')).join(' ')||'움직임 없음';
-  function disp(runs,names,live){
-    if(!names.length)return svg(760,200,text(380,100,'이 미션에는 실린더가 없어요','t','middle'));
+  function disp(runs,names,live,mot=[]){
+    names=names.concat(mot.filter(m=>!names.includes(m)));
+    if(!names.length)return svg(760,200,text(380,100,'이 미션에는 실린더·모터가 없어요','t','middle'));
     // 맨 위 안내: 지금 무엇을 하면 되는지
     const guide=live?'● 기록 중… 실린더가 모두 처음 자리로 돌아오고 1초가 지나면 이번 회차가 끝나요'
       :!runs.length?'PB1을 눌러 동작시키면 실린더가 끝에 닿은 순서를 기록해요'
@@ -262,7 +274,7 @@ const MYD=(()=>{
       text(380,112,'그 뒤에 다시 누르면 2회차로 나란히 그려서 같은지 비교해요 (시험은 2회 이상 똑같이 동작해야 인정)','s','middle'));
     const all=runs.map((r,i)=>({title:`${runs.length>1?(i+1)+'회차':'기록'}: ${fmt(r.seq)}`,seq:r.seq}));
     if(live)all.push({title:`기록 중… ${fmt(live.seq)}`,seq:live.seq});
-    all.forEach(r=>{o.push(text(20,y-22,r.title,'n'));y+=dispRows(80,y,names,r.seq,o)+44;});
+    all.forEach(r=>{o.push(text(20,y-22,r.title,'n'));y+=dispRows(80,y,names,r.seq,o,mot)+44;});
     if(runs.length===2){
       const same=fmt(runs[0].seq)===fmt(runs[1].seq);
       o.push(text(20,y-12,same?'✓ 두 번 모두 같은 순서로 동작했어요':'✗ 두 번의 순서가 달라요 (시험은 2회 이상 똑같이 동작해야 인정)',same?'good':'bad'));y+=10;

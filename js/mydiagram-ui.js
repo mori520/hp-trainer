@@ -8,7 +8,7 @@ function recReset(){Object.assign(REC,MYD.recNew(),{ver:REC.ver+1});}
 function recMotion(){if(S)MYD.recTick(REC,S);}
 function myDiagramSvg(){
   if(MYUI.tab==='pneu')return MYD.pneu(LAYOUT.parts,S.hoses,{set:S.set,leak:S.out.leak,valve:S.valve});
-  if(MYUI.tab==='disp')return MYD.disp(REC.runs.map(MYD.recSeq),Object.keys(S.cyl),REC.cur&&MYD.recSeq(REC.cur));
+  if(MYUI.tab==='disp')return MYD.disp(REC.runs.map(MYD.recSeq),Object.keys(S.cyl),REC.cur&&MYD.recSeq(REC.cur),Object.keys(S.motor||{}));
   return MYD.elec(LAYOUT,PARTS,S,solveElec(S,false));
 }
 function renderMyDiagram(force){

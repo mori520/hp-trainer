@@ -17,6 +17,8 @@
       "settingsCheck":[{"name":"SU","min":0.45,"max":0.55,"label":"…"}]   설정값 범위 검사 (서비스 유닛 압력 등)
    2) 변위단계선도 — 버튼을 한 번 눌렀다 떼고, 실린더가 끝에 닿는 순서를 기록해 비교한다
       {"press":"PB1", "sequence":["A+","B+","A-","B-"], "repeat":2, "timeout":20}
+      유압모터는 돌기 시작·멈춤이 한 칸: "M+"(정회전) "M-"(역회전) "M0"(정지). 예 ["A+","M+","M0","A-"]
+      ("moves"·"movesRepeat"에도 같은 이름이 들어간다)
       "dwell":{"after":"A+","sec":3,"tol":0.5} 을 더하면 A+에 닿은 뒤 다음 움직임이 시작될 때까지의 시간(타이머)도 검사한다
    expect에 카운터 이름과 숫자를 쓰면 센 값을 본다 (예: "C1":0)
    합선, 배선 색은 항상 검사하고, 공기를 쓰면 공기 누설도 검사한다. repeat가 2 이상이면 "2회 반복" 항목이 붙는다.
@@ -66,7 +68,7 @@ const endOf=cylEnd;
 function expectOk(w,key,val){
   if(typeof val==='number'&&key in w.counter)return w.counter[key].n===val;   // 카운터 이름 → 센 값 (예: "C1":0)
   if(key in w.cyl)return endOf(w.cyl[key])===val;
-  if(w.motor&&key in w.motor)return w.motor[key].dir===({'+':1,'-':-1,'0':0})[val];   // 유압모터 → "+"(정회전) "-"(역회전) "0"(정지)
+  if(w.motor&&key in w.motor)return motorState(w.motor[key])===val;   // 유압모터 → "+"(정회전) "-"(역회전) "0"(정지)
   if(key in w.out)return w.out[key]===val;
   if(key in w.sensor)return w.sensor[key]===val;
   if(key in w.pb)return w.pb[key]===val;
@@ -116,7 +118,7 @@ function stepExtraProblem(s,w,tl){
 }
 function gradeSteps(g,c){
   const w=newWorld(clone(c));run(w,g.setup||{},0);
-  const at={};for(const k in w.cyl)at[k]=endOf(w.cyl[k]);
+  const at={};for(const k in w.cyl)at[k]=endOf(w.cyl[k]);for(const k in w.motor)at[k]=motorState(w.motor[k]);
   let tl=[];
   const go=(sets,dur,log)=>{run(w,sets,0);recordMoves(w,dur,log,at,tl);};
   const items=[];let all=true,leak=false;
@@ -134,8 +136,9 @@ function gradeSteps(g,c){
   return{items,leak,short:w.events.includes('short')};
 }
 
-// 실린더가 끝에 닿을 때마다 "A+" / "A-"를 log에 남기며 dur초 진행
-// tl(시간 기록, 선택): 끝에 닿음 {ev:"A+",t}, 끝에서 떠남 {ev:"A~",t}. tl.pos = 실린더마다 지금 끝("+"/"-"/"")
+// 실린더가 끝에 닿을 때마다 "A+" / "A-"를, 유압모터가 돌기 시작하거나 멈출 때마다 "M+"(정회전) / "M-"(역회전) / "M0"(정지)를 log에 남기며 dur초 진행
+// tl(시간 기록, 선택): 끝에 닿음 {ev:"A+",t}, 끝에서 떠남 {ev:"A~",t}. 모터는 돌기 시작할 때 {ev:"M~"}와 {ev:"M+"}, 멈추면 {ev:"M0"}
+// tl.pos = 실린더마다 지금 끝("+"/"-"/"")
 function recordMoves(w,dur,log,at,tl){
   for(let t=0;t<dur;t+=0.02){
     stepWorld(w,0.02);
@@ -143,6 +146,13 @@ function recordMoves(w,dur,log,at,tl){
       const e=endOf(w.cyl[k]);
       if(e&&e!==at[k]){log.push(k+e);at[k]=e;if(tl)tl.push({ev:k+e,t:w.t});}
       if(tl){if(tl.pos[k]&&!e)tl.push({ev:k+'~',t:w.t});tl.pos[k]=e;}
+    }
+    for(const k in w.motor){
+      const e=motorState(w.motor[k]);
+      if(at[k]===undefined){at[k]=e;continue;}
+      if(e===at[k])continue;
+      log.push(k+e);at[k]=e;
+      if(tl){if(e!=='0')tl.push({ev:k+'~',t:w.t});tl.push({ev:k+e,t:w.t});}
     }
   }
 }

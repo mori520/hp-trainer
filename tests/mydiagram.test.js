@@ -148,3 +148,18 @@ for(const id of ['m4','m9','m12']){
     assert.ok(grew>=4,`도면이 여러 번에 걸쳐 자라야 함 (${grew}번)`);
   });
 }
+
+/* 유압모터도 변위단계선도에: 돌기 시작·멈춤이 한 칸 */
+test('기록: H11 실린더 + 모터 (A+ → 모터 3초 → 모터 정지 + A−)',()=>{
+  const runs=runRec('h11',{T1:3},[[9]]);
+  assert.equal(runs.length,1,JSON.stringify(runs));
+  const r=runs[0];
+  assert.deepEqual([r[0],r[1],r[3],r[4]],['A+','M+','M0','A-'],JSON.stringify(r));
+  assert.match(r[2],/^wait:3\.\d초$/);
+});
+test('변위단계선도: 모터 줄은 정·0·역 세 칸으로 그린다',()=>{
+  const s=MYD.disp([{seq:['A+','M+','wait:3.0초','M0','A-']}],['A'],null,['M']);
+  assert.match(s,/>정</);assert.match(s,/>역</);assert.match(s,/>M</);
+  // 모터만 있는 미션(H3)도 그려진다
+  assert.doesNotMatch(MYD.disp([{seq:['M+','M0','M-','M0']}],[],null,['M']),/모터가 없어요/);
+});

@@ -1103,6 +1103,55 @@ const MISSIONS=[
   }
 },
 {
+  "id":"h11","no":"H11","title":"실린더와 모터 시퀀스 (타이머)",
+  "goal":"PB1을 한 번 누르면 실린더 A가 전진하고, 끝(LS2)에 닿으면 유압모터가 3초 동안 정회전한 뒤, 실린더가 후진하면서 모터가 멈추게 하세요.",
+  "learn":"배우는 것: 실린더·모터 두 액추에이터를 한 펌프로 쓰기, 리밋스위치로 다음 동작 시작, 타이머로 시간 지연 (유압 과제처럼 여러 기능을 묶기)",
+  "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve42","cylB":"motor","valveB":"valve43c","LS2":"A+"},"diagram":"diagrams/h11.svg",
+  "steps":[
+    {"g":"1. 유압 호스","t":"파워유닛 <b>P</b>에서 밸브 V1 <b>P</b>로 연결하세요.","hose":["group:hp","V1_P"],"keep":true},
+    {"g":"1. 유압 호스","t":"파워유닛의 다른 <b>P</b>에서 밸브 V2 <b>P</b>로 연결하세요. P 포트가 2개라 밸브 두 개에 나눠 줄 수 있어요.","hose":["group:hp","V2_P"],"keep":true},
+    {"g":"1. 유압 호스","t":"V1 <b>T</b>에서 <b>탱크 T</b>로 연결하세요.","hose":["V1_T","group:ht"],"keep":true},
+    {"g":"1. 유압 호스","t":"V2 <b>T</b>에서 <b>탱크 T</b>로 연결하세요.","hose":["V2_T","group:ht"],"keep":true},
+    {"g":"1. 유압 호스","t":"V1 <b>A</b> → <b>실린더 후방</b>.","hose":["V1_A","A_cap"],"keep":true},
+    {"g":"1. 유압 호스","t":"V1 <b>B</b> → <b>실린더 전방</b>.","hose":["V1_B","A_rod"],"keep":true},
+    {"g":"1. 유압 호스","t":"V2 <b>A</b> → <b>모터 A</b>.","hose":["V2_A","M_a"],"keep":true},
+    {"g":"1. 유압 호스","t":"V2 <b>B</b> → <b>모터 B</b>.","hose":["V2_B","M_b"],"keep":true},
+    {"g":"1. 유압 호스","t":"<b>펌프</b>를 켜세요.","done":{"type":"state","expect":{"air":true}},"hl":["@air"],"keep":true},
+    {"g":"2. 타이머 설정","t":"타이머 표시창의 <b>▲</b>로 <b>3.0초</b>로 맞추세요.","done":{"type":"setting","name":"T1","value":3},"hl":["@T1set"],"keep":true},
+    {"g":"3. K1 — 기동·자기유지 (타이머가 끊음)","t":"배선 색을 <b>빨강</b>으로 고르세요.","done":{"type":"color","is":"red"},"btn":"c-red"},
+    {"g":"3. K1 — 기동·자기유지 (타이머가 끊음)","t":"<b>+24V</b> → <b>타이머 11번</b>(공통).","wire":["group:rail24","T1_11","red"],"keep":true,"hl":["@T1coil"]},
+    {"g":"3. K1 — 기동·자기유지 (타이머가 끊음)","t":"<b>타이머 12번</b>(NC) → <b>PB1 13번</b>. 3초가 지나면 이 길이 끊겨요.","wire":["T1_12","PB1_13","red"],"keep":true},
+    {"g":"3. K1 — 기동·자기유지 (타이머가 끊음)","t":"<b>PB1 14번</b> → <b>K1 A1</b>.","wire":["PB1_14","K1_A1","red"],"keep":true,"hl":["@K1coil"]},
+    {"g":"3. K1 — 기동·자기유지 (타이머가 끊음)","t":"자기유지 ①: <b>타이머 12번</b> → <b>K1 11번</b>.","wire":["T1_12","K1_11","red"],"keep":true},
+    {"g":"3. K1 — 기동·자기유지 (타이머가 끊음)","t":"자기유지 ②: <b>K1 14번</b> → <b>K1 A1</b>.","wire":["K1_14","K1_A1","red"],"keep":true},
+    {"g":"4. 실린더 전진","t":"<b>+24V</b> → <b>K1 21번</b>.","wire":["group:rail24","K1_21","red"],"keep":true},
+    {"g":"4. 실린더 전진","t":"<b>K1 24번</b> → V1의 <b>Y1 +</b>.","wire":["K1_24","V1_Ya_p","red"],"keep":true},
+    {"g":"5. 끝에서 모터와 타이머","t":"<b>+24V</b> → <b>LS2 1번</b>(공통).","wire":["group:rail24","LS2_1","red"],"keep":true,"hl":["@LS2"]},
+    {"g":"5. 끝에서 모터와 타이머","t":"<b>LS2 4번</b>(NO) → <b>타이머 A1</b>. 실린더가 끝에 닿으면 3초를 세기 시작해요.","wire":["LS2_4","T1_A1","red"],"keep":true},
+    {"g":"5. 끝에서 모터와 타이머","t":"<b>LS2 4번</b> → V2의 <b>Y2 +</b>(정회전). 같은 잭에 선이 2개 — 타이머와 모터가 나란히(병렬) 켜져요.","wire":["LS2_4","V2_Ya_p","red"],"keep":true},
+    {"g":"6. 0V 쪽","t":"배선 색을 <b>파랑</b>으로 바꾸세요.","done":{"type":"color","not":"red"},"btn":"c-blue"},
+    {"g":"6. 0V 쪽","t":"<b>K1 A2</b> → <b>0V</b>.","wire":["K1_A2","group:rail0","blue"],"keep":true},
+    {"g":"6. 0V 쪽","t":"<b>타이머 A2</b> → <b>0V</b>.","wire":["T1_A2","group:rail0","blue"],"keep":true},
+    {"g":"6. 0V 쪽","t":"<b>Y1 −</b> → <b>0V</b>.","wire":["V1_Ya_n","group:rail0","blue"],"keep":true},
+    {"g":"6. 0V 쪽","t":"<b>Y2 −</b> → <b>0V</b>.","wire":["V2_Ya_n","group:rail0","blue"],"keep":true},
+    {"g":"7. 동작 확인","t":"<b>POWER</b>를 켜세요.","done":{"type":"state","expect":{"power":true}},"hl":["@rocker"],"keep":true},
+    {"g":"7. 동작 확인","t":"<b>PB1</b>을 잠깐 눌렀다 떼세요. 실린더가 전진해 LS2를 누르면 <b>모터가 돌기 시작</b>해요.","done":{"type":"state","expect":{"A":"+","M":"+"}},"hl":["@PB1btn"]},
+    {"g":"7. 동작 확인","t":"3초 뒤 타이머가 K1을 끊어 <b>실린더가 후진</b>하고 모터가 멈춥니다. 성공!","done":{"type":"state","expect":{"A":"-","M":"0"}}}
+  ],
+  "grading":{
+    "setup":{"power":true,"air":true},"repeat":2,"relayCount":1,
+    "settingsCheck":[{"name":"T1","min":3,"max":3,"label":"타이머 3초"}],
+    "steps":[
+      {"name":"처음엔 실린더 후진, 모터 정지","wait":0.5,"expect":{"A":"-","M":"0"}},
+      {"name":"PB1 → 실린더 전진, 끝에서 모터 정회전","tap":"PB1","wait":1.5,"expect":{"A":"+","M":"+"},
+       "hint":"K1 자기유지로 Y1이 켜져 있어야 하고, LS2 NO(1-4)가 Y2(모터 정회전)를 켜야 해요."},
+      {"name":"3초 동안은 그대로 (모터 회전 중)","wait":1.2,"expect":{"A":"+","M":"+"}},
+      {"name":"3초 뒤 후진하면서 모터 정지","wait":3,"expect":{"A":"-","M":"0"},
+       "hint":"LS2 NO가 타이머 코일도 켜고, 타이머 NC(11-12)가 K1 자기유지 앞에 있어야 해요. 타이머를 3초로 맞췄는지도 보세요."}
+    ]
+  }
+},
+{
   "id":"hpractice","no":"실전","title":"실전 연습 (유압)","steps":[],
   "goal":"가지고 있는 유압 공개도면을 보며 판을 꾸미고 호스·배선을 하세요. 채점은 없어요. 다 했으면 PB1을 두 번 눌러 변위단계선도대로 똑같이 동작하는지 직접 확인하세요.",
   "learn":"판 구성에서 밸브 종류(4/2·4/3), B 자리(실린더·유압모터), 리밋·센서 위치, 유지보수 기기를 도면대로 고르세요. 릴리프 압력도 직접 맞추세요.",

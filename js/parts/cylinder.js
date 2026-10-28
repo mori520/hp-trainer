@@ -24,15 +24,19 @@ function sensorPlate(s,g,name,jacks){
 PARTS.cylinder={
   init(p,w){w.cyl[p.id]=0;},
   // 움직이는 동안 속도 배율(유량조절·급속배기)과 미터 방식, 공급 압력을 남긴다 (채점용)
+  // w.cylSup[id]: 이번에 움직였으면 공급 쪽 포트 (압력스위치가 "움직이는 동안은 압력이 낮다"를 판단)
   move(p,w,P,E,dt,pn){
     const cap=p.id+'_cap', rod=p.id+'_rod';
-    let dir=0,sup,exh;
+    let dir=0,sup,exh,k=1;
     if(P(cap)&&E(rod)){dir=1;sup=cap;exh=rod;} else if(P(rod)&&E(cap)){dir=-1;sup=rod;exh=cap;}
+    // 하중 실린더(cylw): 전방 쪽 기름이 빠질 수 있고 후방 쪽이 막혀 있지 않으면 무게로 천천히 내려감(전진 방향)
+    else if(p.type==='cylw'&&E(rod)&&(E(cap)||P(cap))){dir=1;sup=cap;exh=rod;k=.35;}
+    w.cylSup[p.id]=null;
     if(!dir)return;
     const f=pn?pn.flow(sup,exh):{k:1,meter:''};
     const before=w.cyl[p.id];
-    w.cyl[p.id]=Math.max(0,Math.min(1,before+dir*f.k*dt/STROKE_T));
-    if(w.cyl[p.id]!==before){w.meter[p.id]=f.meter;w.cylP[p.id]=pn?pn.press(sup):0;}
+    w.cyl[p.id]=Math.max(0,Math.min(1,before+dir*k*f.k*dt/STROKE_T));
+    if(w.cyl[p.id]!==before){w.meter[p.id]=f.meter;w.cylP[p.id]=pn?pn.press(sup):0;w.cylSup[p.id]=sup;}
   },
   draw(p){
     const [x,y]=p.at, W=CYL_W;
@@ -57,3 +61,20 @@ PARTS.cylinder={
     p.r.rod.setAttribute('x',px+16);p.r.rodEnd.setAttribute('x',px+16+W-48);
   }
 };
+
+/* 하중 실린더(cylw): 세워서 무거운 물건을 단 실린더 (유압 카운터밸런스·로킹 회로 연습용). 그림은 같고 막대 끝에 추(W).
+   밸브가 A·B를 탱크로 열어 두면(ABT 중립 등) 무게 때문에 천천히 전진 방향으로 내려간다 (자중 낙하) */
+PARTS.cylw=Object.assign({},PARTS.cylinder,{
+  draw(p){
+    PARTS.cylinder.draw(p);
+    const g=el('g',{},G);p.r.weight=g;
+    el('rect',{x:0,y:0,width:30,height:30,rx:3,class:'weight'},g);
+    tx('W',{x:15,y:20,'text-anchor':'middle',class:'ptxt'},g);
+    tx('하중 W (무게로 전진 쪽으로 내려가려 함)',{x:p.at[0]+90,y:p.at[1]-12,class:'psmall'},G);
+  },
+  render(p,w){
+    PARTS.cylinder.render(p,w);
+    const [x,y]=p.at, px=x+24+w.cyl[p.id]*CYL_ST;
+    p.r.weight.setAttribute('transform',`translate(${px+16+CYL_W-34},${y+44})`);
+  }
+});

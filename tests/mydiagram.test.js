@@ -118,3 +118,14 @@ test('기록: 끝나자마자(1초 안에) 다시 누르면 한 회차로 붙는
   const runs=runRec('m5',{},[[2.6],[5]]);   // m5 한 사이클 ≈2.2초 → 0.4초 쉬고 다시 누름
   assert.equal(runs.length,1);assert.deepEqual(runs[0],['A+','A-','A+','A-']);
 });
+test('유압회로도: 하중 실린더·파일럿 체크 블록·카운터밸런스·압력스위치·블리드오프 기호와 포트',()=>{
+  const p=(board)=>{get('configure')({parts:get('makeParts')(get('LAYOUTS').hyd,board)});return get('LAYOUT').parts;};
+  const hinfo={set:{RV:4,CB1:2,PS1:3,F1:5},leak:false,valve:{}};
+  const lockHoses=[{a:'HP1',b:'V1_P'},{a:'V1_T',b:'HT1'},{a:'V1_A',b:'PC1_A1'},{a:'PC1_A2',b:'A_cap'},{a:'V1_B',b:'PC1_B1'},{a:'PC1_B2',b:'A_rod'}];
+  const a=MYD.pneu(p({cylA:'cylw',valveA:'valve43a',LA:'lock'}),lockHoses,hinfo);
+  assert.equal(count(a,/class="hose"/g),6);assert.doesNotMatch(a,/빈 포트/);assert.match(a,/파일럿 체크/);assert.match(a,/>W</);
+  const b=MYD.pneu(p({cylA:'cylw',valveA:'valve43a',MA1:'psw',MA2:'cbv',R1:'thr'}),
+    [{a:'HP1',b:'V1_P'},{a:'V1_T',b:'HT1'},{a:'V1_A',b:'PS1_a'},{a:'PS1_b',b:'A_cap'},{a:'V1_B',b:'CB1_1'},{a:'CB1_2',b:'A_rod'},{a:'HP2',b:'F1_1'},{a:'F1_2',b:'HT2'}],hinfo);
+  assert.equal(count(b,/class="hose"/g),8);assert.doesNotMatch(b,/빈 포트/);
+  assert.match(b,/압력스위치 3\.0/);assert.match(b,/카운터밸런스 2\.0/);assert.match(b,/F1 5단/);
+});

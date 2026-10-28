@@ -209,6 +209,7 @@ body.demo-on #sv,body.demo-on #missionCard .mode,body.demo-on #missionCard .acti
 .pbtn.down circle.cap{transform-box:fill-box;transform-origin:center;transform:scale(.9)}
 .rocker{fill:var(--rocker);stroke:#3a1a08;stroke-width:1.5;cursor:pointer}
 .rocker.on{fill:var(--rocker-on)}
+.weight{fill:#6b4f2a;stroke:var(--panel-ink);stroke-width:1.2}
 .led{fill:var(--led-off)} .led.on{fill:var(--led-on)} .led.sol{fill:var(--led-sol)}
 .steel{fill:var(--steel);stroke:var(--steel-edge);stroke-width:1.4}
 .chrome{fill:var(--chrome);stroke:var(--steel-edge);stroke-width:1}

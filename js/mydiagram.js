@@ -123,6 +123,26 @@ const MYD=(()=>{
     o.push(text(x+16,y+4,t,'s'));
     ports[t+'_2']=[x,y-14,'up'];ports[t+'_1']=[x,y+14,'down'];
   }
+  // 그 밖의 유압 줄 기기 (세로, 위 = 실린더 쪽, 아래 = 밸브 쪽): 양방향 조임·감압·카운터밸런스·압력스위치
+  function hdev(p,x,y,o,ports,info){
+    const t=p.tags[0],v=info.set[t];
+    o.push(rect(x-13,y-14,26,28,'bgfill'));
+    if(p.type==='thr'){o.push(path(`M${x},${y-14}V${y+14}`),path(`M${x-5},${y-6}Q${x},${y} ${x-5},${y+6}M${x+5},${y-6}Q${x},${y} ${x+5},${y+6}`),line(x-8,y+7,x+8,y-7,'arw'),text(x+16,y+4,`${t} ${v}단`,'s'));}
+    if(p.type==='hprv'){o.push(rect(x-8,y-9,16,18),path(`M${x},${y-14}V${y-9}M${x},${y+9}V${y+14}`),line(x-4,y+6,x+4,y-6,'arw'),text(x+16,y+4,`${t} 감압 ${(+v).toFixed(1)}`,'s'));}
+    if(p.type==='cbv'){o.push(path(`M${x},${y-14}V${y-10}H${x-7}V${y+10}H${x}V${y+14}M${x},${y-10}H${x+7}V${y+10}H${x}`),rect(x-11,y-4,8,9),circ(x+7,y-1,3),text(x+16,y+4,`${t} 카운터밸런스 ${(+v).toFixed(1)}`,'s'));}
+    if(p.type==='psw'){o.push(path(`M${x},${y-14}V${y+14}M${x},${y}H${x+6}`),rect(x+6,y-6,10,12),text(x+20,y+4,`${t} 압력스위치 ${(+v).toFixed(1)}`,'s'));
+      ports[t+'_b']=[x,y-14,'up'];ports[t+'_a']=[x,y+14,'down'];return;}
+    ports[t+'_2']=[x,y-14,'up'];ports[t+'_1']=[x,y+14,'down'];
+  }
+  // 파일럿 체크 블록: 실린더 두 포트 아래에 체크 두 개, 서로의 밸브 쪽 압력으로 열림(점선)
+  function lock(p,x0,o,ports){
+    const t=p.tags[0],xa=x0+12,xb=x0+148,y=DEVY;
+    [['A',xa],['B',xb]].forEach(([k,x])=>{
+      o.push(rect(x-13,y-14,26,28,'bgfill'),path(`M${x},${y-14}V${y-6}M${x},${y+5}V${y+14}M${x-7},${y-6}L${x},${y+1}L${x+7},${y-6}`),circ(x,y+2,4));
+      ports[`${t}_${k}2`]=[x,y-14,'up'];ports[`${t}_${k}1`]=[x,y+14,'down'];
+    });
+    o.push(path(`M${xa+8},${y+2}L${xb},${y+12}M${xb-8},${y+2}L${xa},${y+12}`,'thin'),text((xa+xb)/2,y-4,`${t} 파일럿 체크`,'s','middle'));
+  }
   // 호스: 가로·세로로만 꺾는다. 위를 보는 포트끼리는 위로, 그 밖은 두 포트 사이 높이에서 꺾음
   function route(a,b,k){
     const off=(k%3-1)*6;
@@ -137,19 +157,21 @@ const MYD=(()=>{
   function pneu(parts,hoses,info){
     const o=[],ports={},has=t=>parts.some(p=>p.type===t);
     const col=p=>p.slot==='cylB'?COL.B:p.slot==='cylA'?COL.A:COL[p.id]??60;   // 자리로 칸을 정함 (모터 M도 B 칸)
-    const cyls=parts.filter(p=>p.type==='cylinder'||p.type==='motor');
+    const cyls=parts.filter(p=>p.type==='cylinder'||p.type==='cylw'||p.type==='motor');
     cyls.forEach(p=>(p.type==='motor'?motor:cylinder)(p,col(p),o,ports));
+    parts.filter(p=>p.type==='cylw').forEach(p=>{const x=col(p);o.push(rect(x+204,CY+20,20,18),text(x+214,CY+33,'W','s','middle'));});   // 하중(추)
     parts.filter(p=>p.cyl).forEach(p=>sensor(p,COL[p.cyl]??60,o));
     parts.filter(p=>p.type==='valve52s'||p.type==='valve52d').forEach(p=>{
       const cylId=p.slot==='valveB'?'B':'A';
       valve(p,COL[cylId],o,ports,(info.valve||{})[p.id]);
     });
     parts.filter(p=>/^valve4/.test(p.type)).forEach(p=>valve4(p,p.slot==='valveB'?COL.B:COL.A,o,ports,(info.valve||{})[p.id]));
-    parts.filter(p=>p.type==='fcv'||p.type==='qev'||p.type==='chk').forEach(p=>{
-      if(p.slot==='R1'){check(p,330,SUPY-30,o,ports);return;}   // 펌프 토출구 체크밸브
+    parts.filter(p=>['fcv','qev','chk','thr','hprv','cbv','psw'].includes(p.type)).forEach(p=>{
+      if(p.slot==='R1'){if(p.type==='chk')check(p,330,SUPY-30,o,ports);else hdev(p,330,SUPY-30,o,ports,info);return;}   // 펌프 토출구 체크밸브 / 블리드오프
       const m=/^M([AB])([12])$/.exec(p.slot)||[];const x0=COL[m[1]]??60,x=m[2]==='2'?x0+148:x0+12;
-      if(p.type==='chk')check(p,x,DEVY,o,ports);else inline(p,x,o,ports,info);
+      if(p.type==='chk')check(p,x,DEVY,o,ports);else if(p.type==='fcv'||p.type==='qev')inline(p,x,o,ports,info);else hdev(p,x,DEVY,o,ports,info);
     });
+    parts.filter(p=>p.type==='lock').forEach(p=>lock(p,p.slot==='LB'?COL.B:COL.A,o,ports));
     if(has('service'))service(o,ports,info);
     if(has('hpu'))hpu(o,ports,info);
     parts.filter(p=>p.type==='prv').forEach(p=>prv(p,o,ports,info));

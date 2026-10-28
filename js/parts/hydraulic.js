@@ -143,9 +143,11 @@ PARTS.motor={
   move(p,w,P,E,dt,pn){
     const a=p.id+'_a', b=p.id+'_b', m=w.motor[p.id];
     m.dir=P(a)&&E(b)?1:P(b)&&E(a)?-1:0;
+    w.cylSup[p.id]=null;
     if(!m.dir)return;
     const f=pn?pn.flow(m.dir>0?a:b,m.dir>0?b:a):{k:1,meter:''};
     m.ang=(m.ang+m.dir*f.k*dt*240)%360;   // 1배속 = 1초에 2/3바퀴
+    w.cylSup[p.id]=m.dir>0?a:b;   // 도는 동안은 공급 쪽 압력이 낮음 (압력스위치)
     w.meter[p.id]=f.meter;w.cylP[p.id]=pn?pn.press(m.dir>0?a:b):0;
   },
   draw(p){
@@ -183,5 +185,123 @@ PARTS.chk={
     el('path',{d:`M${px},${ty+10}V${ty+27}M${px},${ty+45}V${ty+60}M${px-10},${ty+27}L${px},${ty+37}L${px+10},${ty+27}`,class:'sym'},g);
     el('circle',{cx:px,cy:ty+40,r:6,fill:'none',class:'sym'},g);
     tx('1 → 2',{x:cx+30,y:ty+40,'text-anchor':'middle',class:'ptxt'},g);
+  }
+};
+
+/* ---------- 유지보수용 유압 기기 (기기 자리 MA1… 에 끼움, 위 = 실린더 쪽 2번, 아래 = 밸브 쪽 1번) ---------- */
+// 세로 줄에 끼우는 기기 판: devPanel(pneudev.js)과 같지만 폭·높이를 고를 수 있다
+function hydPanel(p,title,w=DEV_W,h=DEV_H){
+  const [cx,ty]=p.at,g=el('g',{},G);R[p.tags[0]]=g;
+  el('rect',{x:cx-45,y:ty,width:w,height:h,rx:5,class:'panel'},g);
+  tx(title,{x:cx-45+w-6,y:ty+14,'text-anchor':'end',class:'psmall'},g);
+  return{g,cx,ty,px:cx-30};
+}
+/* thr 양방향 유량조절 F: 어느 방향으로 지나가든 조인다 (체크밸브 없음). 펌프 P와 탱크 T 사이에 끼우면 블리드오프 */
+PARTS.thr={
+  tag:'F',
+  settings:p=>({[p.tags[0]]:{def:10,min:1,max:10,step:1,unit:'단'}}),
+  dev:(p,w)=>{const F=p.tags[0];return{kind:'thr',a:F+'_1',b:F+'_2',k:w.set[F]/10};},
+  draw(p){
+    const F=p.tags[0],{g,cx,ty,px}=devPanel(p,'양방향 유량 '+F);
+    pport(F+'_2',px,ty,'up',g,'2',-16,4);
+    pport(F+'_1',px,ty+DEV_H,'down',g,'1',-16,4);
+    el('path',{d:`M${px},${ty+10}V${ty+60}M${px-6},${ty+26}Q${px},${ty+35} ${px-6},${ty+44}M${px+6},${ty+26}Q${px},${ty+35} ${px+6},${ty+44}`,class:'sym'},g);
+    el('line',{x1:px-12,y1:ty+46,x2:px+10,y2:ty+22,class:'sym','marker-end':'url(#ah)'},g);
+    tx('속도',{x:cx+30,y:ty+28,'text-anchor':'middle',class:'psmall'},g);
+    p.r.val=tx('',{x:cx+30,y:ty+44,'text-anchor':'middle',class:'ptxt'},g);
+    setButtons(g,F,cx+8,ty+49);
+  },
+  render(p,w){p.r.val.textContent=w.set[p.tags[0]]+'단';}
+};
+/* hprv 유압 감압밸브 PR: 1(밸브 쪽)→2(실린더 쪽) 압력을 설정값으로 낮춤. 돌아오는 기름(2→1)은 내장 체크로 그냥 지나감 */
+PARTS.hprv={
+  tag:'PR',
+  settings:p=>({[p.tags[0]]:{def:4,min:0.5,max:7,step:0.1,unit:'MPa'}}),
+  dev:(p,w)=>{const N=p.tags[0];return{kind:'prv',rev:true,a:N+'_1',b:N+'_2',set:w.set[N]};},
+  draw(p){
+    const N=p.tags[0],{g,cx,ty,px}=devPanel(p,'감압 '+N);
+    pport(N+'_2',px,ty,'up',g,'2',-16,4);
+    pport(N+'_1',px,ty+DEV_H,'down',g,'1',-16,4);
+    el('rect',{x:px-11,y:ty+22,width:22,height:26,fill:'none',class:'sym'},g);
+    el('path',{d:`M${px},${ty+10}V${ty+22}M${px},${ty+48}V${ty+60}`,class:'sym'},g);
+    el('line',{x1:px-6,y1:ty+44,x2:px+6,y2:ty+26,class:'sym','marker-end':'url(#ah)'},g);
+    tx('2차',{x:cx+30,y:ty+28,'text-anchor':'middle',class:'psmall'},g);
+    p.r.val=tx('',{x:cx+30,y:ty+44,'text-anchor':'middle',class:'ptxt'},g);
+    setButtons(g,N,cx+8,ty+49);
+  },
+  render(p,w){p.r.val.textContent=w.set[p.tags[0]].toFixed(1)+' MPa';}
+};
+/* cbv 카운터밸런스 CB: 1→2(실린더 쪽으로)는 자유, 2→1(실린더에서 나옴)은 실린더 반대쪽 포트 압력이 설정값 이상일 때만.
+   하중 실린더의 전방 줄에 끼우면, 밸브가 탱크로 열려도 무게로 내려가지 않는다 (자중 낙하 방지) */
+PARTS.cbv={
+  tag:'CB',
+  settings:p=>({[p.tags[0]]:{def:2,min:0.5,max:6,step:0.1,unit:'MPa'}}),
+  dev:(p,w)=>{const N=p.tags[0];return{kind:'cbv',a:N+'_1',b:N+'_2',set:w.set[N]};},
+  draw(p){
+    const N=p.tags[0],{g,cx,ty,px}=devPanel(p,'카운터밸런스 '+N);
+    pport(N+'_2',px,ty,'up',g,'2',-16,4);
+    pport(N+'_1',px,ty+DEV_H,'down',g,'1',-16,4);
+    el('path',{d:`M${px},${ty+10}V${ty+18}H${px-10}V${ty+52}H${px}V${ty+60}M${px},${ty+18}H${px+10}V${ty+52}H${px}`,class:'sym'},g);
+    el('rect',{x:px-16,y:ty+28,width:12,height:14,fill:'none',class:'sym'},g);
+    el('circle',{cx:px+10,cy:ty+33,r:4,fill:'none',class:'sym'},g);
+    el('path',{d:`M${px+5},${ty+43}L${px+10},${ty+38}L${px+15},${ty+43}`,class:'sym'},g);
+    tx('설정',{x:cx+30,y:ty+28,'text-anchor':'middle',class:'psmall'},g);
+    p.r.val=tx('',{x:cx+30,y:ty+44,'text-anchor':'middle',class:'ptxt'},g);
+    setButtons(g,N,cx+8,ty+49);
+  },
+  render(p,w){p.r.val.textContent=w.set[p.tags[0]].toFixed(1)+' MPa';}
+};
+/* psw 압력스위치 PS: 줄 중간에 끼우는 통과형 블록(유압 포트 <N>_a 아래·<N>_b 위는 그냥 이어짐) + c접점(전기 잭 1 공통, 2 NC, 4 NO).
+   그 줄 압력이 설정값 이상이면 접점이 바뀐다. 실린더가 움직이는 동안은 압력이 낮고, 끝에 닿아 멈추면 릴리프 압력까지 오른다 */
+PARTS.psw={
+  tag:'PS',
+  settings:p=>({[p.tags[0]]:{def:3,min:0.5,max:7,step:0.1,unit:'MPa'}}),
+  dev:p=>{const N=p.tags[0];return{kind:'pipe',a:N+'_a',b:N+'_b'};},
+  init(p,w){w.sensor[p.tags[0]]=false;},
+  move(p,w,P,E,dt,pn){
+    const N=p.tags[0], port=N+'_a';if(!pn)return;
+    let pres=pn.press(port);
+    if(Object.values(w.cylSup).some(sp=>sp&&pn.same(sp,port)))pres*=.3;   // 움직이는 중: 일하는 만큼만
+    w.sensor[N]=pres>=w.set[N]-1e-9;
+  },
+  elec(p,w,u,all){
+    const N=p.tags[0],a=w.sensor[N];
+    if(all||a)u.u(N+'_1',N+'_4');
+    if(all||!a)u.u(N+'_1',N+'_2');
+  },
+  draw(p){
+    const N=p.tags[0],[cx,ty]=p.at,g=el('g',{},G);R[N]=g;
+    el('rect',{x:cx-45,y:ty,width:150,height:84,rx:5,class:'panel'},g);
+    tx('압력스위치 '+N,{x:cx+99,y:ty+14,'text-anchor':'end',class:'psmall'},g);
+    const px=cx-30;
+    pport(N+'_b',px,ty,'up',g);
+    pport(N+'_a',px,ty+84,'down',g);
+    el('path',{d:`M${px},${ty+10}V${ty+74}M${px},${ty+42}H${px+12}`,class:'sym'},g);
+    el('rect',{x:px+12,y:ty+32,width:14,height:20,fill:'none',class:'sym'},g);
+    [['_1','1'],['_2','2 NC'],['_4','4 NO']].forEach(([k,lab],i)=>ejack(N+k,cx+12+i*30,ty+34,'black',g,lab,0,20));
+    p.r.led=el('circle',{cx:cx+92,cy:ty+16,r:4,class:'led'},g);
+    p.r.val=tx('',{x:cx+18,y:ty+76,'text-anchor':'middle',class:'ptxt'},g);
+    setButtons(g,N,cx+52,ty+62);
+  },
+  render(p,w){const N=p.tags[0];p.r.led.classList.toggle('on',!!w.sensor[N]);p.r.val.textContent=w.set[N].toFixed(1)+' MPa';}
+};
+/* lock 파일럿 조작 체크밸브 2개 블록(유압 로크밸브) PC: A1→A2, B1→B2 는 자유.
+   거꾸로(A2→A1)는 B1에 압력이 있을 때만, (B2→B1)은 A1에 압력이 있을 때만 열린다.
+   실린더 후방·전방 포트 바로 아래(LA·LB 자리)에 두 칸으로 끼운다. ABT 중립 4/3 밸브와 함께 쓰면 그 자리에 꽉 고정(로킹 회로) */
+PARTS.lock={
+  tag:'PC',
+  dev:p=>{const N=p.tags[0];return[{kind:'pocv',a:N+'_A1',b:N+'_A2',pilot:[N+'_B1']},{kind:'pocv',a:N+'_B1',b:N+'_B2',pilot:[N+'_A1']}];},
+  draw(p){
+    const N=p.tags[0],[cx,ty]=p.at,g=el('g',{},G);R[N]=g;
+    const xa=cx-82, xb=cx+82, h=DEV_H;
+    el('rect',{x:cx-100,y:ty,width:200,height:h,rx:5,class:'panel'},g);
+    tx('파일럿 체크 '+N,{x:cx,y:ty+14,'text-anchor':'middle',class:'psmall'},g);
+    pport(N+'_A2',xa,ty,'up',g,'A2',-20,4);pport(N+'_A1',xa,ty+h,'down',g,'A1',-20,4);
+    pport(N+'_B2',xb,ty,'up',g,'B2',20,4);pport(N+'_B1',xb,ty+h,'down',g,'B1',20,4);
+    [xa,xb].forEach(x=>{
+      el('path',{d:`M${x},${ty+10}V${ty+27}M${x},${ty+45}V${ty+60}M${x-9},${ty+27}L${x},${ty+36}L${x+9},${ty+27}`,class:'sym'},g);
+      el('circle',{cx:x,cy:ty+40,r:5,fill:'none',class:'sym'},g);
+    });
+    el('path',{d:`M${xa+8},${ty+40}L${xb},${ty+54}M${xb-8},${ty+40}L${xa},${ty+54}`,class:'leader',fill:'none'},g);
   }
 };

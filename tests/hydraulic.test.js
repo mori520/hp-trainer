@@ -113,7 +113,9 @@ test('P와 T를 곧바로 이으면 압력이 오르지 않는다 (누설로 판
 
 test('유압 판의 모든 부품이 그리기·화면 갱신 중 오류 없이 돈다',()=>{
   for(const board of [{cylA:'cylinder',valveA:'valve42',cylB:'motor',valveB:'valve43c',MA1:'fcv',MB1:'chk',R1:'chk',LS1:'A-',LS2:'A+'},
-                      {cylA:'cylinder',valveA:'valve43a',cylB:'cylinder',valveB:'valve42',S1:'B+'}]){
+                      {cylA:'cylinder',valveA:'valve43a',cylB:'cylinder',valveB:'valve42',S1:'B+'},
+                      {cylA:'cylw',valveA:'valve43a',LA:'lock',cylB:'cylw',valveB:'valve43c',MB1:'psw',MB2:'cbv',R1:'thr',LS2:'A+'},
+                      {cylA:'cylinder',valveA:'valve42',MA1:'hprv',MA2:'thr',cylB:'cylinder',valveB:'valve43a',LB:'lock'}]){
     get('configure')({parts:get('makeParts')(HYD(),board)});
     const parts=get('LAYOUT').parts;
     get('buildScene')(parts,HYD().board);
@@ -122,4 +124,82 @@ test('유압 판의 모든 부품이 그리기·화면 갱신 중 오류 없이 
     const s=get('newWorld')({wires:[],hoses:[]});
     for(const on of [false,true]){s.air=on;for(const k in s.valve)s.valve[k]=on?2:1;for(const p of parts)if(get('PARTS')[p.type].render)get('PARTS')[p.type].render(p,s);}
   }
+});
+
+/* ---------- 유지보수 기기: 양방향 유량조절·블리드오프·감압·압력스위치·카운터밸런스·파일럿 체크, 하중 실린더 ---------- */
+const P43=pbWires('V1',true);
+const hold=(s,btn,sec)=>{run(s,{[btn]:true},sec);run(s,{[btn]:false},0.02);};
+
+test('양방향 유량조절: 후방 줄에 끼우면 전진도 후진도 느려진다',()=>{
+  const s=world({cylA:'cylinder',valveA:'valve42',MA1:'thr'},{wires:pbWires('V1'),hoses:[h('HP1','V1_P'),h('V1_T','HT1'),h('V1_A','F1_1'),h('F1_2','A_cap'),h('V1_B','A_rod')],set:{F1:3}});
+  run(s,{power:true,air:true,PB1:true},1);
+  assert.ok(s.cyl.A>.2&&s.cyl.A<.4,'전진 느림 '+s.cyl.A);
+  run(s,{},3);assert.equal(end(s.cyl.A),'+');
+  run(s,{PB1:false},1);assert.ok(s.cyl.A>.6,'후진도 느림 '+s.cyl.A);
+});
+
+test('블리드오프: 펌프 P2 → 양방향 유량조절 → 탱크. 누설로 보지 않고, 많이 열수록 느려진다',()=>{
+  const go=open=>{
+    const s=world({cylA:'cylinder',valveA:'valve42',R1:'thr'},{wires:pbWires('V1'),hoses:[...cylHoses('V1','A'),h('HP2','F1_1'),h('F1_2','HT2')],set:{F1:open}});
+    run(s,{power:true,air:true,PB1:true},.5);return s;
+  };
+  const a=go(2),b=go(8);
+  assert.equal(a.out.leak,false);assert.equal(a.supP,4);
+  assert.equal(a.meter.A,'bleed');
+  assert.ok(b.cyl.A<a.cyl.A,`많이 열면 더 느림 ${b.cyl.A} < ${a.cyl.A}`);
+});
+
+test('유압 감압밸브: 실린더 쪽 압력이 설정값, 돌아오는 기름은 그냥 지나감',()=>{
+  const s=world({cylA:'cylinder',valveA:'valve42',MA1:'hprv'},{wires:pbWires('V1'),hoses:[h('HP1','V1_P'),h('V1_T','HT1'),h('V1_A','PR1_1'),h('PR1_2','A_cap'),h('V1_B','A_rod')],set:{PR1:2}});
+  run(s,{power:true,air:true,PB1:true},.5);
+  assert.equal(s.cylP.A,2);
+  run(s,{},1);assert.equal(end(s.cyl.A),'+');
+  run(s,{PB1:false},1.5);assert.equal(end(s.cyl.A),'-','후진할 때 후방 기름이 2→1로 돌아감');
+});
+
+test('압력스위치: 실린더가 움직이는 동안은 꺼져 있다가, 끝에 닿아 압력이 오르면 켜진다',()=>{
+  const s=world({cylA:'cylinder',valveA:'valve42',MA1:'psw'},{wires:pbWires('V1'),hoses:[h('HP1','V1_P'),h('V1_T','HT1'),h('V1_A','PS1_a'),h('PS1_b','A_cap'),h('V1_B','A_rod')]});
+  run(s,{power:true,air:true,PB1:true},.4);
+  assert.equal(s.sensor.PS1,false,'움직이는 중');
+  run(s,{},1);assert.equal(end(s.cyl.A),'+');
+  assert.equal(get('expectOk')(s,'PS1',true),true,'끝에 닿으면 켜짐');
+  s.set.PS1=4.5;run(s,{},.1);assert.equal(s.sensor.PS1,false,'설정이 릴리프보다 높으면 안 켜짐');
+});
+
+test('압력스위치 접점: NO(1-4)로 램프를 켠다',()=>{
+  const s=world({cylA:'cylinder',valveA:'valve42',MA1:'psw'},{wires:[...pbWires('V1'),w('R24_0_2','PS1_1','red'),w('PS1_4','H1_p','red'),w('H1_n','R0_0_2','blue'),w('R24_0_0','R24_2_0','red'),w('R0_0_0','R0_2_0','blue')],hoses:[h('HP1','V1_P'),h('V1_T','HT1'),h('V1_A','PS1_a'),h('PS1_b','A_cap'),h('V1_B','A_rod')]});
+  run(s,{power:true,air:true,PB1:true},.3);assert.equal(s.out.H1,false);
+  run(s,{},1.2);assert.equal(s.out.H1,true);
+});
+
+const lift=extra=>({wires:P43,hoses:extra});
+test('하중 실린더: ABT 중립이면 무게로 내려가고, 올 포트 블록·4/2면 그 자리',()=>{
+  const drop=world({cylA:'cylw',valveA:'valve43a'},lift(cylHoses('V1','A')));
+  run(drop,{power:true,air:true},2);
+  assert.ok(drop.cyl.A>.3,'ABT: 내려감 '+drop.cyl.A);
+  const blk=world({cylA:'cylw',valveA:'valve43c'},lift(cylHoses('V1','A')));
+  run(blk,{power:true,air:true},2);assert.equal(blk.cyl.A,0);
+  const s42=world({cylA:'cylw',valveA:'valve42'},{wires:pbWires('V1'),hoses:cylHoses('V1','A')});
+  run(s42,{power:false,air:false},2);assert.equal(s42.cyl.A,0,'펌프가 꺼져도 P 쪽은 막혀 있음');
+});
+
+test('카운터밸런스: 전방 줄에 끼우면 ABT 중립에서도 안 내려가고, Y1로 밀면 내려간다',()=>{
+  const hoses=[h('HP1','V1_P'),h('V1_T','HT1'),h('V1_A','A_cap'),h('V1_B','CB1_1'),h('CB1_2','A_rod')];
+  const s=world({cylA:'cylw',valveA:'valve43a',MA2:'cbv'},lift(hoses));
+  run(s,{power:true,air:true},2);assert.equal(s.cyl.A,0,'자중 낙하 없음');
+  run(s,{PB1:true},1.5);assert.equal(end(s.cyl.A),'+','후방 압력이 설정 이상 → 열림');
+  run(s,{PB1:false,PB2:true},1.5);assert.equal(end(s.cyl.A),'-','들어 올릴 때는 1→2 자유');
+  run(s,{PB2:false},.5);hold(s,'PB1',.4);
+  const mid=s.cyl.A;run(s,{},2);assert.equal(s.cyl.A,mid,'중간에서도 그대로');
+  s.set.CB1=5;run(s,{PB1:true},1);assert.equal(s.cyl.A,mid,'설정이 릴리프보다 높으면 밀어도 안 열림');
+});
+
+test('파일럿 체크 블록(로킹 회로): ABT 중립에서 꽉 고정, Y1·Y2로는 잘 움직임',()=>{
+  const hoses=[h('HP1','V1_P'),h('V1_T','HT1'),h('V1_A','PC1_A1'),h('PC1_A2','A_cap'),h('V1_B','PC1_B1'),h('PC1_B2','A_rod')];
+  const s=world({cylA:'cylw',valveA:'valve43a',LA:'lock'},lift(hoses));
+  run(s,{power:true,air:true},2);assert.equal(s.cyl.A,0);
+  hold(s,'PB1',.5);const mid=s.cyl.A;assert.ok(mid>.2&&mid<.8,'중간 '+mid);
+  run(s,{},2);assert.equal(s.cyl.A,mid,'로킹');
+  run(s,{PB2:true},1.5);assert.equal(end(s.cyl.A),'-');
+  run(s,{PB2:false,air:false},2);assert.equal(end(s.cyl.A),'-','펌프를 꺼도 그대로');
 });

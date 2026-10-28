@@ -3,6 +3,7 @@
    매 프레임 stepWorld: 전기 회로 계산 → 밸브 상태 → 실린더 이동 → 센서 갱신(다음 프레임 전기 계산에 반영)
    부품마다의 동작 규칙은 js/parts/*.js가 PARTS에 등록한다. 엔진은 배치된 부품 목록만 보고 계산한다. */
 const STROKE_T=1.0;       // 실린더 전체 행정 시간(초)
+const CYL_TYPES={cylinder:1,cylw:1};   // 실린더 종류 (포트 <id>_cap / <id>_rod, 위치 w.cyl)
 
 /* 부품 종류 라이브러리. PARTS[종류] 에 들어갈 수 있는 동작 규칙(모두 선택):
    rails(p)            → {r24:[잭], r0:[잭]}  모듈의 +24V/0V 레일 잭. 모듈 안에서만 서로 이어져 있다.
@@ -20,7 +21,9 @@ const STROKE_T=1.0;       // 실린더 전체 행정 시간(초)
                        pn.flow(공급 포트, 배기 포트) → {k:속도 배율, meter:'out'|'in'|''}, pn.press(포트) → 압력(MPa)
    dev(p,w)            공압 기기: {kind:'fcv'|'qev'|'prv', a:1차(밸브 쪽) 포트, b:2차(실린더 쪽) 포트, k:조임 배율, set:2차 압력}
                        fcv(일방향 유량조절) a→b 자유, b→a 조임 / qev(급속배기) b 쪽 배기를 그 자리에서 / prv(감압) b 쪽 압력 = min(공급, set)
-                       chk(체크밸브) a→b만 흐름 (거꾸로 흐르려 하면 막힘)
+                       chk(체크밸브) a→b만 흐름 (거꾸로 흐르려 하면 막힘), pocv(파일럿 체크: pilot 포트에 압력이 있으면 거꾸로도),
+                       cbv(카운터밸런스: 실린더 반대쪽 포트 압력이 set 이상이면 거꾸로도), thr(양방향 조임, 공급↔탱크 사이면 블리드오프),
+                       pipe(그냥 통과: 압력스위치 블록). dev는 배열을 돌려줘도 된다 (로크밸브: 체크 2개)
    sense(p,w)          실린더 위치로 센서·리밋스위치 감지 상태(w.sensor[이름]) 결정
    그 밖의 속성: solCount(솔레노이드 수), relayCount(릴레이 수), span(랙에서 차지하는 칸 수),
                  tag·tagCount(이름 붙이기: 타이머 'T' → T1, 카운터 'C' → C1), settings(p) → {이름:{기본값,최소,최대,간격}}
@@ -104,21 +107,33 @@ function solveElec(w,allClosed){
   return{short,on,hot,gnd};
 }
 // 공압·유압 경로. 기기를 뺀 연결(u0)로 "기기 어느 쪽 포트가 실린더 쪽인지"를 알고, 기기를 넣은 연결로 실제 흐름을 본다
+// 기기(dev) 종류: 늘 통함(fcv·qev·pipe) / thr(양방향 조임: 공급과 탱크 사이에 끼우면 블리드오프) /
+//   한방향(chk·pocv·cbv: a→b만. pocv는 파일럿 포트에, cbv는 실린더 반대쪽 포트에 압력이 있으면 거꾸로도 통함) /
+//   prv(감압: 1차 쪽에 공급이 있어야 지나감. rev면 거꾸로 돌아오는 기름은 그냥 지나감)
 const MIN_P=0.1;   // 이보다 낮은 압력(MPa)이면 실린더가 움직이지 않음
+const DEV_PIPE=new Set(['fcv','qev','pipe']), DEV_DIR=new Set(['chk','pocv','cbv']);
 function solvePneu(w){
   const base=()=>{const u=UF();partsWith('pneu').forEach(p=>PARTS[p.type].pneu(p,w,u));w.hoses.forEach(h=>u.u(h.a,h.b));return u;};
-  const devs=partsWith('dev').map(p=>PARTS[p.type].dev(p,w));
-  const free=devs.filter(d=>d.kind==='fcv'||d.kind==='qev');
-  // 체크밸브: 양쪽이 공급(S)·배기(E)·그 밖(N) 중 어디에 이어졌는지 보고, 거꾸로(b→a) 흐를 자리면 막는다
-  const uc=base();free.forEach(d=>uc.u(d.a,d.b));
-  const side=id=>uc.same(id,'SUP')?'S':uc.same(id,'EX')?'E':'N';
-  const chkOn=devs.filter(d=>{if(d.kind!=='chk')return false;const a=side(d.a),b=side(d.b);return !((b==='S'&&a!=='S')||(a==='E'&&b!=='E'));});
-  const pass=free.concat(chkOn);
-  const u0=base(), u1=base();pass.forEach(d=>u1.u(d.a,d.b));
-  const prvOn=devs.filter(d=>d.kind==='prv'&&u1.same(d.a,'SUP'));   // 감압밸브는 1차 쪽에 공급이 있어야 지나감
-  const u=base();pass.concat(prvOn).forEach(d=>u.u(d.a,d.b));
+  const devs=partsWith('dev').flatMap(p=>[].concat(PARTS[p.type].dev(p,w)));
   const src=partsWith('source')[0];
   const main=w.air?(src?PARTS[src.type].source(src,w):0.5):0;
+  // 1) 늘 통하는 기기만 넣고 각 포트가 공급(S)·배기(E)·그 밖(N) 어디에 이어졌는지 본다
+  const uc=base();devs.filter(d=>DEV_PIPE.has(d.kind)).forEach(d=>uc.u(d.a,d.b));
+  const side=id=>uc.same(id,'SUP')?'S':uc.same(id,'EX')?'E':'N';
+  const thr=devs.filter(d=>d.kind==='thr');
+  const bleed=thr.filter(d=>{const a=side(d.a),b=side(d.b);return (a==='S'&&b==='E')||(a==='E'&&b==='S');});   // 블리드오프: 잇지 않고 속도만 줄임
+  const thrOn=thr.filter(d=>!bleed.includes(d));thrOn.forEach(d=>uc.u(d.a,d.b));
+  // 2) 한방향 기기: 정방향(a→b)으로 흐를 자리면 통함. 거꾸로는 파일럿 조건이 맞을 때만
+  const pre=id=>uc.same(id,'SUP')?main:0;
+  const fwd=d=>{const a=side(d.a),b=side(d.b);return !((b==='S'&&a!=='S')||(a==='E'&&b!=='E'));};
+  const other=id=>{for(const p of LAYOUT.parts){if(!(p.type in CYL_TYPES))continue;const c=p.id+'_cap',r=p.id+'_rod';if(uc.same(id,c))return r;if(uc.same(id,r))return c;}return null;};
+  const pilot=d=>d.kind==='pocv'?d.pilot.some(x=>pre(x)>=MIN_P):d.kind==='cbv'?(o=>o!=null&&pre(o)>=d.set)(other(d.b)):false;
+  const dirOn=devs.filter(d=>DEV_DIR.has(d.kind)&&(fwd(d)||pilot(d)));
+  const pass=devs.filter(d=>DEV_PIPE.has(d.kind)).concat(thrOn,dirOn);
+  const u0=base(), u1=base();pass.forEach(d=>u1.u(d.a,d.b));
+  const prvOn=devs.filter(d=>d.kind==='prv'&&u1.same(d.a,'SUP'));   // 감압밸브는 1차 쪽에 공급이 있어야 지나감
+  const prvRev=devs.filter(d=>d.kind==='prv'&&d.rev&&!prvOn.includes(d)&&u1.same(d.a,'EX'));   // 내장 체크: 돌아오는 기름
+  const u=base();pass.concat(prvOn,prvRev).forEach(d=>u.u(d.a,d.b));
   const leak=w.air&&u.same('SUP','EX');
   const press=id=>{
     if(!w.air||leak)return 0;
@@ -133,14 +148,19 @@ function solvePneu(w){
         if(u0.same(d.b,exh)){k*=d.k;meter='out';}        // 실린더에서 나가는 공기가 2→1(조임): 미터아웃
         else if(u0.same(d.a,sup)){k*=d.k;meter='in';}    // 실린더로 들어가는 공기가 2→1(조임): 미터인
       }
+      if(d.kind==='thr'&&thrOn.includes(d)){               // 양방향 조임: 어느 쪽으로 지나가든 조임
+        if(u0.same(d.a,sup)||u0.same(d.b,sup)){k*=d.k;meter='in';}
+        else if(u0.same(d.a,exh)||u0.same(d.b,exh)){k*=d.k;meter='out';}
+      }
       if(d.kind==='qev'&&u0.same(d.b,exh))k*=1.8;       // 실린더 쪽(A)에서 바로 배기 → 빨라짐
     });
+    if(bleed.length&&u.same(sup,'SUP')){bleed.forEach(d=>k*=Math.max(.1,1-.9*d.k));meter='bleed';}   // 많이 열수록 탱크로 새는 기름이 많아 느려짐
     return{k,meter};
   };
-  return{leak,P,E,press,flow,main};
+  return{leak,P,E,press,flow,main,same:(a,b)=>u.same(a,b)};
 }
 function newWorld(c){
-  const w={wires:c.wires,hoses:c.hoses,set:{},power:false,air:false,t:0,pb:{},relay:{},timer:{},counter:{},modPow:{},meter:{},cylP:{},cyl:{},motor:{},valve:{},sensor:{},sensorPow:{},out:{leak:false},events:[]};
+  const w={wires:c.wires,hoses:c.hoses,set:{},power:false,air:false,t:0,pb:{},relay:{},timer:{},counter:{},modPow:{},meter:{},cylP:{},cylSup:{},cyl:{},motor:{},valve:{},sensor:{},sensorPow:{},out:{leak:false},events:[]};
   for(const k in LAYOUT.settings)w.set[k]=(c.set&&k in c.set)?c.set[k]:LAYOUT.settings[k].def;
   LAYOUT.pbs.concat(LAYOUT.toggles).forEach(id=>w.pb[id]=false); LAYOUT.loads.forEach(l=>w.out[l.name]=false);
   partsWith('init').forEach(p=>PARTS[p.type].init(p,w));

@@ -46,7 +46,7 @@ for(const mis of MISSIONS.filter(m=>!m.soon)){
         const m=/^(\w+)([+-])$/.exec(type);
         assert.ok(m,`${slot}: 위치는 "A+"·"A-" 모양 (지금 ${type})`);
         const cs=L.slots.find(x=>x.id===m[1]);
-        assert.ok(cs&&mis.board[cs.slot]==='cylinder',`${slot}: 실린더 ${m[1]}가 배치되어 있지 않음`);
+        assert.ok(cs&&['cylinder','cylw'].includes(mis.board[cs.slot]),`${slot}: 실린더 ${m[1]}가 배치되어 있지 않음`);
         mounts[type]=(mounts[type]||0)+1;
         assert.ok(mounts[type]<=2,`${type}에 센서가 3개 이상 (최대 2개)`);
       }else assert.ok((s.accepts||[]).includes(type),`${slot}에 ${type}은 놓을 수 없음`);
@@ -62,8 +62,8 @@ for(const mis of MISSIONS.filter(m=>!m.soon)){
     // 상태 이름 검사 (채점 expect와 튜토리얼 state가 같이 쓴다)
     // pbs = 누름버튼(잠깐 누르기 가능), inputs = 누름버튼 + 유지형 스위치(상태로 쓸 수 있음)
     const pbs=new Set(LAYOUT.pbs), inputs=new Set([...LAYOUT.pbs,...LAYOUT.toggles]), loads=new Set(LAYOUT.loads.map(l=>l.name));
-    const cyls=new Set(LAYOUT.parts.filter(p=>p.type==='cylinder').map(p=>p.id));
-    const sensors=new Set(LAYOUT.parts.filter(p=>p.cyl).map(p=>p.id));
+    const cyls=new Set(LAYOUT.parts.filter(p=>p.type==='cylinder'||p.type==='cylw').map(p=>p.id));
+    const sensors=new Set([...LAYOUT.parts.filter(p=>p.cyl).map(p=>p.id),...LAYOUT.parts.filter(p=>p.type==='psw').flatMap(p=>p.tags)]);   // 센서·리밋·압력스위치
     const motors=new Set(LAYOUT.parts.filter(p=>p.type==='motor').map(p=>p.id));
     const counters=new Set(LAYOUT.parts.filter(p=>p.type==='counter').flatMap(p=>p.tags));
     const checkExpect=(exp,at,allowInputs)=>{

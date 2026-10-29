@@ -8,7 +8,9 @@ function renderExam(){
   const mis=cur(),box=$('exam');box.hidden=!mis.exam;if(!mis.exam)return;
   const X=mis.exam,st=examState(mis.id),k=st.stage,stg=X.stages[k],last=X.stages.length-1;
   const passed=i=>st.passed.includes(i),allDone=X.stages.every((_,i)=>passed(i));
-  box.innerHTML=`<div class="prac-top"><span class="clock" id="examClock" title="걸린 시간">${fmtTime(st.sec)}</span>
+  // 산업기사형은 과제당 50분이 목표 (넘으면 시계가 빨개짐)
+  const goal=mis.level==='industrial'?50*60:0;
+  box.innerHTML=`<div class="prac-top"><span class="clock ${goal&&st.sec>goal?'over':''}" id="examClock" title="걸린 시간">${fmtTime(st.sec)}</span>${goal?'<span class="clock-goal">/ 목표 50:00</span>':''}
       <button class="btn ${st.run?'':'primary'}" id="examRun">${st.run?'일시정지':st.sec?'계속':'시작'}</button>
       <button class="btn" id="examZero">0으로</button></div>
     <details class="ex-req" ${st.reqClosed?'':'open'}><summary>요구사항</summary><ul class="req">${X.req.map(t=>`<li>${t}</li>`).join('')}</ul></details>
@@ -65,7 +67,7 @@ $('exam').addEventListener('toggle',e=>{if(e.target.matches('.ex-req')&&cur().ex
 setInterval(()=>{
   const mis=cur();if(!mis||!mis.exam||document.hidden||UI.lesson)return;
   const st=examState(mis.id);if(!st.run)return;
-  st.sec++;const c=$('examClock');if(c)c.textContent=fmtTime(st.sec);
+  st.sec++;const c=$('examClock');if(c){c.textContent=fmtTime(st.sec);if(mis.level==='industrial')c.classList.toggle('over',st.sec>50*60);}
   if(st.sec%10===0)save();
 },1000);
 // 시작할 때 마지막으로 보던 것이 모의 과제였으면 (app.js가 먼저 불러서 아직 그리지 못함) 다시 불러 단계 판까지 맞춘다

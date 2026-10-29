@@ -23,6 +23,7 @@
       유압모터는 돌기 시작·멈춤이 한 칸: "M+"(정회전) "M-"(역회전) "M0"(정지). 예 ["A+","M+","M0","A-"]
       ("moves"·"movesRepeat"에도 같은 이름이 들어간다)
       "dwell":{"after":"A+","sec":3,"tol":0.5} 을 더하면 A+에 닿은 뒤 다음 움직임이 시작될 때까지의 시간(타이머)도 검사한다
+      "meterOn":{"A+":"out"}, "pressureOn":{"A+":[1.9,2.1]} 도 단계 검사와 같은 뜻으로 쓸 수 있다 (회차마다 검사)
    expect에 카운터 이름과 숫자를 쓰면 센 값을 본다 (예: "C1":0)
    합선, 배선 색은 항상 검사하고, 공기를 쓰면 공기 누설도 검사한다. repeat가 2 이상이면 "2회 반복" 항목이 붙는다.
    두 형식 모두 "relayCount": 5 를 적으면 코일 양쪽(A1·A2)이 배선된 릴레이 수를 검사한다 (시험: 릴레이 개수 변경 금지). */
@@ -180,7 +181,8 @@ const fmtSeq=s=>s.map(x=>x.replace('-','−')).join(' ');
 function gradeSequence(g,c){
   const w=newWorld(clone(c));run(w,g.setup||{power:true,air:true},0);
   const at={};recordMoves(w,1,[],at);   // 처음 위치로 자리 잡기
-  const items=[],reps=g.repeat||1;let all=true,leak=false,laterFail='',dwellFail='';
+  const items=[],reps=g.repeat||1;let all=true,leak=false,laterFail='',dwellFail='',extraFail='';
+  const extra=g.meterOn||g.pressureOn?{meterOn:g.meterOn,pressureOn:g.pressureOn}:null;
   for(let r=0;r<reps;r++){
     const log=[],tl=[];tl.pos=Object.assign({},at);
     w.pb[g.press]=true;recordMoves(w,TAP,log,at,tl);w.pb[g.press]=false;
@@ -193,6 +195,13 @@ function gradeSequence(g,c){
     if(r===0)items.push({name:`${g.press} → 변위단계선도(${fmtSeq(g.sequence)})대로 동작`,ok,detail,moves:log});
     else if(!ok&&!laterFail)laterFail=`${r+1}회차 — ${detail}`;
     if(g.dwell&&!dwellFail){const p=dwellProblem(g.dwell,tl);if(p)dwellFail=(reps>1?`${r+1}회차 — `:'')+p;}
+    if(extra&&!extraFail){const p=stepExtraProblem(extra,w,tl);if(p)extraFail=(reps>1?`${r+1}회차 — `:'')+p;}
+  }
+  if(extra){
+    const M={out:'미터아웃',in:'미터인',bleed:'블리드오프'};
+    const what=Object.entries(g.meterOn||{}).map(([k,v])=>`${fmtSeq([k])} ${M[v]}`)
+      .concat(Object.entries(g.pressureOn||{}).map(([k,[lo,hi]])=>`${fmtSeq([k])} 작동압력 ${lo}~${hi} MPa`));
+    items.push({name:`속도 조절·압력: ${what.join(', ')}`,ok:!extraFail,detail:extraFail});
   }
   if(g.dwell)items.push({name:`${fmtSeq([g.dwell.after])} 도달 후 ${g.dwell.sec}초 머문 뒤 다음 동작`,ok:!dwellFail,detail:dwellFail});
   if(reps>=2)items.push({name:TWICE,ok:all,detail:all?'':(laterFail||'1회차부터 순서가 다릅니다.')});

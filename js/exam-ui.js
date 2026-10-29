@@ -17,7 +17,7 @@ function renderExam(){
     <div class="ex-btns"><button class="btn primary" id="examGrade">평가 받기</button>
       ${passed(k)&&k<last?`<button class="btn primary" id="examNext">다음: ${X.stages[k+1].name} →</button>`:''}</div>
     ${allDone?`<p class="fb ok"><b>모든 단계 통과!</b> 걸린 시간 ${fmtTime(st.sec)}. 시험은 보통 기본 동작부터 유지보수까지 정해진 시간 안에 끝내야 해요.</p>`:''}
-    ${passed(0)&&X.explain?`<details class="ex-explain"><summary>도면의 틀린 곳 해설</summary><p>${X.explain}</p></details>`:''}
+    ${passed(0)&&X.explain?`<details class="ex-explain"><summary>${X.explainTitle||'도면의 틀린 곳 해설'}</summary><p>${X.explain}</p></details>`:''}
     <button class="link" id="examRestart">${examAsk?'정말 처음부터? (단계 기록·시간을 지우고, 판을 처음 구성으로 되돌립니다. 한 번 더 누르세요)':'처음부터 다시'}</button>`;
 }
 // 판을 바꾼 뒤 배선·호스·설정·실린더 자리는 그대로 두고 세계를 다시 만든다
@@ -48,7 +48,8 @@ $('exam').addEventListener('click',e=>{
   if(id==='examNext'){
     st.stage++;const add=X.stages[st.stage].board||{};
     examRebuild(Object.assign({},UI.board,add));renderExam();
-    const added=Object.values(add).filter(Boolean).map(v=>pracValName(v)),removed=Object.keys(add).filter(k=>!add[k]);
+    // 센서는 이름과 위치까지 (S1(A 후진 끝))
+    const added=Object.entries(add).filter(([,v])=>v).map(([k,v])=>parseSensor(v)?`${k}(${pracValName(v)})`:pracValName(v)),removed=Object.keys(add).filter(k=>!add[k]);
     if(added.length||removed.length)toast([added.length?`판에 ${added.join('·')}이(가) 생겼어요.`:'',removed.length?`${removed.join('·')}은(는) 판에서 빠졌어요.`:''].filter(Boolean).join(' '));
   }
   if(id==='examRestart'){

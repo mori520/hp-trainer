@@ -4,7 +4,7 @@
 /* ===================== 상태 / 저장 ===================== */
 const KEY='ph-trainer-v1';
 // 처음 온 사람: 기초 강의·미션 칸은 접고, 실전 연습 칸의 자유 실습을 연 상태로 시작
-let store={done:{},circuits:{},last:'free',mode:'tut',fold:{lessons:true,missions:true,hyd:true,design:true,exam:true,custom:true}};
+let store={done:{},circuits:{},last:'free',mode:'tut',fold:{lessons:true,missions:true,hyd:true,design:true,exam:true,exam2:true,custom:true}};
 try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s)store=Object.assign(store,s);}catch(e){}
 const BOOT_LAST=store.last;
 const FIRST_VISIT=needWelcome(store);   // 기록이 없는 처음 온 사람 → 안내 띄움 (onboard.js)   // 시작 때 마지막으로 보던 것 (그리는 중 save()가 store.last를 덮기 전에 기억)
@@ -186,7 +186,7 @@ $('autoColor').onclick=()=>setAutoColor(!store.autoColor);
 // 목록: 기초 강의(lessons.js, 없으면 생략) / 미션 / 실전 연습(실전 연습·자유 실습). 칸 제목을 누르면 접고 편다(store.fold)
 // 모의 과제(exams.js)와 내 과제(store.custom → custom.js가 미션 모양으로)도 목록에. 내 과제를 고치면 custom-ui.js가 ALL을 다시 채운다
 const ALL=MISSIONS.concat(typeof EXAMS==='undefined'?[]:EXAMS,(store.custom||[]).map(d=>{try{return CUSTOM.toMission(d);}catch(e){return null;}}).filter(Boolean));
-const sectOf=x=>x.custom?'custom':x.design?'design':x.exam?'exam':x.practice||x.no==='∞'?'practice':x.layout==='hyd'?'hyd':'missions';   // 실전 연습·자유 실습(no ∞)은 맨 아래 칸, 유압 미션·모의 과제는 따로
+const sectOf=x=>x.custom?'custom':x.design?'design':x.exam?(x.level==='industrial'?'exam2':'exam'):x.practice||x.no==='∞'?'practice':x.layout==='hyd'?'hyd':'missions';   // 실전 연습·자유 실습(no ∞)은 맨 아래 칸, 유압 미션·모의 과제는 따로
 function cur(){return ALL.find(x=>x.id===UI.mission);}
 function renderMissionList(){
   const LS=typeof LESSONS==='undefined'?[]:LESSONS, fold=store.fold||{};
@@ -199,14 +199,15 @@ function renderMissionList(){
   const misItem=x=>`<li><button data-m="${x.id}" aria-current="${!UI.lesson&&x.id===UI.mission}">
     <span class="no">${x.no}</span><span class="t">${x.title}</span>
     <span class="chip ${store.done[x.id]?'done':''}">${store.done[x.id]?'완료':x.no==='∞'?'자유':x.practice?'실전':x.design?'설계':x.custom?'내 과제':x.exam?examChip(x):'도전'}</span></button></li>`;
-  const mis=ALL.filter(x=>sectOf(x)==='missions'), hyd=ALL.filter(x=>sectOf(x)==='hyd'), exam=ALL.filter(x=>sectOf(x)==='exam'), prac=ALL.filter(x=>sectOf(x)==='practice'), des=ALL.filter(x=>sectOf(x)==='design'), cus=ALL.filter(x=>sectOf(x)==='custom');
+  const mis=ALL.filter(x=>sectOf(x)==='missions'), hyd=ALL.filter(x=>sectOf(x)==='hyd'), exam=ALL.filter(x=>sectOf(x)==='exam'), exam2=ALL.filter(x=>sectOf(x)==='exam2'), prac=ALL.filter(x=>sectOf(x)==='practice'), des=ALL.filter(x=>sectOf(x)==='design'), cus=ALL.filter(x=>sectOf(x)==='custom');
   // 내 과제 칸은 비어 있어도 늘 보인다 (+ 새 과제·불러오기 버튼, custom-ui.js가 처리)
   const cusTools=`<li class="cus-tools"><button class="btn" data-cnew>+ 새 과제</button><button class="btn" data-cimport title="내보내기로 저장한 .json 파일을 불러와요">불러오기</button>${cus.length?'<button class="btn" data-cexport title="내 과제를 모두 .json 파일 하나로 저장해요">모두 내보내기</button>':''}</li>`;
   $('missionList').innerHTML=(LS.length?head('lessons','기초 강의',LS.length)+body('lessons',LS.map(lessonItem).join('')):'')
     +head('missions','미션',mis.length)+body('missions',mis.map(misItem).join(''))
     +(hyd.length?head('hyd','유압 미션',hyd.length)+body('hyd',hyd.map(misItem).join('')):'')
     +(des.length?head('design','설계 연습 (산업기사)',des.length)+body('design',des.map(misItem).join('')):'')
-    +(exam.length?head('exam','모의 과제',exam.length)+body('exam',exam.map(misItem).join('')):'')
+    +(exam.length?head('exam','모의 과제 (기사)',exam.length)+body('exam',exam.map(misItem).join('')):'')
+    +(exam2.length?head('exam2','모의 과제 (산업기사)',exam2.length)+body('exam2',exam2.map(misItem).join('')):'')
     +(typeof CUSTOM!=='undefined'?head('custom','내 과제',cus.length)+body('custom',cus.map(misItem).join('')+cusTools):'')
     +head('practice','실전 연습',prac.length)+body('practice',prac.map(misItem).join(''));
   // 선택한 미션 바로 아래(드롭다운처럼). 그 칸이 접혀 있거나 강의를 보는 중이면 목록 맨 끝에 숨겨 둔다.

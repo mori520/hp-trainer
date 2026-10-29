@@ -128,8 +128,8 @@ function cylinder(S,x,y,name,sensors=[]){
   return{cap:[x+12,y+40],rod:[x+148,y+40]};
 }
 // 5/2 밸브: 왼쪽 칸(여자) | 오른쪽 칸(평상시). 포트는 오른쪽 칸에: 4·2 위, 1 아래, 배기 5·3
-// capDev: 후방 줄에 끼운 기기 'fcv'(일방향 유량조절) | 'qev'(급속배기), supplyDev: 공급 줄 'prv'(감압)
-function valve(S,vx,vy,cyl,{double=false,sols,capDev,supplyDev}){
+// capDev·rodDev: 후방·전방 줄에 끼운 기기 'fcv'(일방향 유량조절) | 'qev'(급속배기), supplyDev: 공급 줄 'prv'(감압)
+function valve(S,vx,vy,cyl,{double=false,sols,capDev,rodDev,supplyDev}){
   const W=60,H=36,R=vx+W;
   S.rect(vx,vy,W,H).rect(R,vy,W,H);
   S.path(`M${vx+30},${vy+H}L${vx+15},${vy+3}`,'arw');S.path(`M${vx+45},${vy}L${vx+52},${vy+H-3}`,'arw');
@@ -147,21 +147,22 @@ function valve(S,vx,vy,cyl,{double=false,sols,capDev,supplyDev}){
   else S.path(`M${R+W},${vy+18}l4,-6l6,12l6,-12l6,12l4,-6`);
   // 4 → 후방, 2 → 전방
   S.path(`M${R+15},${vy}V${vy-18}H${cyl.cap[0]}V${cyl.cap[1]}`);
-  if(capDev){
-    // 후방 줄 세로 구간 가운데에 기기 기호
-    const x=cyl.cap[0],y=(cyl.cap[1]+vy-18)/2;
-    S.add(`<rect x="${x-13}" y="${y-14}" width="26" height="28" fill="#fff" stroke="none"/>`);
-    if(capDev==='fcv'){
-      S.path(`M${x},${y-14}V${y-10}H${x-7}V${y+10}H${x}V${y+14}M${x},${y-10}H${x+7}V${y+10}H${x}`);
-      S.path(`M${x-10},${y-5}Q${x-7},${y} ${x-10},${y+5}M${x-4},${y-5}Q${x-7},${y} ${x-4},${y+5}`);
-      S.add(`<circle cx="${x+7}" cy="${y-1}" r="3" class="w"/>`);S.path(`M${x+3},${y+6}L${x+7},${y+2}L${x+11},${y+6}`);
-      S.text(x+16,y+4,'미터아웃',{c:'s'});
-    }else{
-      S.rect(x-8,y-9,16,18);S.path(`M${x},${y-14}V${y-9}M${x},${y+9}V${y+14}M${x+8},${y}H${x+14}`);
-      S.path(`M${x+14},${y-5}L${x+22},${y}L${x+14},${y+5}Z`);S.text(x+26,y+4,'급속배기',{c:'s'});
-    }
-  }
+  if(capDev)lineDev(S,cyl.cap[0],(cyl.cap[1]+vy-18)/2,capDev);   // 후방 줄 세로 구간 가운데에 기기 기호
   S.path(`M${R+45},${vy}V${vy-32}H${cyl.rod[0]}V${cyl.rod[1]}`);
+  if(rodDev)lineDev(S,cyl.rod[0],(cyl.rod[1]+vy-32)/2,rodDev);   // 전방 줄
+}
+// 공압 줄 기기 기호 (세로 줄 위, 가운데 x·y): 'fcv'(일방향 유량조절, 미터아웃) | 'qev'(급속배기)
+function lineDev(S,x,y,dev){
+  S.add(`<rect x="${x-13}" y="${y-14}" width="26" height="28" fill="#fff" stroke="none"/>`);
+  if(dev==='fcv'){
+    S.path(`M${x},${y-14}V${y-10}H${x-7}V${y+10}H${x}V${y+14}M${x},${y-10}H${x+7}V${y+10}H${x}`);
+    S.path(`M${x-10},${y-5}Q${x-7},${y} ${x-10},${y+5}M${x-4},${y-5}Q${x-7},${y} ${x-4},${y+5}`);
+    S.add(`<circle cx="${x+7}" cy="${y-1}" r="3" class="w"/>`);S.path(`M${x+3},${y+6}L${x+7},${y+2}L${x+11},${y+6}`);
+    S.text(x+16,y+4,'미터아웃',{c:'s'});
+  }else{
+    S.rect(x-8,y-9,16,18);S.path(`M${x},${y-14}V${y-9}M${x},${y+9}V${y+14}M${x+8},${y}H${x+14}`);
+    S.path(`M${x+14},${y-5}L${x+22},${y}L${x+14},${y+5}Z`);S.text(x+26,y+4,'급속배기',{c:'s'});
+  }
 }
 
 /* ---------- 가. 유압회로도 ---------- */
@@ -697,3 +698,14 @@ const pneu4=S=>{
 sheet('d1.svg',{w:800,h:520,names:['A','B'],seq:['A+','B+','A-','B-'],pneu:pneu4,note:['PB1을 한 번 누르면 한 사이클. 릴레이 개수는 자유']});
 sheet('d2.svg',{w:800,h:520,names:['A','B'],seq:['A+','B+','B-','A-'],pneu:pneu4,note:['PB1을 한 번 누르면 한 사이클. 릴레이 개수는 자유']});
 sheet('d3.svg',{w:800,h:520,names:['A','B'],seq:['A+','wait:2초','B+','A-','B-'],pneu:pneu4,note:['A 전진 끝에서 2초 머문 뒤 B 전진. 릴레이·타이머 자유']});
+
+/* ---------- 모의 과제 (산업기사형): 전기회로도 없음. 양솔 2개 + 리밋 4개 + 유량조절 ---------- */
+const pneu4f=(aOpt,bOpt)=>S=>{
+  const a=cylinder(S,60,90,'A',[{end:'-',name:'LS1',kind:'ls'},{end:'+',name:'LS2',kind:'ls'}]);valve(S,100,190,a,{double:true,sols:['Y1','Y2'],...aOpt});
+  const b=cylinder(S,460,90,'B',[{end:'-',name:'LS3',kind:'ls'},{end:'+',name:'LS4',kind:'ls'}]);valve(S,500,190,b,{double:true,sols:['Y3','Y4'],...bOpt});
+};
+const NOTE2=['PB1: 한 사이클 (2회 이상 같게)','서비스 유닛 0.5±0.05 MPa'];
+sheet('sx1.svg',{w:800,h:540,names:['A','B'],seq:['A+','B+','B-','A-'],pneu:pneu4f({rodDev:'fcv'},{}),note:NOTE2});
+sheet('sx2.svg',{w:800,h:540,names:['A','B'],seq:['A+','B+','wait:2초','A-','B-'],pneu:pneu4f({},{capDev:'fcv'}),note:NOTE2.concat(['타이머 2초'])});
+sheet('sx3.svg',{w:800,h:540,names:['A','B'],seq:['B+','A+','A-','B-'],pneu:pneu4f({},{rodDev:'fcv'}),note:NOTE2});
+sheet('sx4.svg',{w:800,h:540,names:['A','B'],seq:['A+','A-','B+','B-'],pneu:pneu4f({capDev:'fcv'},{}),note:NOTE2});

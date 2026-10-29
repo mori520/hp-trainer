@@ -492,6 +492,179 @@ const EXAMS=[
     "explain":"한 가지 예예요. K1에 \"A가 전진을 마쳤다\"를 기억: <b>K1 = LS4(NC) · (LS2 ∥ K1)</b> (B가 전진 끝에 닿으면 풀림). <b>Y1(A+) = PB1 · LS3</b>, <b>Y2(A−) = LS2</b>, <b>Y3(B+) = LS1 · K1</b>, <b>Y4(B−) = LS4</b>. LS1(A 후진 끝)은 처음에도 켜져 있지만 K1이 꺼져 있어서 B+가 켜지지 않아요."
   }
 }
+,
+{
+  "id":"su1","no":"산업 유1","title":"A+ B+ B− A− (4/2 + 4/3 중립 블록)","level":"industrial",
+  "goal":"산업기사형: 유압회로도와 변위단계선도만 보고 전기회로를 직접 설계해 배선하세요. 단계마다 \"평가 받기\"를 통과하면 다음 유지보수가 열려요.",
+  "learn":"A는 4/2 편솔(솔레노이드를 계속 켜 둬야 전진 유지), B는 4/3 중립 블록(끄면 그 자리에 멈춤)이에요. 그래서 B는 끝(리밋)에 닿을 때까지 솔레노이드를 켜 두는 릴레이 기억이 필요해요. 유지보수 3문항.",
+  "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve42","cylB":"cylinder","valveB":"valve43c","LS1":"A-","LS2":"A+","LS3":"B-","LS4":"B+"},
+  "diagram":"diagrams/su1.svg","set":{"RV":3.5},
+  "exam":{
+    "req":["릴리프밸브 압력을 4.0±0.2 MPa로 맞춥니다.",
+      "PB1을 한 번 눌렀다 떼면 변위단계선도(A+ B+ B− A−)대로 한 사이클 동작하고 멈춥니다. 2회 이상 똑같이 동작해야 합니다.",
+      "전기회로도는 주어지지 않아요. 변위단계선도를 보고 직접 설계합니다. 릴레이 개수는 자유.","배선 색: +24V 쪽 적색, 0V 쪽 청색 또는 흑색. 밸브 T 포트는 탱크로 잇습니다."],
+    "stages":[
+      {"name":"기본 동작","task":"유압회로를 꾸미고, 변위단계선도대로 동작하는 전기회로를 설계해 배선하세요.",
+       "grading":{"press":"PB1","sequence":["A+","B+","B-","A-"],"repeat":2,"timeout":25,"settingsCheck":[{"name":"RV","min":3.8,"max":4.2,"label":"릴리프 압력 4±0.2 MPa"}]}},
+      {"name":"유지보수 1) A 전진 미터인","task":"판에 생긴 <b>유량조절밸브 F1</b>을 A 후방 줄(V1 A ↔ A 후방)에 <b>미터인</b>으로 끼워 A 전진만 1.5~3초로 느리게 하세요.",
+       "board":{"MA1":"fcv"},
+       "grading":{"setup":{"power":true,"air":true},"repeat":2,"steps":[
+         {"name":"PB1 → A+ B+ B− A− (A 전진 1.5~3초, 미터인)","tap":"PB1","wait":10,"moves":["A+","B+","B-","A-"],
+          "stroke":{"cyl":"A","dir":"+","min":1.5,"max":3},"meterOn":{"A+":"in"},
+          "hint":"미터인은 실린더로 들어가는 기름을 조여요. V1 A → F1 2번, F1 1번 → A 후방."}
+       ]}},
+      {"name":"유지보수 2) LS4 대신 압력스위치","task":"B 전진 끝 리밋 <b>LS4를 떼고</b>(판에서 빠져요), <b>압력스위치 PS1</b>을 B 후방 줄(V2 A ↔ B 후방)에 끼워 B가 끝에 닿아 압력이 오르면 LS4 대신 신호를 주게 하세요. PS1은 <b>3.0±0.5 MPa</b>.",
+       "board":{"MB1":"psw","LS4":""},
+       "grading":{"press":"PB1","sequence":["A+","B+","B-","A-"],"repeat":2,"timeout":25,
+         "settingsCheck":[{"name":"PS1","min":2.5,"max":3.5,"label":"압력스위치 3.0±0.5 MPa"}]}},
+      {"name":"유지보수 3) A 후진 압력 2.0 MPa (감압)","task":"판에 생긴 <b>감압밸브 PR1</b>을 A 전방 줄(V1 B ↔ A 전방)에 끼워, A가 후진할 때 실린더 압력을 <b>2.0±0.5 MPa</b>로 낮추세요. 릴리프는 4.0 그대로.",
+       "board":{"MA2":"hprv"},
+       "grading":{"setup":{"power":true,"air":true},"repeat":2,
+         "settingsCheck":[{"name":"PR1","min":1.5,"max":2.5,"label":"감압밸브 2.0±0.5 MPa"},{"name":"RV","min":3.8,"max":4.2,"label":"릴리프 압력 4±0.2 MPa"}],
+         "steps":[
+           {"name":"PB1 → A+ B+ B− A− (A 후진 압력 1.5~2.5 MPa)","tap":"PB1","wait":10,"moves":["A+","B+","B-","A-"],"pressureOn":{"A-":[1.5,2.5]},
+            "hint":"V1 B → PR1 1번(입구), PR1 2번(출구) → A 전방. 거꾸로 끼우면 기름이 지나가지 못해요."}
+         ]}}
+    ],
+    "explainTitle":"설계 예시 (기본 동작)",
+    "explain":"한 가지 예예요 (동작만 맞으면 다른 설계도 통과). <b>K1</b> = 사이클: PB1로 켜고 자기유지, K3(NC)로 끔. <b>Y1(A+) = K1</b> (4/2라 계속 켜 둠). <b>K2</b> = \"B가 전진 끝에 갔다\": K1·LS4로 켜고 자기유지. <b>Y2(B+) = K1 · LS2 · K2(NC)</b>, <b>Y3(B−) = K2 · K3(NC)</b>. <b>K3</b> = K2 · LS3 (B가 돌아옴) → K1이 꺼져 A가 스프링으로 후진하고 모두 풀려요. Y2에 K1을 넣는 이유: K2가 풀리는 순간 A가 아직 전진 끝(LS2)이라 B+가 다시 켜지는 것을 막으려고."
+  }
+},
+{
+  "id":"su2","no":"산업 유2","title":"하중 A+ → 모터 3초 → A− (4/3 + 2/2, 타이머)","level":"industrial",
+  "goal":"산업기사형: 유압회로도와 변위단계선도만 보고 전기회로를 직접 설계해 배선하세요. 단계마다 \"평가 받기\"를 통과하면 다음 유지보수가 열려요.",
+  "learn":"A는 무게가 걸린 하중 실린더(전진 = 하강), 모터는 2/2 밸브로 켜고 꺼요. 기본 동작에 타이머(3초)가 들어 있어요. 유지보수에서 ABT 중립 + 카운터밸런스, 미터인, 카운터를 해요.",
+  "layout":"hyd","board":{"cylA":"cylw","valveA":"valve43c","cylB":"motor","valveB":"valve22","LS1":"A-","LS2":"A+"},
+  "diagram":"diagrams/su2.svg","set":{"RV":4.5},
+  "exam":{
+    "req":["릴리프밸브 압력을 4.0±0.2 MPa로 맞춥니다.",
+      "PB1을 한 번 눌렀다 떼면 변위단계선도대로: A 하강(A+) → 끝에서 모터 정회전 3초 → 모터 정지 → A 상승(A−). 2회 이상 똑같이 동작해야 합니다.",
+      "타이머 T1은 3.0초. 모터 B 포트는 탱크로 잇습니다.",
+      "전기회로도는 주어지지 않아요. 변위단계선도를 보고 직접 설계합니다. 릴레이 개수는 자유.","배선 색: +24V 쪽 적색, 0V 쪽 청색 또는 흑색. 밸브 T 포트는 탱크로 잇습니다."],
+    "stages":[
+      {"name":"기본 동작","task":"유압회로를 꾸미고, 변위단계선도대로 동작하는 전기회로를 설계해 배선하세요. 타이머 T1은 3.0초.",
+       "grading":{"press":"PB1","sequence":["A+","M+","M0","A-"],"repeat":2,"timeout":25,"dwell":{"after":"M+","sec":3,"tol":0.5},
+         "settingsCheck":[{"name":"RV","min":3.8,"max":4.2,"label":"릴리프 압력 4±0.2 MPa"},{"name":"T1","min":3,"max":3,"label":"타이머 3초"}]}},
+      {"name":"유지보수 1) ABT 중립 + 카운터밸런스","task":"A 밸브(V1)를 <b>4/3 양솔 (중립 ABT)</b>로 바꾸고(펌프를 끄고 V1의 호스·배선을 뺀 뒤 \"⇄ 종류 교체\"), 하중이 제 무게로 내려가지 않게 판에 생긴 <b>카운터밸런스 CB1</b>을 A 전방 줄(V1 B ↔ A 전방)에 끼우세요. CB1은 <b>3.0±0.5 MPa</b>.",
+       "board":{"MA2":"cbv"},
+       "grading":{"setup":{"power":true,"air":true},"repeat":2,
+         "partCheck":[{"slot":"valveA","type":"valve43a","label":"A 밸브를 4/3 중립 ABT로 교체"}],
+         "settingsCheck":[{"name":"CB1","min":2.5,"max":3.5,"label":"카운터밸런스 3.0±0.5 MPa"}],
+         "steps":[
+           {"name":"PB1 → A+ M+ M0 A−","tap":"PB1","wait":9,"moves":["A+","M+","M0","A-"],
+            "hint":"내려갈 때는 후방 압력으로 카운터밸런스가 열려야 해요. V1 B → CB1 1번, CB1 2번 → A 전방."},
+           {"name":"멈춘 뒤 하중이 내려가지 않음 (3초)","wait":3,"moves":[],"expect":{"A":"-"},
+            "hint":"ABT 중립에서는 전방 기름이 탱크로 빠져요. 전방 줄에 카운터밸런스를 끼워 막으세요."}
+         ]}},
+      {"name":"유지보수 2) A 하강 미터인","task":"판에 생긴 <b>유량조절밸브 F1</b>을 A 후방 줄(V1 A ↔ A 후방)에 <b>미터인</b>으로 끼워 A 하강(A+)을 1.5~3초로 느리게 하세요.",
+       "board":{"MA1":"fcv"},
+       "grading":{"setup":{"power":true,"air":true},"repeat":2,"steps":[
+         {"name":"PB1 → A+ M+ M0 A− (A 하강 1.5~3초, 미터인)","tap":"PB1","wait":10,"moves":["A+","M+","M0","A-"],
+          "stroke":{"cyl":"A","dir":"+","min":1.5,"max":3},"meterOn":{"A+":"in"},
+          "hint":"V1 A → F1 2번, F1 1번 → A 후방으로 꽂으면 들어가는 기름이 조여져요."}
+       ]}},
+      {"name":"유지보수 3) 연속 3회 + 카운터 리셋","task":"PB1을 한 번 누르면 <b>3사이클 연속</b>으로 동작하고 멈추게 하세요. 카운터 C1 3회, 다 세면 하던 사이클은 끝까지. 다 센 뒤에는 PB1을 눌러도 움직이지 않고, <b>PB3</b>로 리셋하면 다시 PB1로 3사이클.",
+       "grading":{"setup":{"power":true,"air":true},
+         "settingsCheck":[{"name":"C1","min":3,"max":3,"label":"카운터 3회"}],
+         "steps":[
+           {"name":"PB1 한 번 → (A+ M+ M0 A−)×3 하고 정지","tap":"PB1","wait":30,"moves":["A+","M+","M0","A-","A+","M+","M0","A-","A+","M+","M0","A-"],"expect":{"C1":3},
+            "hint":"PB1로 켜는 '운전' 릴레이를 카운터 NC로 끊는 자기유지로 만들고, A가 상승 끝(LS1)에 돌아오면 운전 중일 때 다시 하강하게 하세요. 카운터는 사이클에 한 번 켜지는 신호(예: 하강 끝 LS2)로."},
+           {"name":"리셋 전에는 PB1을 눌러도 움직이지 않음","tap":"PB1","wait":3,"moves":[]},
+           {"name":"PB3 → 카운터 리셋(0)","tap":"PB3","wait":0.5,"moves":[],"expect":{"C1":0}},
+           {"name":"리셋 후 PB1 → 다시 3사이클","tap":"PB1","wait":30,"moves":["A+","M+","M0","A-","A+","M+","M0","A-","A+","M+","M0","A-"]}
+         ]}}
+    ],
+    "explainTitle":"설계 예시 (기본 동작)",
+    "explain":"한 가지 예예요. <b>K1</b> = (PB1 ∥ K1) · T1(NC): 3초가 지나면 풀려요. <b>Y1(A+) = K1 · LS2(NC)</b> (중립 블록이라 끝에서 끄면 그 자리), <b>모터 Y3 = K1 · LS2(NO)</b>, 타이머 코일도 같은 곳(LS2 NO)에서. <b>K2</b> = \"상승 중\": LS1(NC) · (T1 NO ∥ K2), <b>Y2(A−) = K2</b>. A가 상승 끝(LS1)에 닿으면 K2가 풀려 멈춰요."
+  }
+},
+{
+  "id":"su3","no":"산업 유3","title":"하중 A+ B+ A− B− (4/3 + 4/2)","level":"industrial",
+  "goal":"산업기사형: 유압회로도와 변위단계선도만 보고 전기회로를 직접 설계해 배선하세요. 단계마다 \"평가 받기\"를 통과하면 다음 유지보수가 열려요.",
+  "learn":"A는 하중 실린더 + 4/3 중립 블록, B는 4/2 편솔이에요. B는 A가 다 올라올 때까지 전진을 유지해야 해서 기억(릴레이)이 여러 개 필요해요. 유지보수에서 로킹 회로(ABT + 파일럿 체크)를 해요.",
+  "layout":"hyd","board":{"cylA":"cylw","valveA":"valve43c","cylB":"cylinder","valveB":"valve42","LS1":"A-","LS2":"A+","LS3":"B-","LS4":"B+"},
+  "diagram":"diagrams/su3.svg","set":{"RV":3.2},
+  "exam":{
+    "req":["릴리프밸브 압력을 4.0±0.2 MPa로 맞춥니다.",
+      "PB1을 한 번 눌렀다 떼면 변위단계선도(A+ B+ A− B−)대로 한 사이클 동작하고 멈춥니다. 2회 이상 똑같이 동작해야 합니다.",
+      "전기회로도는 주어지지 않아요. 변위단계선도를 보고 직접 설계합니다. 릴레이 개수는 자유.","배선 색: +24V 쪽 적색, 0V 쪽 청색 또는 흑색. 밸브 T 포트는 탱크로 잇습니다."],
+    "stages":[
+      {"name":"기본 동작","task":"유압회로를 꾸미고, 변위단계선도대로 동작하는 전기회로를 설계해 배선하세요.",
+       "grading":{"press":"PB1","sequence":["A+","B+","A-","B-"],"repeat":2,"timeout":25,"settingsCheck":[{"name":"RV","min":3.8,"max":4.2,"label":"릴리프 압력 4±0.2 MPa"}]}},
+      {"name":"유지보수 1) 로킹 회로 (ABT + 파일럿 체크)","task":"A 밸브(V1)를 <b>4/3 양솔 (중립 ABT)</b>로 바꾸고, 판에 생긴 <b>파일럿 체크 블록 PC1</b>을 V1과 A 사이(V1 A → PC1 A1, PC1 A2 → A 후방, V1 B → PC1 B1, PC1 B2 → A 전방)에 끼워, 펌프를 꺼도 하중이 내려가지 않게 하세요.",
+       "board":{"LA":"lock"},
+       "grading":{"setup":{"power":true,"air":true},"repeat":2,
+         "partCheck":[{"slot":"valveA","type":"valve43a","label":"A 밸브를 4/3 중립 ABT로 교체"}],
+         "steps":[
+           {"name":"PB1 → A+ B+ A− B−","tap":"PB1","wait":9,"moves":["A+","B+","A-","B-"],
+            "hint":"파일럿 체크 블록: A1·B1은 밸브 쪽, A2·B2는 실린더 쪽."},
+           {"name":"멈춘 뒤 펌프를 꺼도 하중이 내려가지 않음 (3초)","set":{"air":false},"wait":3,"moves":[],"expect":{"A":"-"},
+            "hint":"ABT 중립에서는 A·B가 탱크로 열려서, 파일럿 체크가 없으면 무게로 내려가요."},
+           {"name":"펌프 다시 켬","set":{"air":true},"wait":0.5,"moves":[]}
+         ]}},
+      {"name":"유지보수 2) B 전진·후진 모두 느리게 (양방향 유량조절)","task":"판에 생긴 <b>양방향 유량조절밸브 F1</b>을 B 전방 줄(V2 B ↔ B 전방)에 끼워 B의 전진과 후진을 <b>모두</b> 1.5~3초가 되게 하세요.",
+       "board":{"MB2":"thr"},
+       "grading":{"setup":{"power":true,"air":true},"repeat":2,"steps":[
+         {"name":"PB1 → A+ B+ A− B− (B 전진·후진 모두 1.5~3초)","tap":"PB1","wait":12,"moves":["A+","B+","A-","B-"],
+          "stroke":[{"cyl":"B","dir":"+","min":1.5,"max":3},{"cyl":"B","dir":"-","min":1.5,"max":3}],
+          "hint":"양방향 유량조절은 어느 방향으로 지나가든 조여요. 단수를 줄일수록 느려져요."}
+       ]}},
+      {"name":"유지보수 3) B 전진 압력 2.0 MPa (감압)","task":"판에 생긴 <b>감압밸브 PR1</b>을 B 후방 줄(V2 A ↔ B 후방)에 끼워, B가 전진할 때 압력을 <b>2.0±0.5 MPa</b>로 낮추세요.",
+       "board":{"MB1":"hprv"},
+       "grading":{"setup":{"power":true,"air":true},"repeat":2,
+         "settingsCheck":[{"name":"PR1","min":1.5,"max":2.5,"label":"감압밸브 2.0±0.5 MPa"},{"name":"RV","min":3.8,"max":4.2,"label":"릴리프 압력 4±0.2 MPa"}],
+         "steps":[
+           {"name":"PB1 → A+ B+ A− B− (B 전진 압력 1.5~2.5 MPa)","tap":"PB1","wait":12,"moves":["A+","B+","A-","B-"],"pressureOn":{"B+":[1.5,2.5]},
+            "hint":"V2 A → PR1 1번(입구), PR1 2번(출구) → B 후방."}
+         ]}}
+    ],
+    "explainTitle":"설계 예시 (기본 동작)",
+    "explain":"한 가지 예예요. <b>K1</b> = 사이클 (PB1 ∥ K1) · K4(NC). <b>Y1(A+) = K1 · K3(NC)</b>. <b>K2</b> = \"A가 내려가 있음\": K1 · LS1(NC) · (LS2 ∥ K2), <b>Y3(B+) = K2</b> (4/2라 계속 켜 둠). <b>K3</b> = \"B가 전진 끝에 갔다\": K1 · (LS4 ∥ K3), <b>Y2(A−) = K2 · K3</b>. A가 상승 끝(LS1)에 오면 K2가 풀려 B가 스프링으로 후진, <b>K4 = K3 · LS3</b>(B가 돌아옴)로 K1을 끊어 끝. 주의: \"B가 돌아옴\"을 그냥 LS3로 보면 처음부터 눌려 있어서 바로 끝나 버려요."
+  }
+},
+{
+  "id":"su4","no":"산업 유4","title":"A+ → 모터 역회전 2초 → A− (4/2 + 4/3)","level":"industrial",
+  "goal":"산업기사형: 유압회로도와 변위단계선도만 보고 전기회로를 직접 설계해 배선하세요. 단계마다 \"평가 받기\"를 통과하면 다음 유지보수가 열려요.",
+  "learn":"A가 전진 끝에 닿으면 모터가 역회전 2초, 그다음 A가 후진하고 모터는 멈춰요. 변위단계선도의 모터 줄(정·0·역)을 읽어 보세요. 유지보수에서 미터인, 감압, 연속동작·연속정지를 해요.",
+  "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve42","cylB":"motor","valveB":"valve43c","LS1":"A-","LS2":"A+"},
+  "diagram":"diagrams/su4.svg","set":{"RV":3.7},
+  "exam":{
+    "req":["릴리프밸브 압력을 4.0±0.2 MPa로 맞춥니다.",
+      "PB1을 한 번 눌렀다 떼면 변위단계선도대로: A+ → (A 전진 끝에서) 모터 역회전 2초 → 모터 정지 → A−. 2회 이상 똑같이 동작해야 합니다.",
+      "타이머 T1은 2.0초.",
+      "전기회로도는 주어지지 않아요. 변위단계선도를 보고 직접 설계합니다. 릴레이 개수는 자유.","배선 색: +24V 쪽 적색, 0V 쪽 청색 또는 흑색. 밸브 T 포트는 탱크로 잇습니다."],
+    "stages":[
+      {"name":"기본 동작","task":"유압회로를 꾸미고, 변위단계선도대로 동작하는 전기회로를 설계해 배선하세요. 타이머 T1은 2.0초.",
+       "grading":{"press":"PB1","sequence":["A+","M-","M0","A-"],"repeat":2,"timeout":25,"dwell":{"after":"M-","sec":2,"tol":0.5},
+         "settingsCheck":[{"name":"RV","min":3.8,"max":4.2,"label":"릴리프 압력 4±0.2 MPa"},{"name":"T1","min":2,"max":2,"label":"타이머 2초"}]}},
+      {"name":"유지보수 1) A 후진 미터인","task":"판에 생긴 <b>유량조절밸브 F1</b>을 A 전방 줄(V1 B ↔ A 전방)에 <b>미터인</b>으로 끼워 A 후진만 1.5~3초로 느리게 하세요.",
+       "board":{"MA2":"fcv"},
+       "grading":{"setup":{"power":true,"air":true},"repeat":2,"steps":[
+         {"name":"PB1 → A+ M− M0 A− (A 후진 1.5~3초, 미터인)","tap":"PB1","wait":9,"moves":["A+","M-","M0","A-"],
+          "stroke":{"cyl":"A","dir":"-","min":1.5,"max":3},"meterOn":{"A-":"in"},
+          "hint":"V1 B → F1 2번, F1 1번 → A 전방."}
+       ]}},
+      {"name":"유지보수 2) A 전진 압력 2.0 MPa (감압)","task":"판에 생긴 <b>감압밸브 PR1</b>을 A 후방 줄(V1 A ↔ A 후방)에 끼워, A가 전진할 때 압력을 <b>2.0±0.5 MPa</b>로 낮추세요.",
+       "board":{"MA1":"hprv"},
+       "grading":{"setup":{"power":true,"air":true},"repeat":2,
+         "settingsCheck":[{"name":"PR1","min":1.5,"max":2.5,"label":"감압밸브 2.0±0.5 MPa"},{"name":"RV","min":3.8,"max":4.2,"label":"릴리프 압력 4±0.2 MPa"}],
+         "steps":[
+           {"name":"PB1 → A+ M− M0 A− (A 전진 압력 1.5~2.5 MPa)","tap":"PB1","wait":9,"moves":["A+","M-","M0","A-"],"pressureOn":{"A+":[1.5,2.5]},
+            "hint":"V1 A → PR1 1번(입구), PR1 2번(출구) → A 후방."}
+         ]}},
+      {"name":"유지보수 3) 연속동작 / 연속정지","task":"<b>PB2</b>를 누르면 사이클을 계속 되풀이하고, <b>PB3</b>를 누르면 하던 사이클을 마친 뒤(A 후진 끝) 멈추게 하세요. PB1 한 사이클 동작도 그대로 돼야 해요.",
+       "grading":{"setup":{"power":true,"air":true},"steps":[
+         {"name":"PB1 → 한 사이클만","tap":"PB1","wait":9,"moves":["A+","M-","M0","A-"]},
+         {"name":"PB2 → 연속동작 (2사이클 이상)","tap":"PB2","wait":16,"movesRepeat":["A+","M-","M0","A-"],
+          "hint":"'연속' 릴레이를 PB2로 켜고 PB3(NC)로 끄는 자기유지로 만들고, A가 후진 끝(LS1)에 있을 때 그 접점으로 사이클을 다시 시작하게 하세요."},
+         {"name":"PB3 → 사이클을 마치고 정지","tap":"PB3","wait":9,"expect":{"A":"-","M":"0"}},
+         {"name":"멈춘 채로 유지","wait":3,"moves":[]}
+       ]}}
+    ],
+    "explainTitle":"설계 예시 (기본 동작)",
+    "explain":"한 가지 예예요. <b>K1</b> = (PB1 ∥ K1) · T1(NC). <b>Y1(A+) = K1</b> (4/2라 계속 켜 둠). A 전진 끝에서 <b>LS2(NO) → 모터 역회전 Y3</b>과 <b>타이머 T1 코일</b>을 함께 (LS2 1번은 K1 NO 뒤에서 받아요). 2초 뒤 T1 NC가 K1을 끊으면 Y1·Y3가 같이 꺼져 모터가 멈추고 A가 스프링으로 후진해요."
+  }
+}
 
 ];
 // k번째 단계까지의 판: 기본 board + 앞 단계들의 board (DOM 안 씀, 앱·테스트가 같이 씀)

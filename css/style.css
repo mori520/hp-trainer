@@ -356,3 +356,38 @@ body.in-lesson .mydiag{display:none}
 body.docked .stage{margin-right:var(--dock,0px)}
 body.docked #sv{min-width:0}
 body.in-lesson.docked .stage{margin-right:0}
+
+/* ---------- 내 과제 (custom-ui.js) ---------- */
+.missions li.cus-tools{display:flex;gap:6px;flex-wrap:wrap;padding:2px 0 6px}
+.missions>li.cus-tools>button.btn{width:auto;display:inline-block;padding:5px 10px;font-size:12.5px;background:var(--surface)}
+.cus-bar{display:flex;gap:6px;flex-wrap:wrap}
+.cus-bar .btn{padding:5px 10px;font-size:12.5px}
+.cus-ed{position:fixed;left:50%;top:32px;transform:translateX(-50%);width:min(620px,calc(100vw - 32px));max-height:calc(100vh - 64px);overflow:auto;
+  background:var(--surface);color:var(--ink);border:1px solid var(--accent);border-radius:10px;padding:14px 18px;box-shadow:0 10px 32px rgb(0 0 0/.25);z-index:30;
+  display:flex;flex-direction:column;gap:10px;font-size:13px}
+.cus-ed[hidden]{display:none}
+.cus-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.cus-head h3{margin:0;font-size:16px}
+.cus-note{margin:0;color:var(--muted);font-size:12.5px}
+.cus-ed fieldset{border:1px solid var(--line);border-radius:8px;padding:8px 12px 10px;margin:0;display:flex;flex-direction:column;gap:8px}
+.cus-ed legend{font-weight:700;padding:0 4px}
+.cus-row{display:flex;flex-direction:column;gap:3px;color:var(--muted);font-size:12px}
+.cus-ed input:not([type=checkbox]),.cus-ed select,.cus-ed textarea{font:inherit;font-size:13px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:4px 6px}
+.cus-ed input[type=number]{width:72px}
+.cus-ed textarea{resize:vertical}
+.cus-chk{display:flex;align-items:center;gap:6px}
+.cus-line{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.cus-sub{display:flex;flex-direction:column;gap:5px;align-items:flex-start}
+.cus-fluid{align-self:flex-start}
+.cus-seq{display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-height:26px}
+.cus-seq .chip{font:600 13px var(--mono);color:var(--ink)}
+.cus-seq .arr,.cus-ed .muted{color:var(--muted)}
+.cus-tok{display:flex;flex-wrap:wrap;gap:6px}
+.cus-tok .btn{padding:5px 10px;font-family:var(--mono)}
+.cus-thumb{max-height:64px;max-width:120px;border:1px solid var(--line);border-radius:4px}
+.cus-msgs{border-radius:8px;padding:8px 12px}
+.cus-msgs ul{margin:4px 0 0;padding-left:18px}
+.cus-msgs.bad{border:1px solid var(--warn);color:var(--ink)}
+.cus-msgs.ok{border:1px solid var(--ok)}
+.cus-foot{display:flex;gap:8px;align-items:center;position:sticky;bottom:-14px;background:var(--surface);padding:8px 0 4px}
+.cus-foot .sp{flex:1}

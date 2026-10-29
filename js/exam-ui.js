@@ -17,7 +17,7 @@ function renderExam(){
     <div class="ex-btns"><button class="btn primary" id="examGrade">평가 받기</button>
       ${passed(k)&&k<last?`<button class="btn primary" id="examNext">다음: ${X.stages[k+1].name} →</button>`:''}</div>
     ${allDone?`<p class="fb ok"><b>모든 단계 통과!</b> 걸린 시간 ${fmtTime(st.sec)}. 시험은 보통 기본 동작부터 유지보수까지 정해진 시간 안에 끝내야 해요.</p>`:''}
-    ${passed(0)?`<details class="ex-explain"><summary>도면의 틀린 곳 해설</summary><p>${X.explain}</p></details>`:''}
+    ${passed(0)&&X.explain?`<details class="ex-explain"><summary>도면의 틀린 곳 해설</summary><p>${X.explain}</p></details>`:''}
     <button class="link" id="examRestart">${examAsk?'정말 처음부터? (단계 기록·시간을 지우고, 판을 처음 구성으로 되돌립니다. 한 번 더 누르세요)':'처음부터 다시'}</button>`;
 }
 // 판을 바꾼 뒤 배선·호스·설정·실린더 자리는 그대로 두고 세계를 다시 만든다
@@ -37,7 +37,7 @@ $('exam').addEventListener('click',e=>{
   if(id==='examGrade'){
     const k=st.stage,stg=X.stages[k],last=k===X.stages.length-1;
     const res=gradeMission({...mis,grading:stg.grading},{wires:S.wires,hoses:S.hoses,set:S.set});
-    const pass=showResults(res,last?'모의 과제 완료!':'다음 단계가 열렸어요.',stg.name);
+    const pass=showResults(res,last?(mis.custom?'내 과제 통과!':'모의 과제 완료!'):'다음 단계가 열렸어요.',stg.name);
     if(pass){
       if(!st.passed.includes(k))st.passed.push(k);
       if(last){store.done[mis.id]=true;st.run=false;}

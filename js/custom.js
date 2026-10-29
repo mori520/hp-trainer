@@ -71,11 +71,11 @@ const CUSTOM=(()=>{
     req.push(`PB1을 한 번 눌렀다 떼면 ${fmtSeqC(seq)} 순서로 동작하고 멈춥니다.${def.repeat?' 2회 이상 똑같이 동작해야 합니다.':''}`);
     if(def.relays!=null)req.push(`릴레이는 ${def.relays}개를 씁니다.`);
     if(def.timer)req.push(`${fmt(def.timer.after)}에 닿은 뒤 ${def.timer.sec}초 머문 다음 다음 동작.`);
-    for(const [k,v] of Object.entries(def.meter||{}))req.push(`${fmt(k)} 움직임은 ${METER[v]}로 속도 조절.`);
+    for(const [k,v] of Object.entries(def.meter||{}))req.push(`${fmt(k)} 움직임의 속도 조절: ${METER[v]}.`);
     (def.settings||[]).forEach(s=>req.push(`설정값 ${s.name}: ${s.min}~${s.max}`));
     req.push('배선 색: +24V 쪽 적색, 0V 쪽 청색 또는 흑색.');
     String(def.memo||'').split('\n').map(t=>t.trim()).filter(Boolean).forEach(t=>req.push(esc(t)));
-    return{id:'u_'+def.id,no:'내 과제',title:esc(def.title||'(제목 없음)'),custom:true,
+    return{id:'u_'+def.id,no:'내',title:esc(def.title||'(제목 없음)'),custom:true,
       goal:'내가 만든 과제예요. 판을 꾸미고 배선한 뒤 "평가 받기"를 누르면 정한 기준대로 채점해요.',
       learn:'요구사항과 도면(첨부했다면 "도면 보기")을 보며 시험처럼 혼자 꾸며 보세요. 스톱워치로 시간도 재 보세요.',
       layout:F.layout,board:Object.assign({},def.board),diagram:def.img||'',

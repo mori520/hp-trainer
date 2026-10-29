@@ -50,12 +50,13 @@ for(const mis of MISSIONS.filter(m=>!m.soon).concat(EXAMS)){
       const s=L.slots.find(x=>x.slot===slot);
       assert.ok(s,`없는 자리 ${slot}`);
       if(s.sensor){
-        const m=/^(\w+)([+-])$/.exec(type);
+        const m=get('parseSensor')(type);
         assert.ok(m,`${slot}: 위치는 "A+"·"A-" 모양 (지금 ${type})`);
-        const cs=L.slots.find(x=>x.id===m[1]);
-        assert.ok(cs&&['cylinder','cylw'].includes(BOARD[cs.slot]),`${slot}: 실린더 ${m[1]}가 배치되어 있지 않음`);
-        mounts[type]=(mounts[type]||0)+1;
-        assert.ok(mounts[type]<=2,`${type}에 센서가 3개 이상 (최대 2개)`);
+        assert.ok(!m.type||m.type===s.sensor||(s.sensors||[]).includes(m.type),`${slot}: ${m.type}는 놓을 수 없는 센서`);
+        const cs=L.slots.find(x=>x.id===m.cyl);
+        assert.ok(cs&&['cylinder','cylw'].includes(BOARD[cs.slot]),`${slot}: 실린더 ${m.cyl}가 배치되어 있지 않음`);
+        mounts[m.pos]=(mounts[m.pos]||0)+1;
+        assert.ok(mounts[m.pos]<=2,`${m.pos}에 센서가 3개 이상 (최대 2개)`);
       }else assert.ok((s.accepts||[]).includes(type),`${slot}에 ${type}은 놓을 수 없음`);
     }
     // 실제로 그려서 잭 목록을 얻는다
@@ -129,7 +130,7 @@ for(const mis of MISSIONS.filter(m=>!m.soon).concat(EXAMS)){
     if(mis.practice)for(const [slot,vals] of Object.entries(mis.practice.choices||{})){
       const sd=L.slots.find(s=>s.slot===slot);
       assert.ok(sd,`실전 연습: 없는 자리 ${slot}`);
-      for(const v of vals)assert.ok(v===''||(sd.sensor?/^\w+[+-]$/.test(v):(sd.accepts||[]).includes(v)),`실전 연습 ${slot}: ${v}는 놓을 수 없음`);
+      for(const v of vals)assert.ok(v===''||(sd.sensor?(m=>m&&(!m.type||(sd.sensors||[]).includes(m.type)))(get('parseSensor')(v)):(sd.accepts||[]).includes(v)),`실전 연습 ${slot}: ${v}는 놓을 수 없음`);
     }
     // 같은 곳을 쓰는 자리(excludes)를 함께 쓰지 않는다
     for(const sd of L.slots)if((BOARD||{})[sd.slot])(sd.excludes||[]).forEach(e=>assert.ok(!(BOARD||{})[e],`${sd.slot}과 ${e}는 함께 쓸 수 없음`));

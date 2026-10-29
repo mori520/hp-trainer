@@ -155,6 +155,26 @@ test('3선식 센서: 청색(0V)이 빠지면 감지해도 출력이 없다',()=
   assert.deepEqual([s.sensor.S1,s.out.H1],[true,false]);
 });
 
+test('리밋 4개(LS1~LS4)를 실린더 A·B 양 끝에 달 수 있고, 유도형 센서도 정전용량형과 같이 동작한다',()=>{
+  const B4={...FREE,LS1:'A-',LS2:'A+',LS3:'B-',LS4:'B+',S1:'indsensor:A-',S2:'B+'};
+  const s=world(B4,{wires:[...pushA,w('R24_2_0','S1_p','red'),w('S1_n','R0_2_0','blue'),w('S1_out','H1_p','red'),w('H1_n','R0_2_1','blue')],hoses:airA});
+  const types=Object.fromEntries(get('LAYOUT').parts.filter(p=>p.cyl).map(p=>[p.id,p.type+' '+p.cyl+p.end+' '+p.stack]));
+  assert.deepEqual(types,{LS1:'limitsw A- 0',LS2:'limitsw A+ 0',LS3:'limitsw B- 0',LS4:'limitsw B+ 0',S1:'indsensor A- 1',S2:'capsensor B+ 1'});
+  run(s,{power:true,air:true},.3);
+  assert.deepEqual([s.sensor.LS1,s.sensor.LS2,s.sensor.LS3,s.sensor.LS4,s.sensor.S1,s.out.H1],[true,false,true,false,true,true]);
+  run(s,{PB1:true},1.2);
+  assert.deepEqual([s.sensor.LS1,s.sensor.LS2,s.sensor.S1,s.out.H1],[false,true,false,false]);
+});
+
+test('센서 자리 값: "A+" / "indsensor:A+", 자리가 받지 않는 종류는 놓지 않는다',()=>{
+  const ps=get('parseSensor');
+  assert.deepEqual({...ps('indsensor:B-')},{type:'indsensor',cyl:'B',end:'-',pos:'B-'});
+  assert.deepEqual({...ps('A+')},{type:'',cyl:'A',end:'+',pos:'A+'});
+  assert.equal(ps('A'),null);
+  const parts=get('makeParts')(get('LAYOUTS').air,{...FREE,LS1:'indsensor:A+',S1:'limitsw:A+'});
+  assert.equal(parts.filter(p=>p.cyl).length,0);
+});
+
 test('공급이 배기로 바로 이어지면 누설로 판단하고 압력이 걸리지 않는다',()=>{
   const s=world(FREE,{wires:[],hoses:[h('D1','V1_1'),h('D2','V1_4'),h('V1_2','A_rod')]});
   run(s,{air:true},.5);

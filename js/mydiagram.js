@@ -25,7 +25,11 @@ const MYD=(()=>{
   function sensor(p,x,o){
     const sx=x+(p.end==='-'?200:260)+(p.stack?22:0),y=CY;
     if(p.type==='limitsw'){o.push(rect(sx-7,y-26,14,12),line(sx,y-14,sx,y+4),circ(sx,y+8,4));}
-    else o.push(path(`M${sx},${y-24}L${sx+9},${y-15}L${sx},${y-6}L${sx-9},${y-15}Z`),line(sx-4,y-15,sx+4,y-15));
+    else{
+      o.push(path(`M${sx},${y-24}L${sx+9},${y-15}L${sx},${y-6}L${sx-9},${y-15}Z`));
+      // 정전용량형은 가로줄(평판), 유도형은 물결(코일)
+      o.push(p.type==='indsensor'?path(`M${sx-5},${y-15}q1.25,-3 2.5,0t2.5,0t2.5,0t2.5,0`):line(sx-4,y-15,sx+4,y-15));
+    }
     o.push(text(sx,y-32,p.id,'t','middle'));
   }
   // 5/2 밸브: 왼쪽 칸(여자) | 오른쪽 칸(평상시). 포트 4·2 위, 1 아래, 배기 3·5
@@ -307,11 +311,11 @@ const MYD=(()=>{
       d.elec(p,w,rec(all),true);const nowArr=[];d.elec(p,w,rec(nowArr),false);nowArr.forEach(k=>now.add(k));
       all.forEach(k=>{
         const [a,b]=k.split('|'),owner=a.split('_')[0],ta=a.slice(owner.length+1),tb=b.slice(owner.length+1);
-        if(p.type==='capsensor'){add({kind:'sensor',a:b.endsWith('_p')?b:a,b:b.endsWith('_p')?a:b,name:owner,label:`센서 ${owner}`,closed:now.has(k)});return;}
+        if(d.wire3){add({kind:'sensor',ind:p.type==='indsensor',a:b.endsWith('_p')?b:a,b:b.endsWith('_p')?a:b,name:owner,label:`${p.type==='indsensor'?'유도형 ':''}센서 ${owner}`,closed:now.has(k)});return;}
         const nc=/2$/.test(tb);
         add({kind:nc?'nc':'no',a,b,name:owner,term:`${ta}-${tb}`,label:`${owner} ${ta}-${tb}`,closed:now.has(k),pb:p.type==='switch',ls:p.type==='limitsw',timed:p.type==='timer'});
       });
-      if(p.type==='capsensor'&&wired.has(p.id+'_p')&&wired.has(p.id+'_out')&&!(wired.has(p.id+'_n')&&f(p.id+'_n')===f('0V')))issues.push(`센서 ${p.id}: 청색(0V) 선이 0V에 이어져 있지 않아요`);
+      if(d.wire3&&wired.has(p.id+'_p')&&wired.has(p.id+'_out')&&!(wired.has(p.id+'_n')&&f(p.id+'_n')===f('0V')))issues.push(`센서 ${p.id}: 청색(0V) 선이 0V에 이어져 있지 않아요`);
     });
     L.loads.forEach(l=>{
       const kind=l.sol?'sol':l.coil?'coil':l.timer?'timer':l.counter?(l.name.endsWith('R')?'reset':'counter'):'lamp';
@@ -406,6 +410,7 @@ const MYD=(()=>{
         }else if(el.kind==='sensor'){
           o.push(rect(cx-12,cy-16,24,32,el.closed?'w lonbox':'w'),path(`M${cx},${cy-11}L${cx+7},${cy-4}L${cx},${cy+3}L${cx-7},${cy-4}Z`),
             path(`M${cx},${cy-18}V${cy-16}M${cx},${cy+16}V${cy+18}`),text(cx+16,cy+4,el.name,'t'),
+            el.ind?path(`M${cx-4},${cy-4}q1,-2.5 2,0t2,0t2,0t2,0`):line(cx-3,cy-4,cx+3,cy-4),
             // 센서 선 색: 위 갈색(+24V)에서 들어와 아래 흑색(출력)으로 나감. 청색(0V)은 0V에 따로
             text(cx-15,cy-10,'갈','s','end'),text(cx-15,cy+16,'흑','s','end'),text(cx+16,cy+18,'청→0V','s'));
         }else{

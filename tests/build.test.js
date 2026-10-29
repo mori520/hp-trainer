@@ -13,3 +13,11 @@ test('빌드하면 모든 css·js 주소에 ?v=버전 이 붙고, 버전 표시�
   assert.match(out,/<span id="appVer"[^>]*>abc1234<\/span>/);
   assert.equal(stamp(html,'x').split('\n').length,html.split('\n').length,'다른 줄은 그대로');
 });
+
+// 화면 파일(app.js 등)은 테스트에서 실행하지 않으므로, 적어도 문법 오류(같은 이름 두 번 선언 등)는 없는지 확인
+test('모든 스크립트가 문법 오류 없이 읽힌다 (화면 파일 포함)',()=>{
+  const fs=require('fs'), path=require('path'), vm=require('vm');
+  const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
+  for(const [,f] of html.matchAll(/<script src="([^"]+)"/g))
+    assert.doesNotThrow(()=>new vm.Script(fs.readFileSync(path.join(__dirname,'..',f),'utf8'),{filename:f}),f);
+});

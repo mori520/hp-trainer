@@ -93,6 +93,18 @@ test('전기회로도: 그림이 만들어진다 (접점 이름·번호)',()=>{
   assert.match(s,/^<svg /);assert.match(s,/PB2/);assert.match(s,/11-12/);assert.doesNotMatch(s,/확인할 곳/);
 });
 
+test('유도형 센서: 공기압회로도·전기회로도에 물결 기호와 이름',()=>{
+  get('configure')({parts:get('makeParts')(get('LAYOUTS').air,{cylA:'cylinder',valveA:'valve52s',S1:'indsensor:A+',S2:'A-'})});
+  const P=get('LAYOUT').parts, pn=MYD.pneu(P,[],info);
+  assert.match(pn,/q1\.25,-3/);assert.match(pn,/>S1</);
+  const w=get('newWorld')(get('withJumpers')(get('LAYOUTS').air,{wires:[{id:'a',a:'R24_1_0',b:'S1_p',color:'red'},{id:'b',a:'S1_n',b:'R0_1_0',color:'blue'},
+    {id:'c',a:'S1_out',b:'H1_p',color:'red'},{id:'d',a:'H1_n',b:'R0_2_0',color:'blue'}],hoses:[]}));
+  const r=MYD._reduce(get('LAYOUT'),get('PARTS'),w);
+  assert.equal(r.issues.length,0,r.issues.join(' / '));
+  const s=MYD.elec(get('LAYOUT'),get('PARTS'),w,null);
+  assert.match(s,/q1,-2\.5/);
+});
+
 /* 변위단계선도 기록: 엔진을 돌리며 매 프레임 recTick */
 function runRec(id,set,presses){
   const mis=get('MISSIONS').find(x=>x.id===id),L=get('LAYOUTS')[mis.layout];parts(id);get('buildScene')(get('LAYOUT').parts,L.board);

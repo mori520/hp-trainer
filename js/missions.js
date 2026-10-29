@@ -24,7 +24,8 @@
    배치: "layout"은 layouts.js의 이름, "board"는 자리마다 놓을 부품 종류 (없는 자리는 빈칸)
    처음 설정값: "set":{"SU":0.2} 처럼 쓰면 그 미션은 그 값으로 시작 (직접 맞추는 연습용). 없으면 부품 기본값
    채점: "grading" 형식은 grader.js 머리 주석 참고. 없으면 채점 버튼이 숨는다
-   실전 연습: "practice":{"check":[스스로 확인할 것], "choices":{자리:[고를 수 있는 종류, ""=없음]}} — 판 구성을 직접 고르고 스톱워치로 잰다 */
+   실전 연습: "practice":{"check":[스스로 확인할 것], "choices":{자리:[고를 수 있는 종류, ""=없음]}}
+             센서 자리 값은 "A+"(정전용량형) / "indsensor:A+"(유도형) — 판 구성을 직접 고르고 스톱워치로 잰다 */
 const MISSIONS=[
 {
   "id":"m0","no":"0","title":"PB1으로 램프 켜기",
@@ -1280,7 +1281,7 @@ const MISSIONS=[
   "layout":"air","board":{"cylA":"cylinder","valveA":"valve52s","cylB":"cylinder","valveB":"valve52s"},"set":{"SU":0.3},
   "practice":{
     "check":["서비스 유닛 압력 0.5±0.05 MPa","호스는 포트 하나에 하나, 공기 누설 없게","+ 배선 적색, − 배선 청색·흑색","전기회로도의 오류를 고쳐 배선 (릴레이 개수는 그대로)","PB1을 두 번 눌러 두 번 다 똑같이 동작하는지"],
-    "choices":{"valveA":["valve52s","valve52d"],"valveB":["valve52s","valve52d"],"S1":["","A+","A-","B+","B-"],"S2":["","A+","A-","B+","B-"],"LS1":["","A+","A-","B+","B-"],"LS2":["","A+","A-","B+","B-"],"MA1":["","fcv","qev"],"MA2":["","fcv","qev"],"MB1":["","fcv","qev"],"MB2":["","fcv","qev"],"R1":["","prv"]}
+    "choices":{"valveA":["valve52s","valve52d"],"valveB":["valve52s","valve52d"],"S1":["","A+","A-","B+","B-","indsensor:A+","indsensor:A-","indsensor:B+","indsensor:B-"],"S2":["","A+","A-","B+","B-","indsensor:A+","indsensor:A-","indsensor:B+","indsensor:B-"],"S3":["","A+","A-","B+","B-","indsensor:A+","indsensor:A-","indsensor:B+","indsensor:B-"],"S4":["","A+","A-","B+","B-","indsensor:A+","indsensor:A-","indsensor:B+","indsensor:B-"],"LS1":["","A+","A-","B+","B-"],"LS2":["","A+","A-","B+","B-"],"LS3":["","A+","A-","B+","B-"],"LS4":["","A+","A-","B+","B-"],"MA1":["","fcv","qev"],"MA2":["","fcv","qev"],"MB1":["","fcv","qev"],"MB2":["","fcv","qev"],"R1":["","prv"]}
   }
 },
 {
@@ -1660,7 +1661,7 @@ const MISSIONS=[
   "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve42","cylB":"cylinder","valveB":"valve43c"},"set":{"RV":2},
   "practice":{
     "check":["릴리프 압력 4±0.2 MPa","밸브 T 포트는 모두 탱크로 (빠지면 안 움직여요)","+ 배선 적색, − 배선 청색·흑색","전기회로도의 오류를 고쳐 배선 (릴레이 개수는 그대로)","PB1을 두 번 눌러 두 번 다 똑같이 동작하는지"],
-    "choices":{"cylA":["cylinder","cylw"],"valveA":["valve42","valve43c","valve43a","valve22"],"cylB":["cylinder","cylw","motor"],"valveB":["valve42","valve43c","valve43a","valve22"],"S1":["","A+","A-","B+","B-"],"S2":["","A+","A-","B+","B-"],"LS1":["","A+","A-","B+","B-"],"LS2":["","A+","A-","B+","B-"],"MA1":["","fcv","thr","chk","cbv","hprv","psw"],"MA2":["","fcv","thr","chk","cbv","hprv","psw"],"MB1":["","fcv","thr","chk","cbv","hprv","psw"],"MB2":["","fcv","thr","chk","cbv","hprv","psw"],"LA":["","lock"],"LB":["","lock"],"R1":["","chk","thr"]}
+    "choices":{"cylA":["cylinder","cylw"],"valveA":["valve42","valve43c","valve43a","valve22"],"cylB":["cylinder","cylw","motor"],"valveB":["valve42","valve43c","valve43a","valve22"],"S1":["","A+","A-","B+","B-","indsensor:A+","indsensor:A-","indsensor:B+","indsensor:B-"],"S2":["","A+","A-","B+","B-","indsensor:A+","indsensor:A-","indsensor:B+","indsensor:B-"],"S3":["","A+","A-","B+","B-","indsensor:A+","indsensor:A-","indsensor:B+","indsensor:B-"],"S4":["","A+","A-","B+","B-","indsensor:A+","indsensor:A-","indsensor:B+","indsensor:B-"],"LS1":["","A+","A-","B+","B-"],"LS2":["","A+","A-","B+","B-"],"LS3":["","A+","A-","B+","B-"],"LS4":["","A+","A-","B+","B-"],"MA1":["","fcv","thr","chk","cbv","hprv","psw"],"MA2":["","fcv","thr","chk","cbv","hprv","psw"],"MB1":["","fcv","thr","chk","cbv","hprv","psw"],"MB2":["","fcv","thr","chk","cbv","hprv","psw"],"LA":["","lock"],"LB":["","lock"],"R1":["","chk","thr"]}
   }
 },
 {"id":"hfree","no":"∞","title":"유압 자유 실습","goal":"유압 파워유닛, 4/2·4/3 밸브, 실린더·유압모터를 자유롭게 연결해 보세요.","learn":"유압은 쓰고 난 기름이 밸브 T 포트 → 탱크(T)로 돌아가야 움직여요. 펌프 압력은 릴리프(RV)로 맞춥니다 (시험 4±0.2 MPa). 밸브의 ‘종류 교체’로 4/2·4/3을 바꿔 볼 수 있어요.","steps":[],

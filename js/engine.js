@@ -63,11 +63,13 @@ function makeParts(def,board){
   const stacks={};
   def.slots.forEach(s=>{
     if(s.sensor){
-      // 센서 자리: board 값은 붙일 위치 "A+"(실린더 A 전진 끝) / "A-"(후진 끝)
-      const m=/^(\w+)([+-])$/.exec(board[s.slot]||'');if(!m)return;
-      const cyl=def.slots.find(x=>x.id===m[1]);
-      const stack=stacks[board[s.slot]]=(stacks[board[s.slot]]||0)+1;   // 같은 끝에 여러 개면 옆으로 비켜 그림
-      parts.push({type:s.sensor,id:s.id,slot:s.slot,cyl:m[1],end:m[2],cylAt:cyl&&cyl.at,stack:stack-1,sols:[],relays:[],tags:[]});
+      // 센서 자리: board 값은 붙일 위치 "A+"(실린더 A 전진 끝) / "A-"(후진 끝).
+      // 자리가 여러 종류를 받으면(sensors) "indsensor:A+"처럼 종류를 앞에 붙여 고른다 (없으면 자리 기본 종류 sensor)
+      const m=parseSensor(board[s.slot]);if(!m)return;
+      const type=m.type||s.sensor;if(type!==s.sensor&&!(s.sensors||[]).includes(type))return;
+      const cyl=def.slots.find(x=>x.id===m.cyl);
+      const stack=stacks[m.pos]=(stacks[m.pos]||0)+1;   // 같은 끝에 여러 개면 옆으로 비켜 그림
+      parts.push({type,id:s.id,slot:s.slot,cyl:m.cyl,end:m.end,cylAt:cyl&&cyl.at,stack:stack-1,sols:[],relays:[],tags:[]});
       return;
     }
     const type=s.fixed||board[s.slot];if(!type)return;
@@ -75,6 +77,11 @@ function makeParts(def,board){
     names(type,p);parts.push(p);
   });
   return parts;
+}
+// 센서 자리 값 "A+" / "indsensor:A+" → {type(없으면 ''), cyl, end, pos:"A+"}. 모양이 틀리면 null
+function parseSensor(v){
+  const m=/^(?:(\w+):)?(\w+)([+-])$/.exec(v||'');
+  return m?{type:m[1]||'',cyl:m[2],end:m[3],pos:m[2]+m[3]}:null;
 }
 // 기본 전원 선(배치 데이터 jumpers): 전원 모듈에서 각 모듈 레일로 미리 꽂혀 있는 선. 지울 수 있고, 배선 초기화하면 다시 생긴다
 function defaultJumpers(def){
@@ -206,4 +213,4 @@ function motorState(m){return m.dir>0?'+':m.dir<0?'-':'0';}
 function run(w,sets,dur){Object.keys(sets).forEach(k=>{if(k in w.pb)w.pb[k]=sets[k];else w[k]=sets[k];});for(let t=0;t<dur;t+=0.02)stepWorld(w,0.02);return w;}
 function clone(c){return{wires:c.wires.map(x=>({...x})),hoses:c.hoses.map(x=>({...x})),set:Object.assign({},c.set)};}
 
-if(typeof module!=='undefined')module.exports={STROKE_T,PARTS,cContacts,defaultJumpers,withJumpers,configure,makeParts,rackRails,UF,solveElec,solvePneu,newWorld,stepWorld,run,clone,cylEnd,motorState};
+if(typeof module!=='undefined')module.exports={STROKE_T,PARTS,cContacts,defaultJumpers,withJumpers,configure,makeParts,parseSensor,rackRails,UF,solveElec,solvePneu,newWorld,stepWorld,run,clone,cylEnd,motorState};

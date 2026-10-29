@@ -204,11 +204,12 @@ function renderMissionList(){
     +(hyd.length?head('hyd','유압 미션',hyd.length)+body('hyd',hyd.map(misItem).join('')):'')
     +(exam.length?head('exam','모의 과제',exam.length)+body('exam',exam.map(misItem).join('')):'')
     +head('practice','실전 연습',prac.length)+body('practice',prac.map(misItem).join(''));
-  // 선택한 미션 바로 아래(드롭다운처럼). 그 칸이 접혀 있으면 칸 제목 아래, 강의를 보는 중이면 목록 맨 끝(강의 중엔 숨김)
+  // 선택한 미션 바로 아래(드롭다운처럼). 그 칸이 접혀 있거나 강의를 보는 중이면 목록 맨 끝에 숨겨 둔다.
+  // 고른 미션을 한 번 더 눌러 접었으면(UI.cardFold) 그 자리에서 숨김 — 판·선택은 그대로
   const slot=document.createElement('li');slot.className='card-slot';slot.appendChild(card);
   const list=$('missionList'),sel=!UI.lesson&&list.querySelector('button[data-m][aria-current="true"]');
-  const head0=!UI.lesson&&list.querySelector('button[data-sect="'+sectOf(cur())+'"]');
-  if(sel)sel.closest('li').after(slot);else if(head0)head0.closest('li').after(slot);else list.appendChild(slot);
+  if(sel){sel.closest('li').after(slot);sel.setAttribute('aria-expanded',!UI.cardFold);slot.hidden=!!UI.cardFold;}
+  else{list.appendChild(slot);slot.hidden=true;}
 }
 $('missionList').addEventListener('click',e=>{
   const s=e.target.closest('button[data-sect]');
@@ -216,7 +217,9 @@ $('missionList').addEventListener('click',e=>{
   const l=e.target.closest('button[data-l]');if(l){openLesson(l.dataset.l,0);return;}   // lesson.js
   const b=e.target.closest('button[data-m]');
   if(b&&!b.closest('#missionCard')){
-    if(UI.lesson)closeLesson();loadMission(b.dataset.m);
+    // 이미 고른 미션을 다시 누르면 아래 설명 칸만 접고 편다
+    if(!UI.lesson&&b.dataset.m===UI.mission){UI.cardFold=!UI.cardFold;renderMissionList();return;}
+    if(UI.lesson){UI.cardFold=false;closeLesson();}loadMission(b.dataset.m);
     // 고른 미션이 목록 위쪽에 오게 → 바로 아래 펼쳐진 미션 정보가 보인다
     const nb=$('missionList').querySelector('button[data-m="'+b.dataset.m+'"]');if(nb)nb.scrollIntoView({block:'start',behavior:'smooth'});
   }
@@ -276,6 +279,7 @@ $('quiz').addEventListener('click',e=>{
 function loadMission(id){
   if(DEMO_ON)demoStop();
   if(S)save();
+  if(id!==UI.mission)UI.cardFold=false;   // 다른 미션을 열면 설명 칸을 편다
   UI.mission=id;const mis=cur();
   $('mTitle').textContent=(mis.exam?`${mis.no}. `:mis.no!=='∞'&&!mis.practice?`미션 ${mis.no}. `:'')+mis.title;
   $('mGoal').textContent=mis.goal;$('mLearn').textContent=mis.learn;
@@ -414,7 +418,8 @@ function loop(now){
 /* ===================== 시작 ===================== */
 UI.mode=store.mode||'tut';
 if(!ZOOMS.includes(store.zoom))store.zoom=1;
-PLUGGED=!!store.plugged;
+if(typeof store.plugged!=='boolean')store.plugged=true;   // 처음엔 플러그가 꽂힌 채로 시작 (눌러서 뺄 수 있음)
+PLUGGED=store.plugged;
 if(typeof store.autoColor!=='boolean')store.autoColor=true;
 $('autoColor').setAttribute('aria-pressed',store.autoColor);setColor(UI.color);
 applyZoom();

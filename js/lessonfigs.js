@@ -361,5 +361,13 @@ const FIG=(()=>{
       +text(300,26,'편솔은 Y1이 꺼지면 스프링으로 돌아가요 → 켜 둘 기억(자기유지)이 필요','ls','middle'));
   };
 
+  F.hydhold=()=>{
+    // 4/3 중립 블록: K1 = LS2(NC)·(PB1 ∥ K1) → Y1. 끝에서 끊기면 중립 = 그 자리
+    const x=150,hx=215;
+    const k1=dot(x,40)+line(x,40,x,52)+cNC(x,72,'0','LS2')+line(x,92,x,108)+dot(x,108)+line(x,108,hx,108)+line(hx,108,hx,120)
+      +cNO(x,140,'0','PB1')+cNO(hx,140,'0','K1')+line(hx,160,hx,176)+line(x,160,x,176)+line(x,176,hx,176)+dot(x,176)+line(x,176,x,199)+coil(x,210,'0','K1')+line(x,221,x,260)+dot(x,260);
+    return sv(560,300,rails(560)+k1+text(x+30,290,'시작 신호로 켜고, 끝 리밋 NC로 끊기','ls lgood')
+      +rung(400,[{t:'no',n:'K1'},{t:'sol',n:'Y1 (4/3)'}])+text(400,290,'끊기면 중립: 그 자리에 섬','ls'));
+  };
   return F;
 })();

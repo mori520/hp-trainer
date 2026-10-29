@@ -724,3 +724,6 @@ sheet('su3.svg',{...HS,w:900,h:700,names:['A','B'],seq:['A+','B+','A-','B-'],not
 sheet('su4.svg',{...HS,w:880,h:700,names:['A','M'],motors:['M'],seq:['A+','M-','wait:2초','M0','A-'],note:NOTEH.concat(['타이머 2초']),
   pneu:S=>{const a=hyd(S,110,90,{name:'A',valve:'42',sols:['Y1'],sensors:LS4H('LS1','LS2')});
     hyd(S,500,90,{act:'motor',name:'M',valve:'43c',sols:['Y2','Y3'],feed:{x:a.ax,y:a.py}});}});
+sheet('d4.svg',{...HS,w:900,h:700,names:['A','B'],seq:['A+','B+','A-','B-'],note:['PB1을 한 번 누르면 한 사이클. 릴레이 개수는 자유','릴리프 4.0 MPa'],
+  pneu:S=>{const a=hyd(S,110,90,{name:'A',valve:'43c',sols:['Y1','Y2'],sensors:LS4H('LS1','LS2')});
+    hyd(S,520,90,{name:'B',valve:'42',sols:['Y3'],sensors:LS4H('LS3','LS4'),feed:{x:a.ax,y:a.py}});}});

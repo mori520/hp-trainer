@@ -1711,5 +1711,21 @@ const MISSIONS=[
   ],
   "grading":{"press":"PB1","sequence":["A+","B+","A-","B-"],"repeat":2,"timeout":25,"dwell":{"after":"A+","sec":2,"tol":0.5},
     "settingsCheck":[{"name":"T1","min":2,"max":2,"label":"타이머 2초"}]}
+},
+{
+  "id":"d4","no":"D4","title":"설계 연습 4: 유압 A+ B+ A− B− (4/3 + 4/2)","design":true,
+  "goal":"유압판에서 변위단계선도만 보고 설계하세요. PB1을 한 번 누르면 A+ B+ A− B− 순서로 한 사이클 (2회). A는 4/3 중립 블록, B는 4/2 편솔이에요.",
+  "learn":"유압 밸브는 양솔처럼 기억하지 않아요: 4/3은 끄면 그 자리에 서고, 4/2는 끄면 스프링으로 돌아가요. 그래서 끝(리밋)에 닿을 때까지, 또는 다른 동작이 끝날 때까지 솔레노이드를 켜 두는 릴레이 기억이 필요해요 (기초 12의 7장). 릴리프 4.0 MPa, T 포트는 탱크로.",
+  "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve43c","cylB":"cylinder","valveB":"valve42","LS1":"A-","LS2":"A+","LS3":"B-","LS4":"B+"},"diagram":"diagrams/d4.svg",
+  "hints":[
+    "호스: 파워유닛 P 두 개를 V1·V2 P로, 두 밸브 T는 탱크로, A → 실린더 후방, B → 실린더 전방. 펌프를 켜고 릴리프 4.0.",
+    "A+ (4/3): PB1을 눌렀다 떼도 계속 전진해야 해요. K1을 PB1로 켜고 자기유지, A 전진 끝(LS2 NC)에서 끊으면 Y1 = K1. 끊기면 중립이라 그 자리(전진 끝)에 서요.",
+    "B+ (4/2): A가 다 돌아올 때까지 B는 전진을 유지해야 해요. K2를 LS2로 켜고 자기유지, A 후진 끝(LS1 NC)에서 끊으면 Y3 = K2.",
+    "A− (4/3): B가 전진 끝에 있고(LS4) K2가 켜져 있을 때 Y2. A가 후진 끝(LS1)에 오면 K2가 풀려 Y2가 꺼지고(중립에서 멈춤) B는 스프링으로 후진.",
+    "정리: K1 = LS2(NC)·(PB1 ∥ K1), Y1 = K1, K2 = LS1(NC)·(LS2 ∥ K2), Y3 = K2, Y2 = LS4·K2. 릴레이 2개."
+  ],
+  "set":{"RV":4},
+  "grading":{"press":"PB1","sequence":["A+","B+","A-","B-"],"repeat":2,"timeout":25,
+    "settingsCheck":[{"name":"RV","min":3.8,"max":4.2,"label":"릴리프 압력 4±0.2 MPa"}]}
 }
 ];

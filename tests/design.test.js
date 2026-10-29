@@ -47,3 +47,19 @@ test('설계 연습: 힌트가 있고 튜토리얼 단계는 없다 (전기회�
     assert.ok(!(m.steps||[]).length,m.id);
   }
 });
+test('설계 연습 D4 (유압): 자기유지 2개로 통과, 4/3을 PB1로만 켜면(유지 없음) 실패',()=>{
+  const m=MIS('d4'),L=get('LAYOUTS').hyd;
+  get('configure')({parts:get('makeParts')(L,m.board)});
+  const hoses=[h('HP1','V1_P'),h('V1_T','HT1'),h('V1_A','A_cap'),h('V1_B','A_rod'),h('HP2','V2_P'),h('V2_T','HT2'),h('V2_A','B_cap'),h('V2_B','B_rod')];
+  const neg=[w('V1_Ya_n','R0_6_0','blue'),w('V1_Yb_n','R0_6_1','blue'),w('V2_Ya_n','R0_6_2','blue')];
+  // K1 = LS2(NC)·(PB1 ∥ K1), Y1 = K1, K2 = LS1(NC)·(LS2 ∥ K2), Y3 = K2, Y2 = LS4·K2
+  const ok=[w('R24_5_0','LS2_1','red'),w('LS2_2','PB1_13','red'),w('PB1_14','K1_A1','red'),w('LS2_2','K1_11','red'),w('K1_14','K1_A1','red'),w('K1_A2','R0_5_0','blue'),
+    w('R24_5_1','K1_21','red'),w('K1_24','V1_Ya_p','red'),
+    w('R24_5_2','LS1_1','red'),w('LS1_2','K2_11','red'),w('K2_14','K2_A1','red'),w('LS2_4','K2_A1','red'),w('K2_A2','R0_5_1','blue'),
+    w('R24_5_3','K2_21','red'),w('K2_24','V2_Ya_p','red'),
+    w('R24_5_4','LS4_1','red'),w('LS4_4','K2_31','red'),w('K2_34','V1_Yb_p','red'),...neg];
+  const g=c=>JSON.parse(JSON.stringify(get('gradeMission')(m,get('withJumpers')(L,{wires:c,hoses,set:{RV:4}}))));
+  assert.deepEqual(failed(g(ok)),[]);
+  const noHold=ok.filter(x=>x.a!=='K1_14');
+  assert.ok(failed(g(noHold)).some(s=>s.startsWith('PB1 → 변위단계선도')));
+});

@@ -25,6 +25,8 @@
    처음 설정값: "set":{"SU":0.2} 처럼 쓰면 그 미션은 그 값으로 시작 (직접 맞추는 연습용). 없으면 부품 기본값
    채점: "grading" 형식은 grader.js 머리 주석 참고. 없으면 채점 버튼이 숨는다
    실전 연습: "practice":{"check":[스스로 확인할 것], "choices":{자리:[고를 수 있는 종류, ""=없음]}}
+   설계 연습(산업기사형): "design":true + "hints":[힌트 글, …]. 전기회로도 없이 공기압회로도·변위단계선도만 주고,
+     튜토리얼 대신 힌트를 하나씩 열어 본다. 채점은 동작 결과로 (정답 배선 하나를 강요하지 않음)
              센서 자리 값은 "A+"(정전용량형) / "indsensor:A+"(유도형) — 판 구성을 직접 고르고 스톱워치로 잰다 */
 const MISSIONS=[
 {
@@ -1667,5 +1669,47 @@ const MISSIONS=[
 {"id":"hfree","no":"∞","title":"유압 자유 실습","goal":"유압 파워유닛, 4/2·4/3 밸브, 실린더·유압모터를 자유롭게 연결해 보세요.","learn":"유압은 쓰고 난 기름이 밸브 T 포트 → 탱크(T)로 돌아가야 움직여요. 펌프 압력은 릴리프(RV)로 맞춥니다 (시험 4±0.2 MPa). 밸브의 ‘종류 교체’로 4/2·4/3을 바꿔 볼 수 있어요.","steps":[],
  "layout":"hyd","board":{"cylA":"cylinder","valveA":"valve43c","cylB":"motor","valveB":"valve43c","LS1":"A-","LS2":"A+","MA1":"fcv","R1":"chk"}},
 {"id":"free","no":"∞","title":"자유 실습","goal":"모든 부품을 자유롭게 연결하고 동작을 확인해 보세요.","learn":"채점 없이 회로를 실험하는 공간입니다. 밸브의 ‘종류 교체’로 편솔·양솔을 바꿔 볼 수 있어요.","steps":[],
- "layout":"air","board":{"cylA":"cylinder","valveA":"valve52s","cylB":"cylinder","valveB":"valve52d","LS1":"A-","LS2":"A+","S1":"B-","S2":"B+","MA1":"fcv","MB1":"qev","R1":"prv"}}
+ "layout":"air","board":{"cylA":"cylinder","valveA":"valve52s","cylB":"cylinder","valveB":"valve52d","LS1":"A-","LS2":"A+","S1":"B-","S2":"B+","MA1":"fcv","MB1":"qev","R1":"prv"}},
+{
+  "id":"d1","no":"D1","title":"설계 연습 1: A+ B+ A− B− (양솔)","design":true,
+  "goal":"전기회로도 없이 변위단계선도만 보고 회로를 직접 설계해 배선하세요. PB1을 한 번 누르면 A+ B+ A− B− 순서로 한 사이클 동작하고 멈춰야 해요 (2회).",
+  "learn":"산업기사형 판: 양솔 밸브 2개 + 리밋스위치 4개(LS1 A−, LS2 A+, LS3 B−, LS4 B+). 릴레이 개수는 자유. 막히면 아래 힌트를 하나씩 열어 보세요. (기초 12 강의 참고)",
+  "layout":"air","board":{"cylA":"cylinder","valveA":"valve52d","cylB":"cylinder","valveB":"valve52d","LS1":"A-","LS2":"A+","LS3":"B-","LS4":"B+"},"diagram":"diagrams/d1.svg",
+  "hints":[
+    "먼저 호스: 두 밸브 모두 분배기 → 1번, 4번 → 실린더 후방, 2번 → 실린더 전방.",
+    "단계마다 '시작 신호'를 찾아요. ① A+는 PB1, ② B+는 A+ 끝(LS2), ③ A−는 B+ 끝(LS4), ④ B−는 A− 끝(LS1).",
+    "양솔은 한 번 켜면 기억해요. 그래서 한 줄씩: 시작 신호 리밋의 1(공통)에 +24V, 4(NO)에서 그 솔레노이드 +로. 솔레노이드 −는 0V.",
+    "Y1(A+) 줄은 PB1 NO와 LS3 NO(B가 후진 끝에 있음)를 직렬로. 그래야 사이클이 다 끝난 뒤에만 다시 시작해요.",
+    "정리: Y1 = PB1·LS3, Y3(B+) = LS2, Y2(A−) = LS4, Y4(B−) = LS1. 릴레이 없이 4줄이면 돼요."
+  ],
+  "grading":{"press":"PB1","sequence":["A+","B+","A-","B-"],"repeat":2}
+},
+{
+  "id":"d2","no":"D2","title":"설계 연습 2: A+ B+ B− A− (신호 겹침)","design":true,
+  "goal":"변위단계선도만 보고 설계하세요. PB1을 한 번 누르면 A+ B+ B− A− 순서로 한 사이클 (2회). 같은 리밋이 두 번 쓰이는 곳을 찾아 릴레이로 해결해 보세요.",
+  "learn":"D1처럼 한 줄씩만 이으면 처음부터 A−가 켜져 있거나 양솔 양쪽이 동시에 켜져요. 릴레이로 '지금 사이클 어디쯤인지' 기억하는 연습 (기초 12의 4장).",
+  "layout":"air","board":{"cylA":"cylinder","valveA":"valve52d","cylB":"cylinder","valveB":"valve52d","LS1":"A-","LS2":"A+","LS3":"B-","LS4":"B+"},"diagram":"diagrams/d2.svg",
+  "hints":[
+    "시작 신호: ① A+ PB1, ② B+ LS2(A+ 끝), ③ B− LS4(B+ 끝), ④ A− LS3(B− 끝). 그런데 LS3은 맨 처음에도 켜져 있어요 → 신호 겹침.",
+    "LS2도 문제예요: B+를 시작한 뒤 B−를 하는 동안에도 A는 전진 끝이라 LS2가 계속 눌려 있어 Y3(B+)과 Y4(B−)가 함께 켜져요.",
+    "릴레이 K1에 'B가 전진을 마쳤다'를 기억시켜요. LS4 NO로 K1을 켜고, K1 자신의 NO로 자기유지(LS4와 병렬).",
+    "K1은 사이클이 끝날 때(A− 끝, LS1) 꺼져야 해요. K1 줄 맨 위에 LS1 NC를 직렬로. 리밋 하나의 NO·NC는 1번(공통)을 함께 써요.",
+    "정리 예: K1 = LS1(NC)·(LS4 ∥ K1), Y4(B−) = K1, Y2(A−) = LS3·K1, Y3(B+) = LS2·K1(NC), Y1(A+) = PB1·LS1(NO). 다른 방법도 동작만 맞으면 통과예요."
+  ],
+  "grading":{"press":"PB1","sequence":["A+","B+","B-","A-"],"repeat":2}
+},
+{
+  "id":"d3","no":"D3","title":"설계 연습 3: A+ 2초 B+ A− B− (타이머)","design":true,
+  "goal":"변위단계선도만 보고 설계하세요. PB1을 한 번 누르면 A가 전진하고, 전진 끝에서 2초 머문 뒤 B+ A− B− 순서로 (2회).",
+  "learn":"기다림은 타이머로: 시작 신호(LS2)로 타이머 코일을 켜고, 다음 단계는 타이머 접점으로 시작해요. 타이머 설정을 2.0초로 맞추는 것도 잊지 마세요.",
+  "layout":"air","board":{"cylA":"cylinder","valveA":"valve52d","cylB":"cylinder","valveB":"valve52d","LS1":"A-","LS2":"A+","LS3":"B-","LS4":"B+"},"diagram":"diagrams/d3.svg",
+  "hints":[
+    "D1과 같은 판이에요. D1의 회로에서 ② B+ 줄만 바꾸면 돼요.",
+    "LS2(A+ 끝) NO → 타이머 T1 코일(A1), A2 → 0V. 타이머 모듈에 기본 전원 선이 이어져 있는지 확인.",
+    "Y3(B+) 줄은 LS2 대신 타이머 NO 접점(T1 11-14)으로 켜요. 타이머 표시창 ▲로 2.0초.",
+    "정리: Y1 = PB1·LS3, T1 코일 = LS2, Y3 = T1(NO), Y2 = LS4, Y4 = LS1. A가 후진을 시작하면 LS2가 떨어져 타이머도 저절로 꺼져요."
+  ],
+  "grading":{"press":"PB1","sequence":["A+","B+","A-","B-"],"repeat":2,"timeout":25,"dwell":{"after":"A+","sec":2,"tol":0.5},
+    "settingsCheck":[{"name":"T1","min":2,"max":2,"label":"타이머 2초"}]}
+}
 ];

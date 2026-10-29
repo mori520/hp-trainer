@@ -4,7 +4,7 @@
 /* ===================== 상태 / 저장 ===================== */
 const KEY='ph-trainer-v1';
 // 처음 온 사람: 기초 강의·미션 칸은 접고, 실전 연습 칸의 자유 실습을 연 상태로 시작
-let store={done:{},circuits:{},last:'free',mode:'tut',fold:{lessons:true,missions:true,hyd:true,exam:true,custom:true}};
+let store={done:{},circuits:{},last:'free',mode:'tut',fold:{lessons:true,missions:true,hyd:true,design:true,exam:true,custom:true}};
 try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s)store=Object.assign(store,s);}catch(e){}
 const BOOT_LAST=store.last;
 const FIRST_VISIT=needWelcome(store);   // 기록이 없는 처음 온 사람 → 안내 띄움 (onboard.js)   // 시작 때 마지막으로 보던 것 (그리는 중 save()가 store.last를 덮기 전에 기억)
@@ -186,7 +186,7 @@ $('autoColor').onclick=()=>setAutoColor(!store.autoColor);
 // 목록: 기초 강의(lessons.js, 없으면 생략) / 미션 / 실전 연습(실전 연습·자유 실습). 칸 제목을 누르면 접고 편다(store.fold)
 // 모의 과제(exams.js)와 내 과제(store.custom → custom.js가 미션 모양으로)도 목록에. 내 과제를 고치면 custom-ui.js가 ALL을 다시 채운다
 const ALL=MISSIONS.concat(typeof EXAMS==='undefined'?[]:EXAMS,(store.custom||[]).map(d=>{try{return CUSTOM.toMission(d);}catch(e){return null;}}).filter(Boolean));
-const sectOf=x=>x.custom?'custom':x.exam?'exam':x.practice||x.no==='∞'?'practice':x.layout==='hyd'?'hyd':'missions';   // 실전 연습·자유 실습(no ∞)은 맨 아래 칸, 유압 미션·모의 과제는 따로
+const sectOf=x=>x.custom?'custom':x.design?'design':x.exam?'exam':x.practice||x.no==='∞'?'practice':x.layout==='hyd'?'hyd':'missions';   // 실전 연습·자유 실습(no ∞)은 맨 아래 칸, 유압 미션·모의 과제는 따로
 function cur(){return ALL.find(x=>x.id===UI.mission);}
 function renderMissionList(){
   const LS=typeof LESSONS==='undefined'?[]:LESSONS, fold=store.fold||{};
@@ -198,13 +198,14 @@ function renderMissionList(){
     <span class="chip ${(store.lessonDone||{})[x.id]?'done':''}">${(store.lessonDone||{})[x.id]?'읽음':'강의'}</span></button></li>`;
   const misItem=x=>`<li><button data-m="${x.id}" aria-current="${!UI.lesson&&x.id===UI.mission}">
     <span class="no">${x.no}</span><span class="t">${x.title}</span>
-    <span class="chip ${store.done[x.id]?'done':''}">${store.done[x.id]?'완료':x.no==='∞'?'자유':x.practice?'실전':x.custom?'내 과제':x.exam?examChip(x):'도전'}</span></button></li>`;
-  const mis=ALL.filter(x=>sectOf(x)==='missions'), hyd=ALL.filter(x=>sectOf(x)==='hyd'), exam=ALL.filter(x=>sectOf(x)==='exam'), prac=ALL.filter(x=>sectOf(x)==='practice'), cus=ALL.filter(x=>sectOf(x)==='custom');
+    <span class="chip ${store.done[x.id]?'done':''}">${store.done[x.id]?'완료':x.no==='∞'?'자유':x.practice?'실전':x.design?'설계':x.custom?'내 과제':x.exam?examChip(x):'도전'}</span></button></li>`;
+  const mis=ALL.filter(x=>sectOf(x)==='missions'), hyd=ALL.filter(x=>sectOf(x)==='hyd'), exam=ALL.filter(x=>sectOf(x)==='exam'), prac=ALL.filter(x=>sectOf(x)==='practice'), des=ALL.filter(x=>sectOf(x)==='design'), cus=ALL.filter(x=>sectOf(x)==='custom');
   // 내 과제 칸은 비어 있어도 늘 보인다 (+ 새 과제·불러오기 버튼, custom-ui.js가 처리)
   const cusTools=`<li class="cus-tools"><button class="btn" data-cnew>+ 새 과제</button><button class="btn" data-cimport title="내보내기로 저장한 .json 파일을 불러와요">불러오기</button>${cus.length?'<button class="btn" data-cexport title="내 과제를 모두 .json 파일 하나로 저장해요">모두 내보내기</button>':''}</li>`;
   $('missionList').innerHTML=(LS.length?head('lessons','기초 강의',LS.length)+body('lessons',LS.map(lessonItem).join('')):'')
     +head('missions','미션',mis.length)+body('missions',mis.map(misItem).join(''))
     +(hyd.length?head('hyd','유압 미션',hyd.length)+body('hyd',hyd.map(misItem).join('')):'')
+    +(des.length?head('design','설계 연습 (산업기사)',des.length)+body('design',des.map(misItem).join('')):'')
     +(exam.length?head('exam','모의 과제',exam.length)+body('exam',exam.map(misItem).join('')):'')
     +(typeof CUSTOM!=='undefined'?head('custom','내 과제',cus.length)+body('custom',cus.map(misItem).join('')+cusTools):'')
     +head('practice','실전 연습',prac.length)+body('practice',prac.map(misItem).join(''));
@@ -257,6 +258,7 @@ function loadCircuit(){
   UI.stepIdx=0;UI.flash=[];lastStepsKey='';
   // 오류 찾기: 튜토리얼은 매번 새로, 미션 모드는 한 번 맞히면 기억
   UI.quiz={tried:[],ok:!inTutorial()&&!!(store.quiz||{})[mis.id]};renderQuiz();
+  renderHints();
   renderPractice();if(typeof renderExam==='function')renderExam();   // 모의 과제 (exam-ui.js)
   if(typeof renderCustomBar==='function')renderCustomBar();   // 내 과제: 고치기·복제·삭제 (custom-ui.js)
   if(typeof recReset==='function')recReset();   // 미션이 바뀌면 동작 기록도 새로
@@ -281,10 +283,18 @@ $('quiz').addEventListener('click',e=>{
   }else{UI.quiz.tried.push(i);renderQuiz(qz,`<p class="fb bad">${qz.choices[i].why||'다시 골라 보세요.'}</p>`);}
   clearResults();
 });
+// 설계 연습 힌트: 하나씩 열어 본다 (정답 배선을 한꺼번에 보여 주지 않게)
+function renderHints(){
+  const h=cur().hints,box=$('hints');box.hidden=!h;if(!h)return;
+  const n=Math.min(UI.hintN||0,h.length);
+  box.innerHTML=`<ol>${h.slice(0,n).map(t=>`<li>${t}</li>`).join('')}</ol>`
+    +(n<h.length?`<button class="btn" id="hintMore">힌트 ${n+1}/${h.length} 보기</button>`:'<p class="muted">힌트를 모두 봤어요. 동작만 맞으면 다른 방법도 통과예요.</p>');
+}
+$('hints').addEventListener('click',e=>{if(e.target.id==='hintMore'){UI.hintN=(UI.hintN||0)+1;renderHints();}});
 function loadMission(id){
   if(DEMO_ON)demoStop();
   if(S)save();
-  if(id!==UI.mission)UI.cardFold=false;   // 다른 미션을 열면 설명 칸을 편다
+  if(id!==UI.mission){UI.cardFold=false;UI.hintN=0;}   // 다른 미션을 열면 설명 칸을 펴고 힌트는 다시 닫힌 채로
   UI.mission=id;const mis=cur();
   $('mTitle').textContent=(mis.custom?'':mis.exam?`${mis.no}. `:mis.no!=='∞'&&!mis.practice?`미션 ${mis.no}. `:'')+mis.title;
   $('mGoal').textContent=mis.goal;$('mLearn').textContent=mis.learn;

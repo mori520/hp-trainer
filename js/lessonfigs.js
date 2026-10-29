@@ -298,5 +298,68 @@ const FIG=(()=>{
       +mini(320,false)+text(400,214,'미터아웃: 나가는 기름을 조임','lt')+text(400,234,'(공압에서 많이 써요)','ls'));
   };
 
+  /* ---------- 12. 변위단계선도 보고 전기회로 설계하기 ---------- */
+  // 사다리 한 줄: x에 위(+24V)에서 아래(0V)로 items를 고르게 놓는다. {t:'no'|'nc'|'coil'|'sol', n:이름, c:강조 클래스}
+  const rung=(x,items,top=40,bot=260)=>{
+    const n=items.length,gap=(bot-top)/(n+1);let o=dot(x,top)+dot(x,bot),y0=top;
+    items.forEach((it,i)=>{
+      const y=top+gap*(i+1),h=it.t==='no'||it.t==='nc'?20:11;
+      o+=line(x,y0,x,y-h);y0=y+h;
+      if(it.t==='no')o+=cNO(x,y,'0',it.n);
+      else if(it.t==='nc')o+=cNC(x,y,'0',it.n);
+      else if(it.t==='coil')o+=coil(x,y,'0',it.n);
+      else o+=rect(x-17,y-11,34,22,'lcoil')+line(x-17,y+11,x+17,y-11)+text(x+24,y+5,it.n,'lt','start');
+      if(it.c)o+=text(x,y-(h+6),it.c,'ls lgood');
+    });
+    return o+line(x,y0,x,bot);
+  };
+  // 변위단계선도 작은 판: seq 순서, 실린더 줄마다 위 = 전진 끝(1), 아래 = 후진 끝(0)
+  const dispMini=(x0,y0,names,seq,w=60)=>{
+    const pos={};names.forEach(n=>pos[n]=0);let o='';
+    names.forEach((n,i)=>{const y=y0+i*70;o+=text(x0-14,y+5,n,'lh','end')+text(x0-14,y+35,'','ls')
+      +line(x0,y,x0+w*seq.length,y,'ldash')+line(x0,y+40,x0+w*seq.length,y+40,'ldash');});
+    for(let k=0;k<=seq.length;k++)o+=text(x0+k*w,y0-12,String(k+1),'ls');
+    seq.forEach((t,k)=>{
+      names.forEach((n,i)=>{const y=y0+i*70,a=pos[n];let b=a;if(t[0]===n)b=t[1]==='+'?1:0;
+        o+=path(`M${x0+k*w},${y+40-a*40}L${x0+(k+1)*w},${y+40-b*40}`,'lw lon');pos[n]=b;});
+    });
+    return o;
+  };
+  F.dispsteps=()=>sv(560,300,dispMini(90,60,['A','B'],['A+','B+','A-','B-'],95)
+    +text(90+95*0.5,220,'PB1','ls lgood')+text(90+95*1.5,220,'LS2 (A+ 끝)','ls lgood')+text(90+95*2.5,220,'LS4 (B+ 끝)','ls lgood')+text(90+95*3.5,220,'LS1 (A− 끝)','ls lgood')
+    +text(280,250,'↑ 각 단계를 시작시키는 신호 = 앞 단계가 끝난 곳의 센서','ls')
+    +text(280,276,'리밋: LS1 A−, LS2 A+, LS3 B−, LS4 B+','ls'));
+  F.dsolrungs=()=>sv(560,300,rails(560)
+    +rung(110,[{t:'no',n:'PB1'},{t:'no',n:'LS3'},{t:'sol',n:'Y1'}])+text(110,290,'① A+','ls lgood')
+    +rung(230,[{t:'no',n:'LS2'},{t:'sol',n:'Y3'}])+text(230,290,'② B+','ls lgood')
+    +rung(350,[{t:'no',n:'LS4'},{t:'sol',n:'Y2'}])+text(350,290,'③ A−','ls lgood')
+    +rung(470,[{t:'no',n:'LS1'},{t:'sol',n:'Y4'}])+text(470,290,'④ B−','ls lgood'));
+  F.conflict=()=>sv(560,300,dispMini(90,50,['A','B'],['A+','B+','B-','A-'],95)
+    +path('M90,170V210M375,170V210','lbadw')+text(90,228,'LS3 ON','ls lbad')+text(375,228,'LS3 ON','ls lbad')
+    +text(280,256,'처음(A+ 시작)에도, ③ 뒤(A− 시작)에도 LS3이 켜져 있어요.','lt')
+    +text(280,280,'LS3만으로는 "A+를 할 때"와 "A−를 할 때"를 구별할 수 없어요.','ls lbad'));
+  F.memory=()=>{
+    // K1 = B가 전진을 마쳤다는 기억: LS4로 켜고(자기유지), LS1(A− 끝)로 끔
+    const x=100,hx=165;
+    const k1=dot(x,40)+line(x,40,x,62)+dot(x,62)+line(x,62,hx,62)+line(hx,62,hx,80)+cNO(x,100,'0','LS4')+cNO(hx,100,'0','K1')
+      +line(hx,120,hx,140)+line(x,120,x,140)+line(x,140,hx,140)+dot(x,140)+line(x,140,x,152)+cNC(x,172,'0','LS1')+line(x,192,x,209)+coil(x,220,'0','K1')+line(x,231,x,260)+dot(x,260);
+    return sv(560,300,rails(560)+k1+text(x+20,290,'K1: B+ 끝났음을 기억','ls lgood')
+      +rung(290,[{t:'no',n:'LS3'},{t:'no',n:'K1'},{t:'sol',n:'Y2'}])+text(290,290,'A−','ls lgood')
+      +rung(395,[{t:'no',n:'LS2'},{t:'nc',n:'K1'},{t:'sol',n:'Y3'}])+text(395,290,'B+','ls lgood')
+      +rung(500,[{t:'no',n:'PB1'},{t:'nc',n:'K1'},{t:'sol',n:'Y1'}])+text(500,290,'A+','ls lgood'));
+  };
+  F.timerstep=()=>sv(560,300,rails(560)
+    +rung(150,[{t:'no',n:'LS2'},{t:'coil',n:'T1 (3초)'}])+text(150,290,'A+ 끝에서 타이머 시작','ls lgood')
+    +rung(380,[{t:'no',n:'T1'},{t:'sol',n:'Y2 (A−)'}])+text(380,290,'3초 뒤 T1 접점이 닫혀 다음 단계','ls lgood')
+    +path('M250,180C290,150 320,130 362,112','ldash')+path('M352,110L364,111L359,121','lw'));
+  F.singlehold=()=>{
+    const x=170,hx=235;
+    const k1=dot(x,40)+line(x,40,x,52)+cNC(x,72,'0','LS2')+line(x,92,x,108)+dot(x,108)+line(x,108,hx,108)+line(hx,108,hx,120)
+      +cNO(x,140,'0','PB1')+cNO(hx,140,'0','K1')+line(hx,160,hx,176)+line(x,160,x,176)+line(x,176,hx,176)+dot(x,176)+line(x,176,x,199)+coil(x,210,'0','K1')+line(x,221,x,260)+dot(x,260);
+    return sv(560,300,rails(560)+k1+text(x+20,290,'버튼을 떼도 K1이 스스로 유지','ls lgood')
+      +rung(420,[{t:'no',n:'K1'},{t:'sol',n:'Y1 (편솔)'}])+text(420,290,'K1이 켜진 동안만 전진','ls')
+      +text(300,26,'편솔은 Y1이 꺼지면 스프링으로 돌아가요 → 켜 둘 기억(자기유지)이 필요','ls','middle'));
+  };
+
   return F;
 })();

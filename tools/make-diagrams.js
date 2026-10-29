@@ -290,7 +290,14 @@ function sheet(file,{w,h,pneu,elec,elecH=300,seq,names,note,hyd,motors}){
     fs.writeFileSync(path.join(OUT,file),S.toString());console.log('wrote diagrams/'+file);return;
   }
   S.text(16,26,hyd?'가. 유압회로도':'가. 공기압회로도',{c:'h'});pneu(S);
-  const lt=hyd?450:300;S.text(16,lt-20,'나. 전기회로도',{c:'h'});
+  const lt=hyd?450:300;
+  // 설계 연습(산업기사형): 전기회로도 없이 회로도 + 변위단계선도만. 전기회로는 직접 설계
+  if(!elec){
+    S.text(16,lt-20,'나. 변위단계선도',{c:'h'});displacement(S,90,lt+20,names,seq,motors);
+    const ny=lt+20+names.length*58+30;
+    ['※ 전기회로도는 없어요. 변위단계선도를 보고 직접 설계하세요.'].concat(note||[]).forEach((t,k)=>S.text(40,ny+k*20,t));
+    fs.writeFileSync(path.join(OUT,file),S.toString());console.log('wrote diagrams/'+file);return;
+  }S.text(16,lt-20,'나. 전기회로도',{c:'h'});
   elec(ladder(S,{top:lt+10,bot:lt+10+elecH,x0:50,x1:w-30}));
   const dy=lt+elecH+60;S.text(16,dy,seq.length?'다. 변위단계선도':'다. 동작',{c:'h'});
   if(seq.length)displacement(S,90,dy+34,names,seq,motors);
@@ -681,3 +688,12 @@ sheet('m4.svg',{w:560,h:760,names:['A'],seq:['A+','A-'],note:['PB1: 전진 (손�
     L.rung(140,[{t:'nc',name:'PB2',act:'pb'},{t:'no',name:'PB1',act:'pb',hold:'K1'},{t:'coil',name:'K1'}]);
     L.rung(300,[{t:'no',name:'K1'},{t:'sol',name:'Y1'}]);
   }});
+
+/* ---------- 설계 연습 (산업기사형): 전기회로도 없음. 양솔 2개 + 리밋 4개 (LS1 A−, LS2 A+, LS3 B−, LS4 B+) ---------- */
+const pneu4=S=>{
+  const a=cylinder(S,60,90,'A',[{end:'-',name:'LS1',kind:'ls'},{end:'+',name:'LS2',kind:'ls'}]);valve(S,100,190,a,{double:true,sols:['Y1','Y2']});
+  const b=cylinder(S,460,90,'B',[{end:'-',name:'LS3',kind:'ls'},{end:'+',name:'LS4',kind:'ls'}]);valve(S,500,190,b,{double:true,sols:['Y3','Y4']});
+};
+sheet('d1.svg',{w:800,h:520,names:['A','B'],seq:['A+','B+','A-','B-'],pneu:pneu4,note:['PB1을 한 번 누르면 한 사이클. 릴레이 개수는 자유']});
+sheet('d2.svg',{w:800,h:520,names:['A','B'],seq:['A+','B+','B-','A-'],pneu:pneu4,note:['PB1을 한 번 누르면 한 사이클. 릴레이 개수는 자유']});
+sheet('d3.svg',{w:800,h:520,names:['A','B'],seq:['A+','wait:2초','B+','A-','B-'],pneu:pneu4,note:['A 전진 끝에서 2초 머문 뒤 B 전진. 릴레이·타이머 자유']});

@@ -11,6 +11,7 @@
       그 단계 동안의 움직임(실린더가 끝에 닿은 순서)도 볼 수 있다:
         "moves":["A+","A-"]  정확히 이 순서 ([]이면 움직이지 않아야 함)
         "movesRepeat":["A+","A-"], "minCycles":2  이 순서를 계속 되풀이 (연속동작), 기본 2회 이상
+        "cont":true  앞 단계의 움직임 기록에 이어서 센다 (예: 앞 단계에서 "도는 동안 램프 켜짐"만 보고, 이 단계에서 전체 순서를 봄)
         "stroke":{"cyl":"A","dir":"-","min":1.5}   그 단계에서 A가 후진하는 데 걸린 시간(초) 1.5초 이상 (max도 가능). 여러 개면 배열로
         "meter":{"A":"out"}   마지막 움직임이 미터아웃이었는지 ("in" = 미터인, "bleed" = 블리드오프)
         "meterOn":{"A+":"out"}   그 단계에서 A가 전진 끝에 닿은 움직임이 미터아웃이었는지 (한 사이클을 다 돌리는 단계용)
@@ -134,8 +135,9 @@ function gradeSteps(g,c){
   let tl=[];
   const go=(sets,dur,log)=>{run(w,sets,0);recordMoves(w,dur,log,at,tl);};
   const items=[];let all=true,leak=false;
+  let log=[];
   for(let r=0;r<(g.repeat||1);r++)g.steps.forEach(s=>{
-    const log=[];tl=[];tl.pos=Object.assign({},at);
+    if(!s.cont){log=[];tl=[];tl.pos=Object.assign({},at);}   // cont: 앞 단계의 움직임 기록에 이어서 센다
     if(s.tap){go(Object.assign({},s.set,{[s.tap]:true}),TAP,log);go({[s.tap]:false},s.wait||0,log);}
     else go(s.set||{},s.wait||0,log);
     if(w.out.leak)leak=true;

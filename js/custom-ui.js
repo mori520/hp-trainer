@@ -73,6 +73,7 @@ let ED=null, edNew=false, edWarned=false;   // ED: 고치는 중인 정의(복�
 const edBox=$('customEd');
 function openCustomEditor(d){
   edNew=!d;ED=JSON.parse(JSON.stringify(d||CUSTOM.blank(cur()&&cur().layout==='hyd'?'hyd':'air')));
+  ED.maint=ED.maint||[];   // 유지보수 틀이 생기기 전에 만든 과제
   edWarned=false;edBox.hidden=false;renderEditor();edBox.scrollTop=0;
   const t=edBox.querySelector('[data-f="title"]');if(t)t.focus();
 }
@@ -118,7 +119,12 @@ function renderEditor(msgs){
         <button class="btn" data-sdel="${i}" aria-label="빼기">✕</button></div>`).join('')}
       <button class="btn" data-e="setAdd" ${sets.length?'':'disabled'}>+ 추가</button></div>
   </fieldset>
-  <fieldset><legend>4. 메모와 도면</legend>
+  <fieldset><legend>4. 유지보수 (기본 동작을 통과하면 차례대로 열려요)</legend>
+    ${d.maint.map((m,i)=>maintEditor(d,m,i,cylTk,sets)).join('')}
+    <div class="cus-tok">${d.maint.length<CUSTOM.MAX_MAINT?Object.entries(CUSTOM.MAINT).map(([k,v])=>`<button class="btn" data-madd="${k}" ${d.seq.length?'':'disabled'}>+ ${v.label}</button>`).join(''):`<span class="muted">유지보수는 ${CUSTOM.MAX_MAINT}개까지예요.</span>`}</div>
+    <p class="cus-note">기기(유량조절·감압 등)는 위 판 구성에 처음부터 놓아 두세요. 밸브 교체 문제는 판 구성에 <b>바꾸기 전</b> 밸브를 두고, 여기서 바꿀 밸브를 고르면 돼요.</p>
+  </fieldset>
+  <fieldset><legend>5. 메모와 도면</legend>
     <label class="cus-row cus-memo"><span>요구사항 메모 (한 줄에 하나, 요구사항 목록에 보여요)</span><textarea data-f="memo" rows="3" maxlength="2000">${esc(d.memo)}</textarea></label>
     <div class="cus-line"><label class="btn">도면 사진 넣기<input type="file" accept="image/*" data-e="img" hidden></label>
       ${d.img?`<img class="cus-thumb" src="${d.img}" alt="첨부한 도면"><button class="btn" data-e="imgDel">사진 빼기</button>`:'<span class="muted">사진은 줄여서 이 브라우저에 저장돼요.</span>'}</div>
@@ -126,6 +132,40 @@ function renderEditor(msgs){
   ${msgs?`<div class="cus-msgs ${msgs.length?'bad':'ok'}">${msgs.length?'<b>확인할 곳</b><ul>'+msgs.map(m=>`<li>${m}</li>`).join('')+'</ul>':'<b>문제 없어요.</b> 저장한 뒤 판을 꾸미고 "평가 받기"를 눌러 보세요.'}</div>`:''}
   <div class="cus-foot"><button class="btn" data-e="check">이 기준 검사</button><span class="sp"></span>
     <button class="btn" data-e="close">취소</button><button class="btn primary" data-e="save">${edWarned?'그래도 저장':'저장'}</button></div>`;
+}
+// 유지보수 틀 하나의 입력 칸. data-mi = 몇 번째, data-mf = 칸 이름
+function maintEditor(d,m,i,cylTk,sets){
+  const f=(name,html)=>`<label class="cus-row"><span>${name}</span>${html}</label>`;
+  const sel=(mf,list,v)=>`<select data-mi="${i}" data-mf="${mf}">${list.map(([val,l])=>opt(val,l,val===v)).join('')}</select>`;
+  const lamps=[['','없음'],['H1','H1'],['H2','H2']];
+  let body='';
+  if(m.type==='counter')body=f('시작 버튼',sel('start',[['PB2','PB2 (PB1은 한 사이클 그대로)'],['PB1','PB1']],m.start))
+    +f('연속 횟수',`<input type="number" data-mi="${i}" data-mf="n" min="1" max="9" step="1" value="${m.n}"> 회 (카운터 C1, PB3로 리셋)`)
+    +f('램프',sel('lamp',lamps,m.lamp)+(m.lamp?' '+sel('lampMode',[['done','다 끝나면 켜짐 (리셋에 꺼짐)'],['run','도는 동안 켜짐 (끝나면 꺼짐)']],m.lampMode):''));
+  if(m.type==='estop')body=f('동작',sel('start',[['PB2','PB2 연속동작 중에 비상정지'],['PB1','PB1 한 사이클 중에 비상정지']],m.start))
+    +f('램프',sel('lamp',lamps,m.lamp))
+    +'<p class="cus-note">비상정지(ES, 유지형)를 누르면 모든 실린더가 후진 끝으로(모터는 정지), 풀면 멈춘 채로 있다가 다시 시작 버튼으로 처음부터.</p>';
+  if(m.type==='contstop')body='<p class="cus-note">PB2 연속동작, PB3 누르면 하던 사이클을 마치고 정지. PB1 한 사이클도 그대로.</p>';
+  if(m.type==='rules'){
+    const ch=CUSTOM.choices(d.fluid);
+    body=`<div class="cus-line"><label class="cus-chk"><input type="checkbox" data-mi="${i}" data-mf="tOn" ${m.timer?'checked':''}> 타이머: 머무는 시간</label>
+      ${m.timer?`<select data-mi="${i}" data-mf="tAfter">${d.seq.filter((t,k,a)=>a.indexOf(t)===k).map(t=>opt(t,fmtT(t)+' 도착 뒤',t===m.timer.after)).join('')}</select>
+        <input type="number" data-mi="${i}" data-mf="tSec" step="0.5" min="0.5" max="10" value="${m.timer.sec}"> 초`:''}</div>
+    <div class="cus-sub"><b>속도 조절 방식</b>${Object.entries(m.meter).map(([k,v])=>`<div class="cus-line">
+        <select data-mi="${i}" data-mf="meterK" data-k="${k}">${cylTk.map(t=>opt(t,fmtT(t)+' 움직임',t===k)).join('')}</select>
+        <select data-mi="${i}" data-mf="meterV" data-k="${k}">${Object.entries(CUSTOM.METER).map(([mm,l])=>opt(mm,l,mm===v)).join('')}</select>
+        <button class="btn" data-mi="${i}" data-ma="meterDel" data-k="${k}" aria-label="빼기">✕</button></div>`).join('')}
+      <button class="btn" data-mi="${i}" data-ma="meterAdd" ${cylTk.some(t=>!(t in m.meter))?'':'disabled'}>+ 추가</button></div>
+    <div class="cus-sub"><b>기기 설정값 범위</b>${m.settings.map((s,k)=>`<div class="cus-line">
+        <select data-mi="${i}" data-mf="sName" data-k="${k}">${sets.map(a=>opt(a.name,`${a.name} (${a.unit})`,a.name===s.name)).join('')}${sets.some(a=>a.name===s.name)?'':opt(s.name,s.name+' (판에 없음)',true)}</select>
+        <input type="number" data-mi="${i}" data-mf="sMin" data-k="${k}" step="any" value="${s.min}"> ~ <input type="number" data-mi="${i}" data-mf="sMax" data-k="${k}" step="any" value="${s.max}">
+        <button class="btn" data-mi="${i}" data-ma="setDel" data-k="${k}" aria-label="빼기">✕</button></div>`).join('')}
+      <button class="btn" data-mi="${i}" data-ma="setAdd" ${sets.length?'':'disabled'}>+ 추가</button></div>
+    ${CUSTOM.VALVE_SLOTS.filter(s=>d.board[s]&&ch[s]).map(s=>f(`${s==='valveA'?'A':'B'} 밸브 교체`,
+      sel('swap:'+s,[['','그대로']].concat(ch[s].filter(v=>v&&v!==d.board[s]).map(v=>[v,CUSTOM.pracValLabel(v)+'(으)로'])),m.swap[s]||''))).join('')}`;
+  }
+  return`<div class="cus-maint"><div class="cus-line"><b>유지보수 ${i+1}) ${CUSTOM.MAINT[m.type].label}</b><span class="sp"></span>
+    <button class="btn" data-mi="${i}" data-ma="del" aria-label="유지보수 ${i+1} 빼기">✕ 빼기</button></div>${body}</div>`;
 }
 // 글자·숫자 입력은 다시 그리지 않고 값만 (입력 중 커서가 튀지 않게)
 edBox.addEventListener('input',e=>{
@@ -137,10 +177,35 @@ edBox.addEventListener('input',e=>{
   if(f==='tSec'&&isFinite(n))ED.timer.sec=n;
   if(t.dataset.smin!=null&&isFinite(n))ED.settings[+t.dataset.smin].min=n;
   if(t.dataset.smax!=null&&isFinite(n))ED.settings[+t.dataset.smax].max=n;
+  if(t.dataset.mi!=null&&isFinite(n)){
+    const m=ED.maint[+t.dataset.mi],mf=t.dataset.mf,k=+t.dataset.k;
+    if(mf==='n')m.n=Math.round(n);
+    if(mf==='tSec')m.timer.sec=n;
+    if(mf==='sMin')m.settings[k].min=n;
+    if(mf==='sMax')m.settings[k].max=n;
+  }
 });
+// 유지보수 틀의 고르기 칸
+function maintChange(t){
+  const m=ED.maint[+t.dataset.mi],mf=t.dataset.mf,v=t.value,k=t.dataset.k;
+  if(mf==='start'||mf==='lamp'||mf==='lampMode')m[mf]=v;
+  else if(mf==='tOn')m.timer=t.checked?{after:ED.seq[0],sec:3}:null;
+  else if(mf==='tAfter')m.timer.after=v;
+  else if(mf==='meterK'){const x=m.meter[k];delete m.meter[k];m.meter[v]=x;}
+  else if(mf==='meterV')m.meter[k]=v;
+  else if(mf==='sName'){const s=cusSets(ED).find(a=>a.name===v),x=m.settings[+k];x.name=v;if(s){x.min=s.def;x.max=s.def;}}
+  else if(mf.startsWith('swap:')){const slot=mf.slice(5);if(v)m.swap[slot]=v;else delete m.swap[slot];}
+  else return false;
+  return true;
+}
 edBox.addEventListener('change',e=>{
   if(!ED)return;const t=e.target,f=t.dataset.f,d=ED;edWarned=false;
-  if(t.dataset.slot){if(t.value)d.board[t.dataset.slot]=t.value;else delete d.board[t.dataset.slot];}
+  if(t.dataset.mi!=null){if(!maintChange(t))return;}
+  else if(t.dataset.slot){
+    if(t.value)d.board[t.dataset.slot]=t.value;else delete d.board[t.dataset.slot];
+    // 처음 밸브와 같아진 "교체" 규칙은 뺀다
+    d.maint.forEach(m=>{if(m.swap&&m.swap[t.dataset.slot]===d.board[t.dataset.slot])delete m.swap[t.dataset.slot];});
+  }
   else if(f==='repeat')d.repeat=t.checked;
   else if(f==='relays')d.relays=t.value===''?null:+t.value;
   else if(f==='pOn')d.pressure=t.checked?(d.fluid==='hyd'?[3.8,4.2]:[0.45,0.55]):null;
@@ -168,11 +233,24 @@ edBox.addEventListener('click',e=>{
   if(a==='setAdd'){const s=cusSets(d).find(x=>!d.settings.some(y=>y.name===x.name))||cusSets(d)[0];if(s)d.settings.push({name:s.name,min:s.def,max:s.def});}
   if(b.dataset.sdel!=null)d.settings.splice(+b.dataset.sdel,1);
   if(a==='imgDel')d.img='';
+  if(b.dataset.madd&&d.maint.length<CUSTOM.MAX_MAINT)d.maint.push(CUSTOM.MAINT[b.dataset.madd].make());
+  if(b.dataset.ma){
+    const i=+b.dataset.mi,m=d.maint[i],k=b.dataset.k,ma=b.dataset.ma;
+    if(ma==='del')d.maint.splice(i,1);
+    if(ma==='meterAdd'){const t=d.seq.filter((x,j,s)=>s.indexOf(x)===j&&!CUSTOM.tokens(d).includes(x.slice(0,-1)+'0')).find(x=>!(x in m.meter));if(t)m.meter[t]='out';}
+    if(ma==='meterDel')delete m.meter[k];
+    if(ma==='setAdd'){const s=cusSets(d).find(x=>!m.settings.some(y=>y.name===x.name))||cusSets(d)[0];if(s)m.settings.push({name:s.name,min:s.def,max:s.def});}
+    if(ma==='setDel')m.settings.splice(+k,1);
+  }
   if(a==='check'){renderEditor(CUSTOM.check(ED));return;}
   if(a==='save'){cusSave();return;}
   // 순서가 바뀌어 없어진 칸을 쓰던 타이머·속도 조절은 정리
   if(d.timer&&!d.seq.includes(d.timer.after))d.timer=d.seq.length?Object.assign(d.timer,{after:d.seq[0]}):null;
   for(const k in d.meter)if(!d.seq.includes(k))delete d.meter[k];
+  d.maint.forEach(m=>{
+    if(m.timer&&!d.seq.includes(m.timer.after))m.timer=d.seq.length?Object.assign(m.timer,{after:d.seq[0]}):null;
+    for(const k in m.meter||{})if(!d.seq.includes(k))delete m.meter[k];
+  });
   edWarned=false;renderEditor();
 });
 // 저장: 기준 검사에 걸리면 한 번 보여 주고, "그래도 저장"을 누르면 저장

@@ -1,0 +1,18 @@
+# push·PR 때마다 자동 테스트를 돌린다 (외부 패키지 없음, Node 내장 테스트)
+name: 테스트
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm test
+      - run: npm run build

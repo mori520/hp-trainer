@@ -48,9 +48,9 @@ const CUSTOM=(()=>{
   // 판 구성 선택지: 실전 연습과 같고, B 자리는 비울 수도 있다 (실린더 하나짜리 과제)
   function choices(fluid){
     const F=FLUIDS[fluid],src=MISSIONS.find(m=>m.id===F.practice).practice.choices;
-    const ch=Object.assign({},src);
-    ch.cylB=(src.cylB||['cylinder']).concat('');
-    return Object.assign({cylB:ch.cylB},ch);
+    // B 자리는 비울 수도 있게 ''를 더한다. 판 구성에 B 자리가 있으면 그 순서 그대로(A 다음), 없으면 맨 앞
+    const cylB=(src.cylB||['cylinder']).concat('');
+    return Object.assign(src.cylB?{}:{cylB},src,{cylB});
   }
   const layoutOf=def=>LAYOUTS[FLUIDS[def.fluid].layout];
   // 판에 놓인 액추에이터로 쓸 수 있는 변위단계선도 칸: 실린더 → "A+","A-", 모터 → "M+","M-","M0"

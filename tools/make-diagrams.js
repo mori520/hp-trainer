@@ -617,6 +617,38 @@ sheet('x4.svg',{w:920,h:840,names:['A','B'],seq:['B+','A+','B-','A-'],note:['PB1
     const jy=L.Y[1]+40;L.bus(740,860,jy);L.rung(860,[{t:'no',name:'LS1',act:'ls',pressed:true},{t:'coil',name:'K4'}],{fromY:jy,dot:true,slots:[L.Y[2]]});
   }});
 
+// 모의 공5: A+ A− B+ B−. A 양솔(Y1·Y2), B 편솔(Y3). 틀린 곳 = K2 줄의 b접점이 K4 대신 K3
+sheet('x5.svg',{w:920,h:840,names:['A','B'],seq:['A+','A-','B+','B-'],note:['PB1: 한 사이클','릴레이 4개'],
+  pneu:S=>{
+    const a=cylinder(S,60,90,'A',[{end:'+',name:'LS2',kind:'ls'},{end:'-',name:'LS1',kind:'ls'}]);valve(S,100,190,a,{double:true,sols:['Y1','Y2']});
+    const b=cylinder(S,480,90,'B',[{end:'+',name:'S1',kind:'cap'},{end:'-',name:'S2',kind:'cap'}]);valve(S,520,190,b,{sols:['Y3']});
+  },
+  elec:L=>{
+    L.rung(90,[{t:'sensor',name:'S2'},{t:'nc',name:'K2'},{t:'no',name:'PB1',act:'pb',hold:'K1'},{t:'coil',name:'K1'}]);
+    L.rung(230,[{t:'no',name:'K1'},{t:'sol',name:'Y1'}]);
+    L.rung(330,[{t:'nc',name:'K3'},{t:'no',name:'LS2',act:'ls',hold:'K2'},{t:'coil',name:'K2'}]);
+    L.rung(460,[{t:'no',name:'K2'},{t:'nc',name:'K1'},{t:'sol',name:'Y2'}]);
+    L.rung(560,[{t:'no',name:'K2'},{t:'no',name:'LS1',act:'ls',pressed:true},{t:'coil',name:'K3'}]);
+    L.rung(670,[{t:'no',name:'K3'},{t:'sol',name:'Y3'}]);
+    L.rung(770,[{t:'sensor',name:'S1'},{t:'coil',name:'K4'}]);
+  }});
+
+// 모의 공6: B+ B− A+ A−. A 편솔(Y1), B 양솔(Y2·Y3). 틀린 곳 = K2 줄의 자기유지 접점이 K2 대신 K1
+sheet('x6.svg',{w:920,h:840,names:['A','B'],seq:['B+','B-','A+','A-'],note:['PB1: 한 사이클','릴레이 4개'],
+  pneu:S=>{
+    const a=cylinder(S,60,90,'A',[{end:'+',name:'LS2',kind:'ls'},{end:'-',name:'LS1',kind:'ls'}]);valve(S,100,190,a,{sols:['Y1']});
+    const b=cylinder(S,480,90,'B',[{end:'+',name:'S2',kind:'cap'},{end:'-',name:'S1',kind:'cap'}]);valve(S,520,190,b,{double:true,sols:['Y2','Y3']});
+  },
+  elec:L=>{
+    L.rung(80,[{t:'nc',name:'K4'},{t:'no',name:'PB1',act:'pb',hold:'K1'},{t:'coil',name:'K1'}]);
+    L.rung(190,[{t:'no',name:'K1'},{t:'nc',name:'K2'},{t:'sol',name:'Y2'}]);
+    L.rung(300,[{t:'sensor',name:'S2',hold:'K1'},{t:'no',name:'K1'},{t:'coil',name:'K2'}]);
+    L.rung(430,[{t:'no',name:'K2'},{t:'sol',name:'Y3'}]);
+    L.rung(540,[{t:'sensor',name:'S1'},{t:'no',name:'K2'},{t:'coil',name:'K3'}]);
+    L.rung(680,[{t:'no',name:'K3'},{t:'sol',name:'Y1'}]);
+    L.rung(790,[{t:'no',name:'K3'},{t:'no',name:'LS2',act:'ls'},{t:'coil',name:'K4'}]);
+  }});
+
 // 모의 유1: A+ B+ B− A−. A 4/2 편솔(Y1), B 4/3 중립 블록(Y2 전진·Y3 후진). 틀린 곳 = Y2 줄의 리밋이 LS2 대신 LS1
 sheet('y1.svg',{...HS,w:900,h:980,names:['A','B'],seq:['A+','B+','B-','A-'],note:['PB1: 한 사이클','릴레이 4개','릴리프 4.0 MPa'],
   pneu:S=>{const a=hyd(S,110,90,{name:'A',valve:'42',sols:['Y1'],sensors:[{end:'+',name:'LS2',kind:'ls'},{end:'-',name:'LS1',kind:'ls'}]});

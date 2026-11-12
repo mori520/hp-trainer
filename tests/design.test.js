@@ -63,3 +63,34 @@ test('설계 연습 D4 (유압): 자기유지 2개로 통과, 4/3을 PB1로만 �
   const noHold=ok.filter(x=>x.a!=='K1_14');
   assert.ok(failed(g(noHold)).some(s=>s.startsWith('PB1 → 변위단계선도')));
 });
+
+test('설계 연습 D5 (A 편솔 + B 양솔): 릴레이 3개 예시와 2개짜리 다른 설계 모두 통과, 사이클 끝 기억(K3)이 없으면 실패',()=>{
+  const neg=[w('V1_Ya_n','R0_6_0','blue'),w('V2_Ya_n','R0_6_1','blue'),w('V2_Yb_n','R0_6_2','blue')];
+  // K1 = K3(NC)·(PB1 ∥ K1), Y1 = K1, K2 = K1·(LS4 ∥ K2), Y2 = K1·LS2·K2(NC), Y3 = K2, K3 = K2·LS3
+  const ok=[w('R24_5_0','K3_11','red'),w('K3_12','PB1_13','red'),w('PB1_14','K1_A1','red'),w('K3_12','K1_11','red'),w('K1_14','K1_A1','red'),w('K1_A2','R0_5_0','blue'),
+    w('R24_5_1','K1_21','red'),w('K1_24','V1_Ya_p','red'),
+    w('K1_24','LS2_1','red'),w('LS2_4','K2_31','red'),w('K2_32','V2_Ya_p','red'),
+    w('K1_24','LS4_1','red'),w('LS4_4','K2_A1','red'),w('K1_24','K2_11','red'),w('K2_14','K2_A1','red'),w('K2_A2','R0_5_1','blue'),
+    w('R24_5_2','K2_21','red'),w('K2_24','V2_Yb_p','red'),w('K2_24','LS3_1','red'),w('LS3_4','K3_A1','red'),w('K3_A2','R0_5_2','blue'),...neg];
+  assert.deepEqual(failed(grade('d5',ok)),[]);
+  assert.ok(failed(grade('d5',ok.filter(x=>x.b!=='K3_A1'))).some(s=>s.startsWith('PB1 → 변위단계선도')));
+  // 다른 설계(릴레이 2개): K1 = (K2(NC) ∥ LS3(NC))·(PB1 ∥ K1), K2 = LS2·(LS4 ∥ K2), Y2 = LS2·K2(NC), Y3 = K2
+  const alt=[w('R24_5_0','K2_41','red'),w('R24_5_0','LS3_1','red'),w('K2_42','PB1_13','red'),w('LS3_2','PB1_13','red'),w('PB1_14','K1_A1','red'),
+    w('PB1_13','K1_11','red'),w('K1_14','K1_A1','red'),w('K1_A2','R0_5_0','blue'),
+    w('R24_5_1','K1_21','red'),w('K1_24','V1_Ya_p','red'),
+    w('R24_5_2','LS2_1','red'),w('LS2_4','K2_31','red'),w('K2_32','V2_Ya_p','red'),
+    w('LS2_4','LS4_1','red'),w('LS4_4','K2_A1','red'),w('LS2_4','K2_11','red'),w('K2_14','K2_A1','red'),w('K2_A2','R0_5_1','blue'),
+    w('R24_5_3','K2_21','red'),w('K2_24','V2_Yb_p','red'),...neg];
+  assert.deepEqual(failed(grade('d5',alt)),[]);
+});
+test('설계 연습 D6 (카운터 3회): 운전 릴레이 + 카운터로 통과, D1 회로 그대로(한 사이클)거나 카운터가 2회면 실패',()=>{
+  // K1 = C1(NC)·(PB1 ∥ K1), Y1 = K1·LS3, Y3 = LS2, Y2 = LS4, Y4 = LS1, C1 계수 = LS2, 리셋 = PB3
+  const ok=[w('R24_4_0','C1_11','red'),w('C1_12','PB1_13','red'),w('PB1_14','K1_A1','red'),w('C1_12','K1_11','red'),w('K1_14','K1_A1','red'),w('K1_A2','R0_5_0','blue'),
+    w('R24_5_1','K1_21','red'),w('K1_24','LS3_1','red'),w('LS3_4','V1_Ya_p','red'),
+    w('R24_5_2','LS2_1','red'),w('LS2_4','V2_Ya_p','red'),w('LS2_4','C1_A1','red'),w('C1_A2','R0_4_0','blue'),
+    w('R24_5_3','LS4_1','red'),w('LS4_4','V1_Yb_p','red'),w('R24_5_4','LS1_1','red'),w('LS1_4','V2_Yb_p','red'),
+    w('R24_1_1','PB3_13','red'),w('PB3_14','C1_R1','red'),w('C1_R2','R0_4_1','blue'),...solN()];
+  assert.deepEqual(failed(grade('d6',ok,{C1:3})),[]);
+  assert.ok(failed(grade('d6',d1(),{C1:3})).length>0);
+  assert.ok(failed(grade('d6',ok,{C1:2})).length>0);
+});

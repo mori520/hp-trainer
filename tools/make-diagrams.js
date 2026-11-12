@@ -724,6 +724,13 @@ sheet('su3.svg',{...HS,w:900,h:700,names:['A','B'],seq:['A+','B+','A-','B-'],not
 sheet('su4.svg',{...HS,w:880,h:700,names:['A','M'],motors:['M'],seq:['A+','M-','wait:2초','M0','A-'],note:NOTEH.concat(['타이머 2초']),
   pneu:S=>{const a=hyd(S,110,90,{name:'A',valve:'42',sols:['Y1'],sensors:LS4H('LS1','LS2')});
     hyd(S,500,90,{act:'motor',name:'M',valve:'43c',sols:['Y2','Y3'],feed:{x:a.ax,y:a.py}});}});
+// D5: A 편솔(Y1) + B 양솔(Y2·Y3), D6: D1 판에서 3사이클(카운터)
+sheet('d5.svg',{w:800,h:520,names:['A','B'],seq:['A+','B+','B-','A-'],note:['PB1을 한 번 누르면 한 사이클. 릴레이 개수는 자유'],
+  pneu:S=>{
+    const a=cylinder(S,60,90,'A',[{end:'-',name:'LS1',kind:'ls'},{end:'+',name:'LS2',kind:'ls'}]);valve(S,100,190,a,{sols:['Y1']});
+    const b=cylinder(S,460,90,'B',[{end:'-',name:'LS3',kind:'ls'},{end:'+',name:'LS4',kind:'ls'}]);valve(S,500,190,b,{double:true,sols:['Y2','Y3']});
+  }});
+sheet('d6.svg',{w:800,h:520,names:['A','B'],seq:['A+','B+','A-','B-'],pneu:pneu4,note:['PB1 한 번 → 3사이클 하고 정지 (카운터 3회)','PB3: 카운터 리셋. 릴레이 개수는 자유']});
 sheet('d4.svg',{...HS,w:900,h:700,names:['A','B'],seq:['A+','B+','A-','B-'],note:['PB1을 한 번 누르면 한 사이클. 릴레이 개수는 자유','릴리프 4.0 MPa'],
   pneu:S=>{const a=hyd(S,110,90,{name:'A',valve:'43c',sols:['Y1','Y2'],sensors:LS4H('LS1','LS2')});
     hyd(S,520,90,{name:'B',valve:'42',sols:['Y3'],sensors:LS4H('LS3','LS4'),feed:{x:a.ax,y:a.py}});}});

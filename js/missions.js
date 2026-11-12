@@ -1727,5 +1727,41 @@ const MISSIONS=[
   "set":{"RV":4},
   "grading":{"press":"PB1","sequence":["A+","B+","A-","B-"],"repeat":2,"timeout":25,
     "settingsCheck":[{"name":"RV","min":3.8,"max":4.2,"label":"릴리프 압력 4±0.2 MPa"}]}
+},
+{
+  "id":"d5","no":"D5","title":"설계 연습 5: A+ B+ B− A− (A 편솔 + B 양솔)","design":true,
+  "goal":"변위단계선도만 보고 설계하세요. PB1을 한 번 누르면 A+ B+ B− A− 순서로 한 사이클 (2회). A 밸브는 편솔(Y1), B 밸브는 양솔(Y2 전진·Y3 후진)이에요.",
+  "learn":"편솔 밸브는 기억이 없어서, A는 B가 나갔다 돌아올 때까지 Y1을 계속 켜 둬야 해요(자기유지). 그리고 'B가 돌아왔다'(LS3)는 맨 처음에도 켜져 있는 신호라, 'B가 한 번 나갔다 왔다'를 릴레이로 기억해야 A를 제때 후진시킬 수 있어요 (기초 12의 4·6장).",
+  "layout":"air","board":{"cylA":"cylinder","valveA":"valve52s","cylB":"cylinder","valveB":"valve52d","LS1":"A-","LS2":"A+","LS3":"B-","LS4":"B+"},"diagram":"diagrams/d5.svg",
+  "hints":[
+    "A+ (편솔): PB1로 K1을 켜고 K1 NO로 자기유지, Y1 = K1. K1이 꺼지면 A는 스프링으로 저절로 후진해요. 그러니 'A−'는 K1을 끊는 일이에요.",
+    "B+ (양솔 Y2): A 전진 끝(LS2)에서 시작. 그런데 B가 돌아오는 동안에도 LS2는 계속 눌려 있으니, 'B가 전진을 마쳤다'를 기억할 릴레이 K2가 필요해요.",
+    "K2 = LS4(B+ 끝)로 켜고 K2 NO로 자기유지. Y2(B+) = LS2 · K2(NC), Y3(B−) = K2. K2 줄은 K1 NO 뒤에 두면 사이클이 끝날 때 함께 꺼져요.",
+    "A− : 'K2가 켜진 채로 B가 후진 끝(LS3)에 왔다' = 사이클 끝. 이 신호로 K3를 켜고(K3 = K2 · LS3), K1 줄 맨 위에 K3 NC를 직렬로 넣어 K1을 끊어요.",
+    "정리 예: K1 = K3(NC)·(PB1 ∥ K1), Y1 = K1, K2 = K1·(LS4 ∥ K2), Y2 = K1·LS2·K2(NC), Y3 = K2, K3 = K2·LS3. 릴레이 3개. 다른 방법도 동작만 맞으면 통과예요."
+  ],
+  "grading":{"press":"PB1","sequence":["A+","B+","B-","A-"],"repeat":2,"timeout":25}
+},
+{
+  "id":"d6","no":"D6","title":"설계 연습 6: A+ B+ A− B− 를 3번 (카운터)","design":true,
+  "goal":"D1과 같은 판이에요. PB1을 한 번 누르면 A+ B+ A− B−를 3사이클 하고 멈추게 설계하세요. 다 센 뒤에는 PB1을 눌러도 움직이지 않고, PB3로 카운터를 리셋하면 다시 3사이클.",
+  "learn":"연속 동작은 '운전 중' 릴레이 하나로: PB1로 켜서 자기유지하고, 시작 줄(Y1)에 PB1 대신 이 릴레이 접점을 넣으면 사이클이 끝날 때마다 다시 시작해요. 카운터가 다 세면 카운터 NC 접점이 이 릴레이를 끊어요. 카운터 설정은 3회로.",
+  "layout":"air","board":{"cylA":"cylinder","valveA":"valve52d","cylB":"cylinder","valveB":"valve52d","LS1":"A-","LS2":"A+","LS3":"B-","LS4":"B+"},"diagram":"diagrams/d6.svg",
+  "hints":[
+    "먼저 D1 회로를 그대로 만드세요: Y1 = PB1·LS3, Y3 = LS2, Y2 = LS4, Y4 = LS1. 한 번 누르면 한 사이클이 되는지 확인.",
+    "'운전 중' 릴레이 K1: PB1로 켜고 K1 NO로 자기유지. Y1 줄의 PB1 자리를 K1 NO 접점으로 바꾸면(Y1 = K1·LS3) B가 돌아올 때마다 A가 다시 나가요.",
+    "카운터 C1: 계수 입력(A1)에 A 전진 끝 LS2 신호를, A2는 0V. 표시창 ▲로 3회. 카운터 모듈에 기본 전원 선이 이어져 있는지 확인.",
+    "K1 줄 맨 위에 카운터 NC 접점(C1 11-12)을 직렬로. 3번째 A+에서 K1이 꺼지지만, 하던 사이클은 리밋 신호로 끝까지 가요.",
+    "리셋: PB3 NO(13-14) → 카운터 리셋 입력(R1), R2는 0V. 정리: K1 = C1(NC)·(PB1 ∥ K1), Y1 = K1·LS3, Y3 = LS2, Y2 = LS4, Y4 = LS1, C1 계수 = LS2, 리셋 = PB3."
+  ],
+  "grading":{"setup":{"power":true,"air":true},
+    "settingsCheck":[{"name":"C1","min":3,"max":3,"label":"카운터 3회"}],
+    "steps":[
+      {"name":"PB1 한 번 → A+ B+ A− B−를 3번 하고 정지","tap":"PB1","wait":20,"moves":["A+","B+","A-","B-","A+","B+","A-","B-","A+","B+","A-","B-"],"expect":{"C1":3},
+       "hint":"'운전 중' 릴레이를 PB1로 켜 자기유지하고 카운터 NC(11-12)로 끊으세요. Y1은 그 릴레이 접점과 LS3로."},
+      {"name":"리셋 전에는 PB1을 눌러도 움직이지 않음","tap":"PB1","wait":3,"moves":[]},
+      {"name":"PB3 → 카운터 리셋(0)","tap":"PB3","wait":0.5,"moves":[],"expect":{"C1":0},"hint":"PB3 NO(13-14)를 카운터 리셋 입력(R1-R2)에 이으세요."},
+      {"name":"리셋 후 PB1 → 다시 3사이클","tap":"PB1","wait":20,"moves":["A+","B+","A-","B-","A+","B+","A-","B-","A+","B+","A-","B-"]}
+    ]}
 }
 ];

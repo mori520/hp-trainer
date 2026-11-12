@@ -23,6 +23,18 @@ function save(){if(WIPED)return;try{if(!inTutorial())store.circuits[UI.mission]=
 const UI={color:'red',mission:'m0',mode:'tut',board:{},stepIdx:0,flash:[],quiz:{tried:[],ok:false},lesson:null};
 let S=null;
 let uid=1;
+// 되돌리기(Ctrl+Z): 선·호스를 바꾸기 직전 모습을 쌓아 둔다. 판이 바뀌면(applyBoard) 비운다
+const UNDO=[];
+function undoMark(){UNDO.push(JSON.stringify({w:S.wires,h:S.hoses}));if(UNDO.length>60)UNDO.shift();undoBtnState();}
+function undoClear(){UNDO.length=0;undoBtnState();}
+function undoBtnState(){const b=document.getElementById('undoBtn');if(b)b.disabled=!UNDO.length;}
+function undo(){
+  if(DEMO_ON||!UNDO.length)return;
+  const p=JSON.parse(UNDO[UNDO.length-1]);
+  // 시험 규칙: 공급 중에는 호스를 바꿀 수 없다
+  if(S.air&&JSON.stringify(p.h)!==JSON.stringify(S.hoses)){toast(fluidText().stopFirst+' 호스를 되돌릴 수 있어요.');return;}
+  UNDO.pop();S.wires=p.w;S.hoses=p.h;undoBtnState();clearResults();renderConn();
+}
 
 /* ===================== 사용자 조작 ===================== */
 const sv=$('sv'),prev=$('preview');
@@ -37,10 +49,10 @@ function connect(a,b){
   if(A.kind==='pneu'){
     const used=id=>S.hoses.some(h=>h.a===id||h.b===id);
     if(used(a)||used(b)){toast('이 포트에는 이미 호스가 꽂혀 있어요. 포트 하나에는 호스 하나만 연결합니다.');return;}
-    S.hoses.push({id:'h'+uid++,a,b});
+    undoMark();S.hoses.push({id:'h'+uid++,a,b});
   }else{
     if(S.wires.some(x=>(x.a===a&&x.b===b)||(x.a===b&&x.b===a))){toast('같은 두 잭 사이에 이미 선이 있어요.');return;}
-    S.wires.push({id:'w'+uid++,a,b,color:store.autoColor?autoWireColor(a,b):UI.color});
+    undoMark();S.wires.push({id:'w'+uid++,a,b,color:store.autoColor?autoWireColor(a,b):UI.color});
   }
   clearResults();renderConn();
 }
@@ -115,7 +127,7 @@ sv.addEventListener('click',e=>{
   if(e.detail!==1)return;
   const c=e.target.closest&&e.target.closest('.conn[data-type="wire"]');if(!c)return;
   const x=S.wires.find(w=>w.id===c.dataset.id);if(!x)return;
-  x.color=WIRE_COLORS[(WIRE_COLORS.indexOf(x.color)+1)%WIRE_COLORS.length];
+  undoMark();x.color=WIRE_COLORS[(WIRE_COLORS.indexOf(x.color)+1)%WIRE_COLORS.length];
   clearResults();renderConn();
 });
 // 선·호스에 올리면 그 선만, 잭에 올리면 그 잭에 꽂힌 선들만 진하게 (나머지는 흐리게, 양 끝 잭에 테두리)
@@ -137,12 +149,13 @@ sv.addEventListener('dblclick',e=>{
   const id=c.dataset.id;
   if(c.dataset.type==='hose'){
     if(S.air){toast(fluidText().stopFirst+' 호스를 제거하세요. (수험자 유의사항)');return;}
-    S.hoses=S.hoses.filter(h=>h.id!==id);
-  }else S.wires=S.wires.filter(w=>w.id!==id);
+    undoMark();S.hoses=S.hoses.filter(h=>h.id!==id);
+  }else{undoMark();S.wires=S.wires.filter(w=>w.id!==id);}
   clearResults();renderConn();
 });
 window.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&drag){drag=null;prev.setAttribute('d','');}
+  if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&e.key.toLowerCase()==='z'&&!(e.target.closest&&e.target.closest('input,textarea,select'))){undo();e.preventDefault();}
   if(['1','2','3'].includes(e.key)&&!e.target.closest('input,textarea')){if(store.autoColor)setAutoColor(false);setColor(['red','blue','black'][+e.key-1]);}
   const pb=document.activeElement&&document.activeElement.dataset&&document.activeElement.dataset.pb;
   if(pb&&(e.key===' '||e.key==='Enter')){if(!e.repeat)pressButton(document.activeElement);e.preventDefault();}
@@ -197,18 +210,21 @@ function renderMissionList(){
     <span class="no">${x.no.replace('기초 ','')}</span><span class="t">${x.title}</span>
     <span class="chip ${(store.lessonDone||{})[x.id]?'done':''}">${(store.lessonDone||{})[x.id]?'읽음':'강의'}</span></button></li>`;
   const misItem=x=>`<li><button data-m="${x.id}" aria-current="${!UI.lesson&&x.id===UI.mission}">
-    <span class="no">${x.no}</span><span class="t">${x.title}</span>
+    <span class="no">${x.no}</span><span class="t">${x.title}${x.exam&&(store.examBest||{})[x.id]?`<small class="best">최고 기록 ${fmtTime(store.examBest[x.id])}</small>`:''}</span>
     <span class="chip ${store.done[x.id]?'done':''}">${store.done[x.id]?'완료':x.no==='∞'?'자유':x.practice?'실전':x.design?'설계':x.custom?'내 과제':x.exam?examChip(x):'도전'}</span></button></li>`;
+  // 칸 제목 옆: 완료한 수/전체 (하나도 안 했으면 전체 수만)
+  const cnt=list=>{const d=list.filter(x=>store.done[x.id]).length;return d?`${d}/${list.length}`:list.length;};
+  const lsDone=LS.filter(x=>(store.lessonDone||{})[x.id]).length;
   const mis=ALL.filter(x=>sectOf(x)==='missions'), hyd=ALL.filter(x=>sectOf(x)==='hyd'), exam=ALL.filter(x=>sectOf(x)==='exam'), exam2=ALL.filter(x=>sectOf(x)==='exam2'), prac=ALL.filter(x=>sectOf(x)==='practice'), des=ALL.filter(x=>sectOf(x)==='design'), cus=ALL.filter(x=>sectOf(x)==='custom');
   // 내 과제 칸은 비어 있어도 늘 보인다 (+ 새 과제·불러오기 버튼, custom-ui.js가 처리)
   const cusTools=`<li class="cus-tools"><button class="btn" data-cnew>+ 새 과제</button><button class="btn" data-cimport title="내보내기로 저장한 .json 파일을 불러와요">불러오기</button>${cus.length?'<button class="btn" data-cexport title="내 과제를 모두 .json 파일 하나로 저장해요">모두 내보내기</button>':''}</li>`;
-  $('missionList').innerHTML=(LS.length?head('lessons','기초 강의',LS.length)+body('lessons',LS.map(lessonItem).join('')):'')
-    +head('missions','미션',mis.length)+body('missions',mis.map(misItem).join(''))
-    +(hyd.length?head('hyd','유압 미션',hyd.length)+body('hyd',hyd.map(misItem).join('')):'')
-    +(des.length?head('design','설계 연습 (산업기사)',des.length)+body('design',des.map(misItem).join('')):'')
-    +(exam.length?head('exam','모의 과제 (기사)',exam.length)+body('exam',exam.map(misItem).join('')):'')
-    +(exam2.length?head('exam2','모의 과제 (산업기사)',exam2.length)+body('exam2',exam2.map(misItem).join('')):'')
-    +(typeof CUSTOM!=='undefined'?head('custom','내 과제',cus.length)+body('custom',cus.map(misItem).join('')+cusTools):'')
+  $('missionList').innerHTML=(LS.length?head('lessons','기초 강의',lsDone?`${lsDone}/${LS.length}`:LS.length)+body('lessons',LS.map(lessonItem).join('')):'')
+    +head('missions','미션',cnt(mis))+body('missions',mis.map(misItem).join(''))
+    +(hyd.length?head('hyd','유압 미션',cnt(hyd))+body('hyd',hyd.map(misItem).join('')):'')
+    +(des.length?head('design','설계 연습 (산업기사)',cnt(des))+body('design',des.map(misItem).join('')):'')
+    +(exam.length?head('exam','모의 과제 (기사)',cnt(exam))+body('exam',exam.map(misItem).join('')):'')
+    +(exam2.length?head('exam2','모의 과제 (산업기사)',cnt(exam2))+body('exam2',exam2.map(misItem).join('')):'')
+    +(typeof CUSTOM!=='undefined'?head('custom','내 과제',cnt(cus))+body('custom',cus.map(misItem).join('')+cusTools):'')
     +head('practice','실전 연습',prac.length)+body('practice',prac.map(misItem).join(''));
   // 선택한 미션 바로 아래(드롭다운처럼). 그 칸이 접혀 있거나 강의를 보는 중이면 목록 맨 끝에 숨겨 둔다.
   // 고른 미션을 한 번 더 눌러 접었으면(UI.cardFold) 그 자리에서 숨김 — 판·선택은 그대로
@@ -232,7 +248,7 @@ $('missionList').addEventListener('click',e=>{
 });
 // 자리별 부품 선택(board)대로 부품 목록을 만들고 화면을 다시 그린다
 function applyBoard(board){
-  UI.board=board;
+  UI.board=board;undoClear();
   const def=LAYOUTS[cur().layout];
   configure({parts:makeParts(def,board)});
   buildScene(LAYOUT.parts,def.board);buildHits();lastHL=null;   // null: 다음 renderHL이 반드시 다시 그림(남은 강조 지우기 포함)
@@ -318,11 +334,13 @@ $('gradeBtn').onclick=()=>{
   const pass=showResults(res,'미션 완료!');
   if(pass){store.done[mis.id]=true;save();renderMissionList();}
 };
+// 변위단계선도가 달라 떨어진 항목: 요구한 동작과 내 회로의 동작을 나란히 그린다 (mydiagram.js)
+function cmpFig(want,got){const g=typeof MYD==='undefined'?'':MYD.cmp(want,got,Object.keys(S.cyl),Object.keys(S.motor||{}));return g?`<div class="cmpfig">${g}</div>`:'';}
 // 채점 결과 목록과 요약을 보여 주고, 색이 틀린 선은 깜박이게 한다. 모두 통과면 true
 function showResults(res,passText,head){
   const pass=res.every(r=>r.ok);
   const col=res.find(r=>r.bad);UI.flash=col&&col.bad.length?col.bad:[];renderConn();
-  $('results').innerHTML=res.map(r=>`<li class="${r.ok?'pass':'fail'}"><span class="m">${r.ok?'✓':'✗'}</span><span>${r.name}${!r.ok&&r.detail?`<small>${r.detail}</small>`:''}</span></li>`).join('');
+  $('results').innerHTML=res.map(r=>`<li class="${r.ok?'pass':'fail'}"><span class="m">${r.ok?'✓':'✗'}</span><span>${r.name}${!r.ok&&r.detail?`<small>${r.detail}</small>`:''}${!r.ok&&r.want&&r.moves?cmpFig(r.want,r.moves):''}</span></li>`).join('');
   const sm=$('summary');sm.hidden=false;sm.className='summary '+(pass?'pass':'fail');
   sm.textContent=(head?head+' — ':'')+(pass?`${res.length}/${res.length} 통과 — ${passText}`:`${res.filter(r=>r.ok).length}/${res.length} 통과 — 빨간 항목을 고쳐 보세요.`);
   return pass;
@@ -410,8 +428,32 @@ $('resetNo').onclick=()=>{$('resetConfirm').hidden=true;};
 $('resetYes').onclick=()=>{$('resetConfirm').hidden=true;applyBoard(Object.assign({},baseBoard(cur())));S=newWorld(withJumpers(LAYOUTS[cur().layout],{wires:[],hoses:[],set:Object.assign({},cur().set)}));UI.stepIdx=0;clearResults();renderConn();};
 
 // 설정 ⚙ → 모든 기록 지우기: 한 번 더 확인받고 저장을 지운 뒤 새로고침 (처음 온 사람과 같은 상태: 자유 실습, 강의·미션 칸 접힘)
-$('settingsBtn').onclick=()=>{const box=$('settings');box.hidden=!box.hidden;$('settingsBtn').setAttribute('aria-expanded',!box.hidden);$('wipeConfirm').hidden=true;};
+$('settingsBtn').onclick=()=>{const box=$('settings');box.hidden=!box.hidden;$('settingsBtn').setAttribute('aria-expanded',!box.hidden);$('wipeConfirm').hidden=true;$('restoreConfirm').hidden=true;};
 $('wipeBtn').onclick=()=>{$('wipeConfirm').hidden=false;};
+// 내 기록 내보내기 / 불러오기 (onboard.js backupText·parseBackup). 불러오면 지금 기록을 통째로 바꾸고 새로고침
+let RESTORE=null;
+$('backupBtn').onclick=()=>{save();cusDownload('공유압트레이너-내기록-'+new Date().toISOString().slice(0,10),backupText(store,APP_VER));};
+$('restoreBtn').onclick=()=>{$('backupFile').value='';$('backupFile').click();};
+$('backupFile').addEventListener('change',e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{
+    const p=parseBackup(String(r.result));
+    if(p.error){toast(p.error);return;}
+    if(p.store.custom&&typeof CUSTOM!=='undefined')p.store.custom=p.store.custom.map(d=>CUSTOM.sanitize(d)).filter(Boolean);
+    RESTORE=p.store;
+    $('restoreMsg').textContent=`${p.saved?p.saved+'에 내보낸 ':''}기록이에요 (완료 ${p.count.done}개, 저장한 배선 ${p.count.circuits}개, 내 과제 ${p.count.custom}개). 지금 이 브라우저의 기록은 모두 이 파일 내용으로 바뀌어요.`;
+    $('restoreConfirm').hidden=false;
+  };
+  r.readAsText(f);
+});
+$('restoreNo').onclick=()=>{RESTORE=null;$('restoreConfirm').hidden=true;};
+$('restoreYes').onclick=()=>{
+  if(!RESTORE)return;
+  try{localStorage.setItem(KEY,JSON.stringify(RESTORE));}catch(e){toast('저장 공간이 모자라 불러오지 못했어요.');return;}
+  WIPED=true;location.reload();   // WIPED: 새로고침 전에 지금 기록이 다시 덮어쓰지 않게
+};
+$('undoBtn').onclick=undo;
 $('wipeNo').onclick=()=>{$('wipeConfirm').hidden=true;};
 $('wipeYes').onclick=()=>{WIPED=true;try{localStorage.removeItem(KEY);}catch(e){}location.reload();};
 

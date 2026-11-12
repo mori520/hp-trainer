@@ -1,6 +1,6 @@
 /* ===================== 채점 =====================
    엔진(stepWorld)을 화면 없이 돌려 동작 결과로 채점한다. 정답 배선과 비교하지 않는다.
-   gradeMission(미션, 회로) → [{name, ok, detail, bad?, moves?}]
+   gradeMission(미션, 회로) → [{name, ok, detail, bad?, moves?, want?}]  (want = 요구한 움직임, 화면이 비교 그림을 그릴 때 씀)
 
    미션 데이터의 "grading" 형식 (둘 중 하나):
    1) 단계 검사 — 버튼을 누르고 떼며 그때그때 결과를 본다
@@ -144,7 +144,7 @@ function gradeSteps(g,c){
     const mv=movesProblem(s,log)||stepExtraProblem(s,w,tl);
     const ok=!mv&&Object.keys(s.expect||{}).every(k=>expectOk(w,k,s.expect[k]));
     if(!ok)all=false;
-    if(r===0)items.push({name:s.name,ok,detail:ok?'':[mv,s.hint].filter(Boolean).join(' — '),moves:log});
+    if(r===0)items.push({name:s.name,ok,detail:ok?'':[mv,s.hint].filter(Boolean).join(' — '),moves:log,want:s.moves&&s.moves.length?s.moves:undefined});
   });
   if((g.repeat||1)>=2)items.push({name:TWICE,ok:all});
   return{items,leak,short:w.events.includes('short')};
@@ -194,7 +194,7 @@ function gradeSequence(g,c){
     const ok=log.join(' ')===g.sequence.join(' ');
     if(!ok)all=false;
     const detail=ok?'':`기대: ${fmtSeq(g.sequence)} / 실제: ${log.length?fmtSeq(log):'움직임 없음'}`;
-    if(r===0)items.push({name:`${g.press} → 변위단계선도(${fmtSeq(g.sequence)})대로 동작`,ok,detail,moves:log});
+    if(r===0)items.push({name:`${g.press} → 변위단계선도(${fmtSeq(g.sequence)})대로 동작`,ok,detail,moves:log,want:g.sequence});
     else if(!ok&&!laterFail)laterFail=`${r+1}회차 — ${detail}`;
     if(g.dwell&&!dwellFail){const p=dwellProblem(g.dwell,tl);if(p)dwellFail=(reps>1?`${r+1}회차 — `:'')+p;}
     if(extra&&!extraFail){const p=stepExtraProblem(extra,w,tl);if(p)extraFail=(reps>1?`${r+1}회차 — `:'')+p;}

@@ -12,7 +12,7 @@ function syncCustom(){
 }
 // 내 과제 하나의 기록(배선·단계·완료)을 지운다
 function cusForget(mid,keepWires){
-  delete store.done[mid];if(store.exam)delete store.exam[mid];
+  delete store.done[mid];if(store.exam)delete store.exam[mid];if(store.examBest)delete store.examBest[mid];
   if(!keepWires)delete store.circuits[mid];
   else if(store.circuits[mid])delete store.circuits[mid].board;   // 판 구성은 새 정의를 따르게
 }

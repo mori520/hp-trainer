@@ -146,6 +146,8 @@ test('변위단계선도: 순서가 다르면 기대와 실제를 보여 준다'
   const r=res[3];
   assert.equal(r.ok,false);
   assert.equal(r.detail,'기대: A+ A− / 실제: B+');
+  // 화면의 비교 그림용: 요구한 움직임과 실제 움직임을 함께 돌려준다
+  assert.deepEqual(r.want,['A+','A-']);assert.deepEqual(r.moves,['B+']);
 });
 
 test('변위단계선도: 아무것도 안 움직이면 "움직임 없음"',()=>{

@@ -2,6 +2,7 @@
    사용자가 만든 것을 시험 도면 모양으로 다시 그린다 (DOM을 쓰지 않음 → 테스트에서도 돈다). 화면 쪽은 mydiagram-ui.js
    - pneu(parts, hoses, info) : 공기압회로도(유압 판이면 유압회로도: 파워유닛·4/2·4/3 밸브·모터·체크밸브). 부품 기호는 자리마다 정해진 곳에 두고, 꽂힌 호스를 선으로 잇는다
        (도면대로 꽂았으면 시험 도면과 같은 모양이 되고, 잘못 꽂았으면 잘못된 모양 그대로 보인다). 비어 있는 포트는 빈 동그라미
+   - cmp(want, got, names, motors) : 채점에서 떨어졌을 때 요구한 동작과 내 동작을 나란히 (처음 달라진 칸 표시)
    - disp(runs, names, live, motors) : 변위단계선도. runs = 기록한 동작 [{seq:["A+","wait:3.0초","B+",…]}]. 모터는 "M+"(정회전)·"M0"(정지)·"M-"(역회전)
    - elec(LAYOUT, PARTS, w, e): 전기회로도(사다리). 꽂은 선으로 직렬·병렬을 정리해 그리고, 정리 안 되는 곳은 "확인할 곳" 목록 */
 const MYD=(()=>{
@@ -242,8 +243,8 @@ const MYD=(()=>{
   /* ---------- 변위단계선도 ---------- */
   // seq: "A+"·"B-" 같은 도착, "wait:3.0초"는 그 구간 그대로 머묾. 실린더마다 0(후진)·1(전진) 줄
   // 유압모터(mot에 든 이름)는 세 칸 줄: 위 정회전(+) · 가운데 정지(0) · 아래 역회전(−)
-  function dispRows(x,y,names,seq,o,mot){
-    const dx=Math.min(70,Math.max(34,560/Math.max(1,seq.length))),rh=30,gap=18,n=seq.length+1;
+  function dispRows(x,y,names,seq,o,mot,dx0){
+    const dx=dx0||Math.min(70,Math.max(34,560/Math.max(1,seq.length))),rh=30,gap=18,n=seq.length+1;
     seq.forEach((m,k)=>{if(m.startsWith('wait:'))o.push(text(x+(k+0.5)*dx,y+12,m.slice(5),'s','middle'));});
     for(let k=0;k<n;k++)o.push(text(x+k*dx,y-6,String(k+1),'s','middle'));
     names.forEach((a,r)=>{
@@ -458,6 +459,31 @@ const MYD=(()=>{
     if(issues.length){o.push(text(20,y,'확인할 곳','bad'));y+=20;issues.forEach(s=>{o.push(text(28,y,'• '+s,'t'));y+=19;});}
     return svg(W,y+10,o.join(''));
   }
+  /* ---------- 채점에서 떨어졌을 때: 요구한 동작(위)과 내 회로의 동작(아래) ----------
+     want·got = ["A+","B+",…]. 처음 달라진 칸을 빨갛게 칠하고 한 줄로 알려 준다. 같으면 ''.
+     좁은 칸에 들어가도록 작게 그린다 (칸 폭 40). 돌려주는 SVG는 제 크기(px)를 갖는다 */
+  function cmpNote(want,got){
+    let i=0;while(i<want.length&&i<got.length&&want[i]===got[i])i++;
+    const f=m=>m.replace('-','−');
+    if(i>=want.length&&i>=got.length)return{i:-1,msg:''};
+    if(!got.length)return{i,msg:'아무것도 움직이지 않았어요'};
+    if(i>=got.length)return{i,msg:`${i+1}번째 동작 ${f(want[i])}에서 멈췄어요`};
+    if(i>=want.length)return{i,msg:`끝난 뒤에 ${f(got[i])}가 더 일어났어요`};
+    return{i,msg:`${i+1}번째가 달라요: 요구 ${f(want[i])} / 실제 ${f(got[i])}`};
+  }
+  function cmp(want,got,names,mot=[]){
+    const note=cmpNote(want,got);if(note.i<0)return '';
+    const all=names.concat(mot.filter(m=>!names.includes(m)));
+    const ns=all.filter(n=>want.concat(got).some(m=>m.slice(0,-1)===n));if(!ns.length)return '';
+    const X=46,DX=40,RH=ns.length*48-18,W=Math.max(236,X+Math.max(want.length,got.length)*DX+24),o=[];
+    const mark=(seq,y)=>{if(note.i<seq.length)o.push(rect(X+note.i*DX,y-3,DX,RH+6,'badbox'));};
+    let y=46;
+    o.push(text(10,20,'요구한 동작','n'));mark(want,y);y+=dispRows(X,y,ns,want,o,mot,DX)+30;
+    o.push(text(10,y-26,'내 회로의 동작','n'));mark(got,y);y+=dispRows(X,y,ns,got,o,mot,DX);
+    o.push(text(10,y+6,'✗ '+note.msg,'bad'));
+    const H=y+20;
+    return `<svg viewBox="0 0 ${W} ${H}" style="width:${W}px;height:${H}px" class="mdsvg cmpsvg" xmlns="http://www.w3.org/2000/svg">${rect(0,0,W,H,'bg')}${o.join('')}</svg>`;
+  }
   // _reduce: 테스트용 (정리 결과 + 확인할 곳 전체)
-  return{pneu,disp,elec,recNew,recTick,recSeq,_reduce:(L,PARTS,w)=>{const G=elecGraph(L,PARTS,w,null),R=reduce(G);return{rungs:R.rungs,partial:partialChains(G,R.rungs),issues:G.issues.concat(R.issues)};}};
+  return{pneu,disp,elec,cmp,cmpNote,recNew,recTick,recSeq,_reduce:(L,PARTS,w)=>{const G=elecGraph(L,PARTS,w,null),R=reduce(G);return{rungs:R.rungs,partial:partialChains(G,R.rungs),issues:G.issues.concat(R.issues)};}};
 })();

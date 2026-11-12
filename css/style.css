@@ -402,3 +402,17 @@ body.in-lesson.docked .stage{margin-right:0}
 .hints .muted{margin:0;color:var(--muted);font-size:12.5px}
 .clock.over{color:var(--bad)}
 .clock-goal{font-size:12px;color:var(--muted)}
+
+/* 설정: 기록 백업 */
+.set-note{margin:0;font-size:12px;color:var(--muted)}
+.set-row{display:flex;gap:6px;flex-wrap:wrap}
+/* 되돌리기 */
+#undoBtn:disabled{opacity:.45;cursor:default}
+/* 목록: 모의 과제 최고 기록 */
+.missions .best{display:block;font-size:11px;font-weight:400;color:var(--muted)}
+.ex-stages li small{margin-left:auto;font-weight:400;color:var(--muted);font-variant-numeric:tabular-nums}
+/* 채점 결과: 요구한 동작과 내 동작 비교 그림 */
+.results li>span{min-width:0}
+.cmpfig{overflow-x:auto;margin-top:6px;border-radius:6px}
+.mdsvg.cmpsvg{max-width:none;flex:none}
+.mdsvg .badbox{fill:#fbd5d1;stroke:none}

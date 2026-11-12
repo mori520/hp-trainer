@@ -14,11 +14,11 @@ function renderExam(){
       <button class="btn ${st.run?'':'primary'}" id="examRun">${st.run?'일시정지':st.sec?'계속':'시작'}</button>
       <button class="btn" id="examZero">0으로</button></div>
     <details class="ex-req" ${st.reqClosed?'':'open'}><summary>요구사항</summary><ul class="req">${X.req.map(t=>`<li>${t}</li>`).join('')}</ul></details>
-    <ol class="ex-stages">${X.stages.map((s,i)=>`<li class="${passed(i)?'pass':i===k?'cur':'lock'}"><span class="m">${passed(i)?'✓':i===k?'▶':'·'}</span>${s.name}</li>`).join('')}</ol>
+    <ol class="ex-stages">${X.stages.map((s,i)=>`<li class="${passed(i)?'pass':i===k?'cur':'lock'}"><span class="m">${passed(i)?'✓':i===k?'▶':'·'}</span>${s.name}${passed(i)&&(st.times||{})[i]!=null?`<small title="이 단계를 통과한 때의 시계">${fmtTime(st.times[i])}</small>`:''}</li>`).join('')}</ol>
     <div class="ex-task"><b>${stg.name}</b><p>${stg.task}</p></div>
     <div class="ex-btns"><button class="btn primary" id="examGrade">평가 받기</button>
       ${passed(k)&&k<last?`<button class="btn primary" id="examNext">다음: ${X.stages[k+1].name} →</button>`:''}</div>
-    ${allDone?`<p class="fb ok"><b>모든 단계 통과!</b> 걸린 시간 ${fmtTime(st.sec)}. 시험은 보통 기본 동작부터 유지보수까지 정해진 시간 안에 끝내야 해요.</p>`:''}
+    ${allDone?`<p class="fb ok"><b>모든 단계 통과!</b> 걸린 시간 ${fmtTime(st.sec)}${(store.examBest||{})[mis.id]?` (최고 기록 ${fmtTime(store.examBest[mis.id])})`:''}. 시험은 보통 기본 동작부터 유지보수까지 정해진 시간 안에 끝내야 해요.</p>`:''}
     ${passed(0)&&X.explain?`<details class="ex-explain"><summary>${X.explainTitle||'도면의 틀린 곳 해설'}</summary><p>${X.explain}</p></details>`:''}
     <button class="link" id="examRestart">${examAsk?'정말 처음부터? (단계 기록·시간을 지우고, 판을 처음 구성으로 되돌립니다. 한 번 더 누르세요)':'처음부터 다시'}</button>`;
 }
@@ -41,8 +41,12 @@ $('exam').addEventListener('click',e=>{
     const res=gradeMission({...mis,grading:stg.grading},{wires:S.wires,hoses:S.hoses,set:S.set});
     const pass=showResults(res,last?(mis.custom?'내 과제 통과!':'모의 과제 완료!'):'다음 단계가 열렸어요.',stg.name);
     if(pass){
-      if(!st.passed.includes(k))st.passed.push(k);
-      if(last){store.done[mis.id]=true;st.run=false;}
+      // 스톱워치를 쓴 경우에만: 단계를 통과한 때의 시계, 끝까지 가면 최고 기록 (처음부터 다시 해도 최고 기록은 남음)
+      if(!st.passed.includes(k)){st.passed.push(k);if(st.sec>0){st.times=st.times||{};st.times[k]=st.sec;}}
+      if(last){
+        store.done[mis.id]=true;st.run=false;
+        if(st.sec>0){store.examBest=store.examBest||{};const b=store.examBest[mis.id];if(!b||st.sec<b)store.examBest[mis.id]=st.sec;}
+      }
       save();renderMissionList();
     }
     renderExam();

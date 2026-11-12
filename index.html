@@ -19,6 +19,14 @@
     </header>
     <section class="card settings" id="settings" hidden>
       <h3>설정</h3>
+      <p class="set-note">기록은 이 브라우저에만 저장돼요. 다른 컴퓨터로 옮기거나, 지워질 때를 대비해 파일로 보관해 두세요.</p>
+      <div class="set-row"><button class="btn" id="backupBtn">내 기록 내보내기</button><button class="btn" id="restoreBtn">내 기록 불러오기</button></div>
+      <div class="confirm" id="restoreConfirm" hidden>
+        <span id="restoreMsg"></span>
+        <button class="btn danger" id="restoreYes">이 파일로 바꾸기</button>
+        <button class="btn" id="restoreNo">취소</button>
+      </div>
+      <input type="file" id="backupFile" accept=".json,application/json" hidden>
       <button class="btn danger" id="wipeBtn">모든 기록 지우기</button>
       <div class="confirm" id="wipeConfirm" hidden>
         <span>완료 표시, 저장한 배선, 강의 읽은 기록, 화면 설정이 모두 지워지고 처음 상태로 돌아가요. 되돌릴 수 없어요.</span>
@@ -77,8 +85,9 @@
         <button class="swatch" id="zoomFit" title="트레이너 전체를 화면에 맞춤">맞춤</button>
         <button class="swatch" id="zoomIn" aria-label="확대">+</button>
       </div>
+      <button class="swatch" id="undoBtn" disabled title="방금 한 선·호스 연결, 삭제, 색 바꾸기를 되돌려요 (Ctrl+Z)">↶ 되돌리기</button>
       <div class="status" id="status"></div>
-      <div class="help">잭에서 드래그해 연결 · 선 클릭: 색 바꾸기 · 선 더블클릭: 삭제 · Esc 취소 · 숫자키 1/2/3 색 고르기</div>
+      <div class="help">잭에서 드래그해 연결 · 선 클릭: 색 바꾸기 · 선 더블클릭: 삭제 · Ctrl+Z 되돌리기 · Esc 취소 · 숫자키 1/2/3 색 고르기</div>
     </div>
     <div class="demo-bar" id="demoBar" hidden role="group" aria-label="시연 조작">
       <span id="demoInfo" aria-live="polite"></span>

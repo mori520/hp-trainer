@@ -175,3 +175,19 @@ test('변위단계선도: 모터 줄은 정·0·역 세 칸으로 그린다',()=
   // 모터만 있는 미션(H3)도 그려진다
   assert.doesNotMatch(MYD.disp([{seq:['M+','M0','M-','M0']}],[],null,['M']),/모터가 없어요/);
 });
+
+test('비교 그림: 처음 달라진 곳을 찾아 알려 줌',()=>{
+  const n=(a,b)=>MYD.cmpNote(a,b);
+  assert.equal(n(['A+','B+'],['A+','B+']).i,-1);
+  assert.equal(MYD.cmp(['A+','B+'],['A+','B+'],['A','B']),'');
+  assert.deepEqual(JSON.parse(JSON.stringify(n(['A+','B+','A-','B-'],['A+','B+','B-','A-']))),{i:2,msg:'3번째가 달라요: 요구 A− / 실제 B−'});
+  assert.match(n(['A+','A-'],[]).msg,/아무것도 움직이지/);
+  assert.match(n(['A+','A-'],['A+']).msg,/2번째 동작 A−에서 멈췄어요/);
+  assert.match(n(['A+','A-'],['A+','A-','A+']).msg,/끝난 뒤에 A\+가 더/);
+  const s=MYD.cmp(['A+','B+','A-','B-'],['A+','B+','B-','A-'],['A','B']);
+  assert.match(s,/^<svg /);assert.match(s,/요구한 동작/);assert.match(s,/내 회로의 동작/);
+  assert.equal((s.match(/badbox/g)||[]).length,2,'달라진 칸을 위·아래 모두 표시');
+  // 나오지 않는 실린더 줄은 그리지 않고, 모터 줄은 그린다
+  assert.ok(!MYD.cmp(['A+','A-'],['A+'],['A','B']).includes('>B<'));
+  assert.ok(MYD.cmp(['A+','M+','M0','A-'],['A+'],['A'],['M']).includes('>M<'));
+});

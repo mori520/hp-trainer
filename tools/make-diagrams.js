@@ -705,6 +705,33 @@ sheet('y4.svg',{...HS,w:880,h:1000,names:['A','M'],motors:['M'],seq:['A+','M+','
     L.rung(790,[{t:'no',name:'K4'},{t:'no',name:'LS1',act:'ls',pressed:true},{t:'coil',name:'K3'}]);
   }});
 
+// 모의 유5: B+ A+ A− B−. A 하중 실린더 4/3 중립 블록(Y1 하강·Y2 상승), B 4/2(Y3). 틀린 곳 = K4 줄의 LS1이 b접점
+sheet('y5.svg',{...HS,w:880,h:980,names:['A','B'],seq:['B+','A+','A-','B-'],note:['PB1: 한 사이클','릴레이 4개','릴리프 4.0 MPa'],
+  pneu:S=>{const a=hyd(S,110,90,{act:'cylw',name:'A',valve:'43c',sols:['Y1','Y2'],sensors:[{end:'+',name:'LS2',kind:'ls'},{end:'-',name:'LS1',kind:'ls'}]});
+    hyd(S,520,90,{name:'B',valve:'42',sols:['Y3'],sensors:[{end:'+',name:'S1',kind:'cap'}],feed:{x:a.ax,y:a.py}});},
+  elec:L=>{
+    L.rung(80,[{t:'nc',name:'K4'},{t:'no',name:'PB1',act:'pb',hold:'K1'},{t:'coil',name:'K1'}]);
+    L.rung(190,[{t:'no',name:'K1'},{t:'sol',name:'Y3'}]);
+    L.rung(300,[{t:'sensor',name:'S1'},{t:'coil',name:'K2'}]);
+    L.rung(410,[{t:'no',name:'K1'},{t:'no',name:'K2'},{t:'nc',name:'K3'},{t:'sol',name:'Y1'}]);
+    L.rung(510,[{t:'no',name:'LS2',act:'ls',hold:'K3'},{t:'no',name:'K1'},{t:'coil',name:'K3'}]);
+    L.rung(630,[{t:'no',name:'K3'},{t:'sol',name:'Y2'}]);
+    L.rung(740,[{t:'no',name:'K3'},{t:'nc',name:'LS1',act:'ls'},{t:'coil',name:'K4'}]);
+  }});
+
+// 모의 유6: B+ A+ B− A−. A 4/2(Y1), B 4/2(Y2). 틀린 곳 = Y1 줄의 접점이 K2 대신 K3
+sheet('y6.svg',{...HS,w:880,h:980,names:['A','B'],seq:['B+','A+','B-','A-'],note:['PB1: 한 사이클','릴레이 4개','릴리프 4.0 MPa'],
+  pneu:S=>{const a=hyd(S,110,90,{name:'A',valve:'42',sols:['Y1'],sensors:[{end:'+',name:'S1',kind:'cap'}]});
+    hyd(S,520,90,{name:'B',valve:'42',sols:['Y2'],sensors:[{end:'+',name:'LS2',kind:'ls'},{end:'-',name:'LS1',kind:'ls'}],feed:{x:a.ax,y:a.py}});},
+  elec:L=>{
+    L.rung(90,[{t:'nc',name:'K4'},{t:'no',name:'PB1',act:'pb',hold:'K1'},{t:'coil',name:'K1'}]);
+    L.rung(210,[{t:'no',name:'K1'},{t:'nc',name:'K3'},{t:'sol',name:'Y2'}]);
+    L.rung(320,[{t:'no',name:'LS2',act:'ls',hold:'K2'},{t:'no',name:'K1'},{t:'coil',name:'K2'}]);
+    L.rung(440,[{t:'no',name:'K3'},{t:'sol',name:'Y1'}]);
+    L.rung(550,[{t:'sensor',name:'S1',hold:'K3'},{t:'no',name:'K1'},{t:'coil',name:'K3'}]);
+    L.rung(700,[{t:'no',name:'K3'},{t:'no',name:'LS1',act:'ls',pressed:true},{t:'coil',name:'K4'}]);
+  }});
+
 // 미션 0~4: 튜토리얼에서 완성 도면을 보며 배우도록 (2026-10-28 사용자 요청)
 sheet('m0.svg',{w:420,h:440,note:['PB1을 누르는 동안 H1 점등'],
   elec:L=>{L.rung(170,[{t:'no',name:'PB1',act:'pb'},{t:'lamp',name:'H1'}]);}});

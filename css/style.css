@@ -416,3 +416,23 @@ body.in-lesson.docked .stage{margin-right:0}
 .cmpfig{overflow-x:auto;margin-top:6px;border-radius:6px}
 .mdsvg.cmpsvg{max-width:none;flex:none}
 .mdsvg .badbox{fill:#fbd5d1;stroke:none}
+
+/* 시험 모드 */
+.test-dlg{width:min(460px,calc(100vw - 32px));max-height:calc(100vh - 110px);overflow:auto}
+.test-dlg label{display:flex;flex-direction:column;gap:3px;font-size:13px;color:var(--muted);margin-bottom:8px}
+.test-dlg select{font:inherit;font-size:13px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:5px 6px}
+.test-dlg hr{border:0;border-top:1px solid var(--line);margin:10px 0}
+.test-res{list-style:none;margin:6px 0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:13px}
+.test-res small{display:block;color:var(--muted)}
+.test-res li.pass small{color:var(--ok)} .test-res li.fail small{color:var(--bad)}
+.test-ok{color:var(--ok);font-weight:700} .test-no{color:var(--ink);font-weight:600}
+.test-bar{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:24;display:flex;gap:10px;align-items:center;white-space:nowrap;
+  background:var(--surface);color:var(--ink);border:1px solid var(--accent);border-radius:999px;padding:5px 6px 5px 16px;box-shadow:0 6px 20px rgb(0 0 0/.25);font-size:13px}
+.test-bar[hidden]{display:none}
+.test-bar b{font-variant-numeric:tabular-nums}
+.test-bar b.warn{color:var(--warn,#d98200)} .test-bar b.over{color:var(--bad)}
+.test-bar .btn{padding:4px 10px;border-radius:999px}
+body.testing #mydiagBtn,body.testing .mydiag,body.testing .ex-explain,body.testing #exam .prac-top,body.testing #examRestart,
+body.testing #exam .fb.ok,body.testing .results small,body.testing .cmpfig{display:none}
+body.testing #missionList>li:not(.test-row):not(.card-slot){pointer-events:none;opacity:.35}
+body.test-over #examGrade{opacity:.45}

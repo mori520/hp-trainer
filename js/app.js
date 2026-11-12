@@ -199,7 +199,7 @@ $('autoColor').onclick=()=>setAutoColor(!store.autoColor);
 // 목록: 기초 강의(lessons.js, 없으면 생략) / 미션 / 실전 연습(실전 연습·자유 실습). 칸 제목을 누르면 접고 편다(store.fold)
 // 모의 과제(exams.js)와 내 과제(store.custom → custom.js가 미션 모양으로)도 목록에. 내 과제를 고치면 custom-ui.js가 ALL을 다시 채운다
 const ALL=MISSIONS.concat(typeof EXAMS==='undefined'?[]:EXAMS,(store.custom||[]).map(d=>{try{return CUSTOM.toMission(d);}catch(e){return null;}}).filter(Boolean));
-const sectOf=x=>x.custom?'custom':x.design?'design':x.exam?(x.level==='industrial'?'exam2':'exam'):x.practice||x.no==='∞'?'practice':x.layout==='hyd'?'hyd':'missions';   // 실전 연습·자유 실습(no ∞)은 맨 아래 칸, 유압 미션·모의 과제는 따로
+const sectOf=x=>x.test?'test':x.custom?'custom':x.design?'design':x.exam?(x.level==='industrial'?'exam2':'exam'):x.practice||x.no==='∞'?'practice':x.layout==='hyd'?'hyd':'missions';   // 실전 연습·자유 실습(no ∞)은 맨 아래 칸, 유압 미션·모의 과제는 따로
 function cur(){return ALL.find(x=>x.id===UI.mission);}
 function renderMissionList(){
   const LS=typeof LESSONS==='undefined'?[]:LESSONS, fold=store.fold||{};
@@ -222,6 +222,7 @@ function renderMissionList(){
     +head('missions','미션',cnt(mis))+body('missions',mis.map(misItem).join(''))
     +(hyd.length?head('hyd','유압 미션',cnt(hyd))+body('hyd',hyd.map(misItem).join('')):'')
     +(des.length?head('design','설계 연습 (산업기사)',cnt(des))+body('design',des.map(misItem).join('')):'')
+    +(typeof testRows==='function'?head('test','시험 모드','')+(fold.test&&!testOn()?'':testRows(misItem)):'')   // 시험 모드 (test-ui.js)
     +(exam.length?head('exam','모의 과제 (기사)',cnt(exam))+body('exam',exam.map(misItem).join('')):'')
     +(exam2.length?head('exam2','모의 과제 (산업기사)',cnt(exam2))+body('exam2',exam2.map(misItem).join('')):'')
     +(typeof CUSTOM!=='undefined'?head('custom','내 과제',cnt(cus))+body('custom',cus.map(misItem).join('')+cusTools):'')
